@@ -17,13 +17,15 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P5a deploy scripts | ✅ written 2026-11-06 (PLAN 3.1); initial price within 1 bp (fuzz) | end-to-end proof on the local chain in 3.2 |
 | P5b local chain | ✅ done 2026-11-06 (PLAN 3.2): `pnpm local:once` deploys all 5 scripts on anvil with mock precompiles. Smoke swaps verify **MATCH on A and B**; ~2 min | `backend/scripts/src/localChain.ts` |
 | P5c testnet runbook | ✅ written 2026-11-06 (`docs/DEPLOYMENTS.md`). **Testnet run BLOCKED on Sayan**: funded deployer + HyperCore user | — |
-| **P6 Arena service** | ⏭ next (PLAN 4.1–4.4) | — |
+| P6 Arena service | ✅ done 2026-11-06 (PLAN 4.1–4.4): 22 unit/API tests (auth and rate-limit mutations caught). **E2E gate passes on the local chain**: shock → bot arbs both pools → Aven fee > control fee → `lpKeptMoreUsd > 0` → `/verify` MATCH; trades reload after restart (156 s) | `backend/arena` |
+| **P7 market data** | ⏭ next (PLAN 5.1) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
 
+- **2026-11-06: Arena defaults** (`backend/.env`, all overridable): `MAX_TRADE_BASE` 5, `MAX_TRADE_QUOTE` 10,000, shock = buy base with `SHOCK_QUOTE` 40,000 aUSD, `MIN_NATIVE_BALANCE` 0.01 (auto-pause), `NATIVE_USD` 0 (testnet gas is valued at $0 in profit), poll 500 ms, 30 POSTs/min per client. Stats count only bot (`arb`) trades; shock swaps are recorded as `retail`.
 - **2026-11-06: PoolManager owner = `address(0)`** (DeployCore default, `PM_OWNER` overrides). Nobody can ever set a protocol fee, so verify check B is exact and there are no admin keys. The canonical Uniswap PoolManager has a governance owner; ours deliberately doesn't.
 - **2026-11-06: Deploy state.** Scripts pass addresses via `contracts/deployments/<chainId>.wip.json` (gitignored); `CreatePools` writes the final §8.3 `<chainId>.json`. The bot and shock wallets approve routers themselves (the Arena holds their keys); `DeployTokens` only needs their addresses (`BOT_ADDRESS`, `SHOCK_ADDRESS`).
 - **2026-11-06: Node deps** are pinned to exact versions at least two weeks old: viem 2.57.10, zod 4.6.7, vitest 5.0.5, tsx 4.23.15, typescript 5.9.3, @types/node 22.20.5 (hono 4.13.13 and @hono/node-server 2.1.5 for the Arena). pnpm 12 needs `allowBuilds: {esbuild: true}` in `pnpm-workspace.yaml`.
@@ -60,6 +62,9 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- `sqrtBig` originally seeded Newton with `Math.sqrt(Number(x))`. When the float seed landed below the root, the fix-up loop stepped by ±1 ~1e8 times (hang). Now it's integer Newton from a 2^ceil(bits/2) over-estimate, with a 300-size randomized floor test.
+- vitest hides `console.log` from passing tests, so e2e numbers must be asserted or written to a file to be seen.
 
 - On Windows, spawn long-running children (anvil) with `shell: false`. A `cmd.exe` wrapper leaves anvil orphaned when you kill the wrapper's pid, and the parent pipeline hangs.
 - `LiquidityAmounts.getLiquidityForAmounts(…, huge, …)` reverts with SafeCastOverflow: it computes both sides. Size from one side with `getLiquidityForAmount0/1`.

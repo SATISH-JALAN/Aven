@@ -108,22 +108,22 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
 
 ## Phase 4: Arena service (P6)
 
-- [ ] **4.1 Core loop:** `backend/arena`:
+- [x] **4.1 Core loop:** `backend/arena`:
   - Hono + `@hono/node-server`;
   - config from `backend/.env` + `deployments/<chainId>.json`;
   - block poller (500 ms);
   - bot loop: read the oracle, quote via `previewFee`, compute p* and the sqrtPriceLimit, simulate, send if profitable;
   - nonce manager; retry/backoff;
   - `MAX_TRADE` cap and the balance auto-pause.
-- [ ] **4.2 Shock, stats and persistence:**
+- [x] **4.2 Shock, stats and persistence:**
   - shock = identical swaps on both pools from the shock wallet;
   - per-pool stats, `lpKeptMoreUsd`, `botProfitDiffUsd`;
   - `backend/data/arena/trades.jsonl` append + reload.
-- [ ] **4.3 HTTP + SSE:** exactly per `docs/spec/API.md` (B4), plus `/config`.
+- [x] **4.3 HTTP + SSE:** exactly per `docs/spec/API.md` (B4), plus `/config`.
   - admin token on POSTs;
   - CORS allowlist;
   - POST rate limit.
-- [ ] **4.4 Tests + local e2e:**
+- [x] **4.4 Tests + local e2e:**
   - vitest: direction, p*, sqrtPriceLimit for both token orders, profit, stats;
   - e2e on the local chain: shock → bot trades both pools → the Aven fee is higher than control's for the same gap → `lpKeptMoreUsd > 0` → `/verify/:tx` MATCH.
 

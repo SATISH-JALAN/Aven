@@ -6,20 +6,17 @@ import { type Config, mulDiv } from "./fee.ts";
 
 const Q192 = 2n ** 192n;
 
-/** floor(sqrt(x)) for x >= 0 (Newton's method). Matches OpenZeppelin Math.sqrt (rounding down). */
+/**
+ * floor(sqrt(x)) for x >= 0. Integer Newton's method from a power-of-two OVER-estimate, so the iterates decrease
+ * monotonically to the floor (no float seed: a float seed below the root made the old version step by 1 ~1e8 times).
+ */
 export function sqrtBig(x: bigint): bigint {
   if (x < 0n) throw new RangeError("sqrtBig: negative");
   if (x < 2n) return x;
-  let r = BigInt(Math.floor(Math.sqrt(Number(x)))); // seed only; refined below with integers
-  if (r === 0n) r = 1n;
+  let r = 1n << BigInt(Math.ceil(x.toString(2).length / 2)); // 2^ceil(bits/2) >= sqrt(x)
   for (;;) {
     const next = (r + x / r) >> 1n;
-    if (next >= r) {
-      // converge from above, then make sure r = floor(sqrt(x))
-      while (r * r > x) r -= 1n;
-      while ((r + 1n) * (r + 1n) <= x) r += 1n;
-      return r;
-    }
+    if (next >= r) return r;
     r = next;
   }
 }

@@ -86,8 +86,14 @@ describe("§6.3 scaling", () => {
       expect(diff * 10_000n <= want).toBe(true);
     }
   });
-  it("sqrtBig is exact floor", () => {
-    for (const x of [0n, 1n, 2n, 3n, 4n, 15n, 16n, 17n, 10n ** 40n, 10n ** 40n + 1n, 2n ** 255n]) {
+  it("sqrtBig is exact floor (incl. sizes where a float seed lands below the root)", () => {
+    const xs = [0n, 1n, 2n, 3n, 4n, 15n, 16n, 17n, 10n ** 40n, 10n ** 40n + 1n, 2n ** 255n, 2n ** 256n - 1n];
+    let seed = 0x9e3779b97f4a7c15n; // deterministic xorshift-ish sweep over 1..2^256
+    for (let i = 0; i < 300; i++) {
+      seed = (seed * 6364136223846793005n + 1442695040888963407n) & ((1n << 256n) - 1n);
+      xs.push(seed >> BigInt(i % 200));
+    }
+    for (const x of xs) {
       const r = sqrtBig(x);
       expect(r * r <= x && (r + 1n) * (r + 1n) > x).toBe(true);
     }

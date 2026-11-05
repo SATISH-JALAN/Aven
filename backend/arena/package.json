@@ -1,0 +1,28 @@
+{
+  "name": "@aven/arena",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Aven Arena service: block poller, arb bot, shock, stats, HTTP + SSE API (docs/spec/API.md).",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch src/main.ts",
+    "test": "vitest run",
+    "test:e2e": "tsx scripts/e2e.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@aven/core": "workspace:*",
+    "@hono/node-server": "2.1.5",
+    "hono": "4.13.13",
+    "viem": "2.57.10",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@aven/scripts": "workspace:*",
+    "@types/node": "22.20.5",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

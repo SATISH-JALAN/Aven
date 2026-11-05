@@ -26,7 +26,7 @@ flowchart LR
   end
   subgraph backend["backend/ (TypeScript)"]
     CORE["core: fee, state, price, abi, pool, precompiles, addresses, verify ✅"]
-    ARENA["arena: poller, bot, shock, API+SSE 🔜P6"]
+    ARENA["arena: poller, bot, shock, API+SSE ✅"]
     SCR["scripts: fetch-market-data, replay-to-web 🔜P7/P8"]
     DATA["data/: raw, replay, vectors, arena"]
   end
@@ -101,9 +101,16 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
   8. `Smoke.s.sol`: one swap each direction on both pools.
 - **Exit:** **`contracts/deployments/998.json`** (§8.3). It's the single source of addresses for `backend/` and `frontend/`; tx links go into the docs.
 
-## 5. Arena service (live demo bot) 🔜P6
+## 5. Arena service (live demo bot) ✅ `backend/arena`
 
-- **Entry:** `pnpm arena:start` (or `arena:dev`) → `backend/arena` main. It loads `backend/.env` and `contracts/deployments/998.json`, and reloads `backend/data/arena/trades.jsonl`.
+- **Entry:** `pnpm --filter @aven/arena start` (or `dev`) → `src/main.ts`:
+  - `loadDotEnv` + `loadConfig` (zod: `src/config.ts`);
+  - `loadDeployments(CHAIN_ID)`;
+  - `makeChain` (`src/chain.ts`: viem with a nonce manager per wallet);
+  - `new Arena(...).start()` (`src/arena.ts`: reloads `backend/data/arena/trades.jsonl`, approves the routers for bot and shock, starts the poller);
+  - `makeApp` (`src/server.ts`, Hono) served on `ARENA_PORT`.
+
+  Pure maths lives in `src/math.ts`; the API types are `src/types.ts` (= B4).
 - **Path:** one process, three loops (§7.2):
   1. **Poller:** every ~500 ms, `eth_blockNumber` (no websockets on HyperEVM, recon B.2).
   2. **Bot loop**, per new block, per pool (control, aven):
@@ -172,7 +179,9 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 | invariant, replay | `contracts/test/{invariant,replay}/` | §9 | 🔜 P8, P11 |
 | `pnpm test` (root) | `backend/core/test/{fee,differential,chain}.test.ts` | TS port mirrors the Solidity unit tests; vectors (skipped if absent); poolId/slot0/precompile decoding/§8.3 schema/verifier checks A and B | ✅ 29 pass |
 | `pnpm prove:diff` (root) | `backend/core/scripts/prove-diff.ts` | I7: 10,000 fee + 2,000 anchor vectors, exact | ✅ |
-| `pnpm test` (arena, frontend) | `backend/arena`, `frontend/` | bot math, UI | 🔜 P6, P10 |
+| `pnpm --filter @aven/arena test` | `backend/arena/test/{math,server}.test.ts` | direction, p*, sqrtPriceLimit (both orders), valuation, stats; B4 routes, admin token, CORS, rate limit, SSE | ✅ 22 pass |
+| `pnpm --filter @aven/arena test:e2e` | `backend/arena/test/e2e.test.ts` (E2E=1, local anvil chain) | PLAN 4.4 gate: shock → arbs → Aven fee > control → lpKeptMoreUsd > 0 → verify MATCH; persistence reload | ✅ 2 pass (~2.5 min) |
+| `pnpm test` (frontend) | `frontend/` | UI | 🔜 P10 (teammate) |
 
 ## 11. What exists today ✅
 
