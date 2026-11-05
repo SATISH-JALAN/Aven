@@ -129,7 +129,7 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
 
 ## Phase 5: Replay data and engine (P7, P8)
 
-- [ ] **5.1 Market data:**
+- [x] **5.1 Market data:**
   - `backend/scripts/fetch-market-data.ts` + `scenarios.json`;
   - A = 2026-10-29 18:00–24:00 UTC. 1m is unavailable (the API returns 0 candles), so it uses **5m**: 73 candles available, plus funding.
   - B = calm (2026-10-25 06:00–12:00);

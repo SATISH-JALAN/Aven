@@ -1,0 +1,25 @@
+{
+  "scenario": {
+    "id": "binance-halt",
+    "label": "Oct 29 2026: Binance halt",
+    "coin": "HYPE",
+    "start": "2026-10-29T18:00:00Z",
+    "end": "2026-10-30T00:00:00Z",
+    "note": "Binance theft began 20:05 UTC; Binance suspended trading while Hyperliquid kept trading."
+  },
+  "source": "https://api.hyperliquid.xyz/info",
+  "endpoints": [
+    "candleSnapshot",
+    "fundingHistory"
+  ],
+  "downloadedAt": "2026-11-05T23:28:35.772Z",
+  "interval": "5m",
+  "fallbackReason": "1m candles not served for this window",
+  "candles": 72,
+  "fundingSamples": 8,
+  "missing": [],
+  "priceRange": {
+    "min": 88.957,
+    "max": 95.241
+  }
+}

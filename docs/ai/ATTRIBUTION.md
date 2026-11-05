@@ -18,6 +18,7 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `contracts/script/*.s.sol`, `contracts/script/base/AvenScript.sol` | AI | P5 deploy scripts (DeployCore, DeployTokens, DeployAven, CreatePools, Smoke) |
 | `contracts/test/unit/PriceMath.t.sol` | AI | P5 initial-price 1 bp test |
 | `backend/arena/**` (`src/*`, `test/*`, `scripts/e2e.ts`, `package.json`, `tsconfig.json`), `backend/README.md` (run section), `backend/.env.example` (optional knobs) | AI | P6 Arena service |
+| `backend/scripts/fetch-market-data.ts`, `backend/scripts/src/marketData.ts`, `backend/scripts/scenarios.json`, `backend/scripts/test/marketData.test.ts`, `backend/data/raw/README.md` | AI | P7 market data pipeline (the data itself comes from the Hyperliquid API) |
 | `backend/scripts/**` (`local-chain.ts`, `src/localChain.ts`, `package.json`, `tsconfig.json`), `contracts/deployments/README.md` | AI | P5 local chain harness |
 | `contracts/test/vectors/GenVectors.t.sol` | AI | P4 differential vector generator |
 | `backend/core/**` (`src/*` incl. generated `src/abi.ts`, `test/*`, `scripts/*`, `package.json`, `tsconfig.json`), `backend/tsconfig.base.json` | AI | P4 TS port, differential test, scripts |

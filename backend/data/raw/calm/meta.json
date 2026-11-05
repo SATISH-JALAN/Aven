@@ -1,0 +1,24 @@
+{
+  "scenario": {
+    "id": "calm",
+    "label": "Calm day",
+    "coin": "HYPE",
+    "start": "2026-10-25T06:00:00Z",
+    "end": "2026-10-25T12:00:00Z"
+  },
+  "source": "https://api.hyperliquid.xyz/info",
+  "endpoints": [
+    "candleSnapshot",
+    "fundingHistory"
+  ],
+  "downloadedAt": "2026-11-05T23:28:36.983Z",
+  "interval": "5m",
+  "fallbackReason": "1m candles not served for this window",
+  "candles": 72,
+  "fundingSamples": 8,
+  "missing": [],
+  "priceRange": {
+    "min": 75.143,
+    "max": 76.439
+  }
+}

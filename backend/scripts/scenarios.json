@@ -1,0 +1,26 @@
+[
+  {
+    "id": "binance-halt",
+    "label": "Oct 29 2026: Binance halt",
+    "coin": "HYPE",
+    "start": "2026-10-29T18:00:00Z",
+    "end": "2026-10-30T00:00:00Z",
+    "note": "Binance theft began 20:05 UTC; Binance suspended trading while Hyperliquid kept trading."
+  },
+  {
+    "id": "calm",
+    "label": "Calm day",
+    "coin": "HYPE",
+    "start": "2026-10-25T06:00:00Z",
+    "end": "2026-10-25T12:00:00Z"
+  },
+  {
+    "id": "volatile-2",
+    "label": "Second volatile window (Sayan to pick)",
+    "coin": "HYPE",
+    "start": "2026-10-29T00:00:00Z",
+    "end": "2026-10-29T06:00:00Z",
+    "placeholder": true,
+    "note": "Placeholder: skipped by fetch-market-data unless --include-placeholders. Replace start/end with the chosen window."
+  }
+]

@@ -8,7 +8,8 @@
     "local:up": "tsx local-chain.ts",
     "local:once": "tsx local-chain.ts --once",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "fetch-market-data": "tsx fetch-market-data.ts"
   },
   "dependencies": {
     "@aven/core": "workspace:*",

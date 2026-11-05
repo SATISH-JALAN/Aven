@@ -18,7 +18,8 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P5b local chain | ✅ done 2026-11-06 (PLAN 3.2): `pnpm local:once` deploys all 5 scripts on anvil with mock precompiles. Smoke swaps verify **MATCH on A and B**; ~2 min | `backend/scripts/src/localChain.ts` |
 | P5c testnet runbook | ✅ written 2026-11-06 (`docs/DEPLOYMENTS.md`). **Testnet run BLOCKED on Sayan**: funded deployer + HyperCore user | — |
 | P6 Arena service | ✅ done 2026-11-06 (PLAN 4.1–4.4): 22 unit/API tests (auth and rate-limit mutations caught). **E2E gate passes on the local chain**: shock → bot arbs both pools → Aven fee > control fee → `lpKeptMoreUsd > 0` → `/verify` MATCH; trades reload after restart (156 s) | `backend/arena` |
-| **P7 market data** | ⏭ next (PLAN 5.1) | — |
+| P7 market data | ✅ done 2026-11-06 (PLAN 5.1): binance-halt and calm each have 72 × 5m HYPE candles + 8 funding samples, 0 gaps. Oct 29 18:00–24:00 HYPE range 88.96–95.24. volatile-2 is a placeholder (Sayan to pick) | `backend/data/raw/` |
+| **P8 replay engine** | ⏭ next (PLAN 5.2–5.3) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
@@ -50,6 +51,8 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - **2026-11-05:** `docs/spec/ARCHITECTURE.md` (team's `AVEN_ARCHITECTURE.md`) is normative.
 
 ## Open questions (need a decision)
+
+- **Replay scenario C (`volatile-2`):** pick a window (`backend/scripts/scenarios.json`; placeholder Oct 29 00:00–06:00 is skipped by default).
 
 0. **Testnet deploy (BLOCKED on Sayan):** fund the deployer (testnet HYPE for gas on HyperEVM; how is UNVERIFIED, see DEPLOYMENTS.md §0), make it a HyperCore user, then run docs/DEPLOYMENTS.md.
 1. **Big blocks on testnet: UNVERIFIED** until we send `evmUserModify`. The deployer must be a HyperCore user. The faucet only serves addresses that have deposited on mainnet; otherwise someone must `usdSend` testnet USDC to the deployer.

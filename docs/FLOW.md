@@ -27,7 +27,7 @@ flowchart LR
   subgraph backend["backend/ (TypeScript)"]
     CORE["core: fee, state, price, abi, pool, precompiles, addresses, verify ✅"]
     ARENA["arena: poller, bot, shock, API+SSE ✅"]
-    SCR["scripts: fetch-market-data, replay-to-web 🔜P7/P8"]
+    SCR["scripts: fetch-market-data ✅, replay-to-web 🔜P8"]
     DATA["data/: raw, replay, vectors, arena"]
   end
   subgraph frontend["frontend/ (Next.js) 🔜P10"]
@@ -145,11 +145,11 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 - **Path:** `contracts/test/vectors/GenVectors.t.sol` (`GEN_VECTORS=1`, fixed seed, 9 coverage classes, written line by line with `vm.writeLine`) → `backend/data/vectors/fee-vectors.json` + `anchor-vectors.json` → `backend/core/test/differential.test.ts` (vitest) recomputes each vector in TS.
 - **Exit:** 10,000/10,000 fee vectors and 2,000/2,000 anchor vectors match, or the test fails (I7).
 
-## 8. Replay (mainnet history, offline) 🔜P7/P8
+## 8. Replay (mainnet history, offline): data ✅, engine 🔜P8
 
 - **Entry:** `pnpm replay:<scenario>`.
 - **Path:**
-  1. `backend/scripts/fetch-market-data.ts` calls the Hyperliquid **mainnet** info API (`candleSnapshot` 1m, `fundingHistory`) and writes `backend/data/raw/<scenario>/` + `normalized.csv`;
+  1. `pnpm --filter @aven/scripts fetch-market-data` (`backend/scripts/fetch-market-data.ts` → `src/marketData.ts`) reads `backend/scripts/scenarios.json`. It calls the Hyperliquid **mainnet** info API (`candleSnapshot`: 1m first, falling back to 5m, which is what's served for these dates; `fundingHistory` for the hourly premium). It writes `backend/data/raw/<scenario>/{candles,funding,meta}.json` + `normalized.csv` and `backend/data/raw/README.md` (source, time, method, limits);
   2. `contracts/test/replay/Replay.t.sol` runs a local PoolManager with 4 pools (fixed 0.05%, fixed 0.30%, Aven-delayed, Aven-live), `MockHyperCorePx` etched at 0x806/0x807, and per step `vm.warp`/`vm.roll`, an arb agent and a seeded retail agent;
   3. it writes `backend/data/replay/<scenario>.csv` + `.summary.json`;
   4. `backend/scripts/replay-to-web.ts` writes `frontend/public/replay/<scenario>.json`.
@@ -179,6 +179,7 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 | invariant, replay | `contracts/test/{invariant,replay}/` | §9 | 🔜 P8, P11 |
 | `pnpm test` (root) | `backend/core/test/{fee,differential,chain}.test.ts` | TS port mirrors the Solidity unit tests; vectors (skipped if absent); poolId/slot0/precompile decoding/§8.3 schema/verifier checks A and B | ✅ 29 pass |
 | `pnpm prove:diff` (root) | `backend/core/scripts/prove-diff.ts` | I7: 10,000 fee + 2,000 anchor vectors, exact | ✅ |
+| `pnpm --filter @aven/scripts test` | `backend/scripts/test/marketData.test.ts` | premium forward-fill, oracleProxy, gaps, paging by close + 1 ms, 1m→5m fallback | ✅ 6 pass |
 | `pnpm --filter @aven/arena test` | `backend/arena/test/{math,server}.test.ts` | direction, p*, sqrtPriceLimit (both orders), valuation, stats; B4 routes, admin token, CORS, rate limit, SSE | ✅ 22 pass |
 | `pnpm --filter @aven/arena test:e2e` | `backend/arena/test/e2e.test.ts` (E2E=1, local anvil chain) | PLAN 4.4 gate: shock → arbs → Aven fee > control → lpKeptMoreUsd > 0 → verify MATCH; persistence reload | ✅ 2 pass (~2.5 min) |
 | `pnpm test` (frontend) | `frontend/` | UI | 🔜 P10 (teammate) |
