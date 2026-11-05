@@ -16,7 +16,7 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `contracts/src/AvenHook.sol`, `contracts/src/interfaces/IAvenHook.sol` | AI | P3 hook per ARCHITECTURE §6.4–§6.5, §8.1 |
 | `contracts/test/integration/AvenHook.t.sol`, `contracts/test/utils/AvenTestBase.sol`, `contracts/test/utils/PriceMath.sol` | AI | P3 integration tests (both token orders) and helpers |
 | `contracts/test/vectors/GenVectors.t.sol` | AI | P4 differential vector generator |
-| `backend/core/**` (`src/fee.ts`, `src/state.ts`, `src/price.ts`, `src/index.ts`, `test/*`, `scripts/*`, `package.json`, `tsconfig.json`), `backend/tsconfig.base.json` | AI | P4 TS port, differential test, scripts |
+| `backend/core/**` (`src/*` incl. generated `src/abi.ts`, `test/*`, `scripts/*`, `package.json`, `tsconfig.json`), `backend/tsconfig.base.json` | AI | P4 TS port, differential test, scripts |
 | `contracts/test/mocks/MockHyperCorePx.sol` | AI | Etchable precompile mock with failure injection |
 | `contracts/test/recon/Recon.t.sol` | AI | P1 recon checks; optional FORK_READ live read |
 | `contracts/src/interfaces/IDynamicFeeHook.sol` | Uniswap (MIT), copied by AI | Verbatim from Uniswap/v4-hooks-public@c45509f; AI added only the source/licence header |

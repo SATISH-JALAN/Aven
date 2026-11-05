@@ -13,7 +13,8 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P2 AvenFairValue | ✅ done 2026-11-06 (PLAN 1.1): 34 unit + fuzz tests (1,000 runs each) | `contracts/src/AvenFairValue.sol` |
 | P3 mocks + AvenHook | ✅ done 2026-11-06 (PLAN 1.2–1.4): 20 integration tests × 2 token orders, incl. all nine §9 named tests; 3 mutation checks caught | `contracts/src/AvenHook.sol` (9,337 B runtime) |
 | P4a TS port + differential | ✅ done 2026-11-06 (PLAN 2.1–2.3): **10,000/10,000 fee + 2,000/2,000 anchor vectors match exactly**; 2 mutation checks caught | `pnpm prove:diff` (~45 s) |
-| **P4b ABIs, precompiles, addresses, verify** | ⏭ next (PLAN 2.4–2.5) | — |
+| P4b ABIs, precompiles, addresses, verify | ✅ done 2026-11-06 (PLAN 2.4–2.5): 29 core tests; poolId/slot checked against `cast`, perpAssetInfo against real testnet bytes | live check on the local chain in PLAN 3.2 |
+| **P5 deploy scripts + local chain** | ⏭ next (PLAN 3.1–3.3) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.

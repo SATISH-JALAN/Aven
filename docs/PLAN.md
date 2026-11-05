@@ -71,8 +71,8 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - `backend/core/test/differential.test.ts`;
   - `pnpm prove:diff`.
   - Check: 10,000/10,000 and 2,000/2,000 exact.
-- [ ] **2.4 `abi.ts` (generated from `contracts/out` by `pnpm abi`), `precompiles.ts`, `addresses.ts`** (zod schema §8.3).
-- [ ] **2.5 `verify.ts`** (§7.3): checks A and B; logs scanned in ≤ 50-block chunks.
+- [x] **2.4 `abi.ts` (generated from `contracts/out` by `pnpm abi`), `precompiles.ts`, `addresses.ts`** (zod schema §8.3).
+- [x] **2.5 `verify.ts`** (§7.3): checks A and B; logs scanned in ≤ 50-block chunks.
   - Check: unit tests on a fixture receipt, then a live local check in 3.x.
 
 ## Phase 3: Deploy scripts + local chain (P5)
