@@ -34,3 +34,6 @@ backend/data/vectors/*.json
 
 # deploy-script scratch state (final file is <chainId>.json)
 contracts/deployments/*.wip.json
+
+# local anvil deployment (pnpm local:up)
+contracts/deployments/31337.json
