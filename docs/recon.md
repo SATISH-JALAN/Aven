@@ -185,5 +185,22 @@ Method: `POST /info {"type":"meta"}` (index = position in `universe`), plus `{"t
 2. **PoolManager:** **deploy our own** on 998 (none exists). Build from the pinned v4-core `PoolManager` (same logic as v4.0.0). It needs **big blocks**, so the deployer must first become a HyperCore user (receive testnet USDC on Core), then send `evmUserModify {usingBigBlocks: true}`.
 3. **Hook deployment:** use the existing **CREATE2 deployer `0x4e59b44847b379578588920cA78FbF26c0B4956C`** on 998. Mine the salt with `HookMiner.find(0x4e59…956C, BEFORE_INITIALIZE_FLAG | BEFORE_SWAP_FLAG, creationCode, abi.encode(poolManager, …))`; `forge script` routes `new Hook{salt: s}(…)` through that deployer. No custom factory.
 4. **HYPE perp index:** **testnet 135**, **mainnet 159** (both `szDecimals 2`). The replay uses mainnet 159.
-5. **Precompile read gas cap:** 10,000 per read. Check `success && ret.length == 32 && raw != 0`; anything else uses the fallback fee.
+5. **Precompile read gas cap:** use the architecture default `Params.precompileGas = 30,000` (the constructor requires ≥ 10,000). The 3,693 measured above gives ~8× headroom; worst case on a bad index is 60k burned per swap. `readOk` = `success && ret.length >= 32 && raw > 0` for both reads (architecture §6.3 Step 1).
 6. **⚠️ Needs confirmation: Arena asset on testnet.** Testnet HYPE's oracle (≈7,157) is ~87× its mark (≈82.6), so the live hook would sit on fallback or max fees. Proposed: run the live Arena on **testnet ETH (index 4, szDec 4)**, or BTC (index 3, szDec 5), with mock tokens named accordingly. Keep HYPE for the mainnet-data replay. `perpIndex` and `szDecimals` are constructor immutables, so this only changes the deploy script. Alternative: keep HYPE and add a mark-vs-oracle sanity bound (e.g. |premium| > 2,000 bps → fallback). That is a FEE_SPEC change, so it needs sign-off either way.
+
+## Alignment with `docs/description/AVEN_ARCHITECTURE.md` (2026-11-05)
+
+The architecture doc is normative. Here is how recon lines up with it.
+
+| Topic | Architecture says | Recon finding | Action |
+|---|---|---|---|
+| v4-core version | read at `bea7f6d` (main); pin "`v4.0.0` or recon-chosen commit" | Pinned `d153b048`. `git diff d153b048 bea7f6d -- src/` is **empty** (only CI commits in between). | Keep `d153b048`; source-identical to `bea7f6d` |
+| OZ uniswap-hooks | `BaseHook` "v1.3.0" | `git ls-remote --tags` lists **no `v1.3.0` tag**, only `v1.3.0-rc.0`. Latest stable is `v1.2.1`. | Keep `v1.2.1`. Its `BaseHook` constructor validates the hook address (§1). Revisit if 1.3.0 ships. |
+| HookMiner path | v4-periphery main `test/shared/HookMiner.sol` | At the pinned `7ebd04b` it is `src/utils/HookMiner.sol`; on `main` it moved to `test/shared/`. | Import `@uniswap/v4-periphery/src/utils/HookMiner.sol` (compile-checked) |
+| OZ remapping | `@openzeppelin/uniswap-hooks/=lib/uniswap-hooks/` | OZ README: `=lib/uniswap-hooks/src/` | Keep the README form; import is `@openzeppelin/uniswap-hooks/base/BaseHook.sol` |
+| Precompile gas | `2000 + 65×(in+out)` = 6,160 per read | Measured on 998: **3,693** gas for the whole `staticcall` frame (valid read); a bad index burns the full cap | `precompileGas = 30,000` default is safe |
+| CREATE2 deployer on 998 | [RECON] | **Deployed** (§3) | Hook via `0x4e59…956C` |
+| PoolManager on 998 | [RECON] | **None** (§3) | Deploy our own via big blocks |
+| PoolManager < 24 KB with `via_ir`, runs 44444444 | [RECON] | **Not yet checked.** Mainnet 999's PoolManager is 24,009 bytes, so the canonical build fits. | Check with `forge build --sizes` under v4-core's profile before deploying (P-deploy) |
+| Perp index for HYPE | from recon | testnet **135**, mainnet **159**, szDecimals 2. `perpAssetInfo(135)` returns coin `"HYPE"`, so the §11.3 step G assertion will pass. | — |
+| Testnet price sanity (§10.3 "thin or odd") | — | Testnet HYPE oracle ≈ 7,157 vs mark ≈ 82.6 (premium ≈ −9,885 bps). Under §6.3, every **base-selling** swap gets `withPressure`: 500 + 9,885 × 50 → clamped to **10,000 pips (max)**, whatever the gap. A pool seeded at oracle would also be ~87× off the mark. | **Open; see Decision 6.** Either use testnet ETH/BTC for the Arena, or add a premium sanity bound (spec change). |

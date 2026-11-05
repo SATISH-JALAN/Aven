@@ -16,3 +16,4 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `contracts/test/recon/PrecompileMockPlan.t.sol` | AI | P1 recon test (mock-plan check), not product code |
 | `contracts/test/recon/V4Imports.t.sol` | AI | P1 compile check of v4 import paths |
 | `contracts/remappings.txt`, `contracts/foundry.lock`, `.gitmodules` | AI | P1 dependency pins |
+| `docs/description/AVEN_ARCHITECTURE.md`, `docs/description/perp-aware-pools-handoff.md` | Provided by the team | Added by the user; AI did not edit them |

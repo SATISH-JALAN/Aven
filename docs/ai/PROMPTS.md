@@ -59,3 +59,11 @@ Output: docs/recon.md filled in, plus a "Decisions" section: which BaseHook to u
 
 Gate: you can read the HYPE oracle and mark price from the testnet precompile and they match the info API after scaling. If not, stop and fix before P2.
 ```
+
+---
+
+## #2 — 2026-11-05T17:02:13Z — Read architecture
+
+```text
+i have put product description and technical architecture in docs/description read it properly so know everything about the project
+```
