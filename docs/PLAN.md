@@ -96,7 +96,7 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - `deployments/31337.json` written;
   - smoke swaps emit `FeeComputed`;
   - `pnpm verify <smokeTx>` gives MATCH on A and B.
-- [ ] **3.3 Testnet runbook:** `docs/DEPLOYMENTS.md`. Exact commands in order, for Sayan to run:
+- [x] **3.3 Testnet runbook:** written (`docs/DEPLOYMENTS.md`). **BLOCKED on Sayan** for the actual run. The ask: fund the deployer with testnet HYPE (gas), make it a HyperCore user (USDC on Core), then run the runbook commands. `docs/DEPLOYMENTS.md`. Exact commands in order, for Sayan to run:
   1. become a Core user;
   2. switch big blocks on (Python SDK one-liner);
   3. build the v4core artifact;

@@ -23,6 +23,7 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `contracts/test/mocks/MockHyperCorePx.sol` | AI | Etchable precompile mock with failure injection |
 | `contracts/test/recon/Recon.t.sol` | AI | P1 recon checks; optional FORK_READ live read |
 | `contracts/src/interfaces/IDynamicFeeHook.sol` | Uniswap (MIT), copied by AI | Verbatim from Uniswap/v4-hooks-public@c45509f; AI added only the source/licence header |
+| `docs/DEPLOYMENTS.md` | AI | Testnet runbook (P5) |
 | `docs/PLAN.md` | AI | Backend build plan, ticked off per step |
 | `docs/FLOW.md`, `docs/MEMORY.md` | AI | Code flow and project memory, kept in sync with changes |
 | `docs/recon.md` | AI | P1. Facts from installed deps, official docs and live RPC/API output; sources inline |

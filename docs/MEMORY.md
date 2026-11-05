@@ -16,7 +16,8 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P4b ABIs, precompiles, addresses, verify | ✅ done 2026-11-06 (PLAN 2.4–2.5): 29 core tests; poolId/slot checked against `cast`, perpAssetInfo against real testnet bytes | live check on the local chain in PLAN 3.2 |
 | P5a deploy scripts | ✅ written 2026-11-06 (PLAN 3.1); initial price within 1 bp (fuzz) | end-to-end proof on the local chain in 3.2 |
 | P5b local chain | ✅ done 2026-11-06 (PLAN 3.2): `pnpm local:once` deploys all 5 scripts on anvil with mock precompiles. Smoke swaps verify **MATCH on A and B**; ~2 min | `backend/scripts/src/localChain.ts` |
-| **P5c testnet runbook** | ⏭ next (PLAN 3.3); the actual testnet run is BLOCKED on Sayan | — |
+| P5c testnet runbook | ✅ written 2026-11-06 (`docs/DEPLOYMENTS.md`). **Testnet run BLOCKED on Sayan**: funded deployer + HyperCore user | — |
+| **P6 Arena service** | ⏭ next (PLAN 4.1–4.4) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
@@ -48,6 +49,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 ## Open questions (need a decision)
 
+0. **Testnet deploy (BLOCKED on Sayan):** fund the deployer (testnet HYPE for gas on HyperEVM; how is UNVERIFIED, see DEPLOYMENTS.md §0), make it a HyperCore user, then run docs/DEPLOYMENTS.md.
 1. **Big blocks on testnet: UNVERIFIED** until we send `evmUserModify`. The deployer must be a HyperCore user. The faucet only serves addresses that have deposited on mainnet; otherwise someone must `usdSend` testnet USDC to the deployer.
 2. Repo must be made **public** before submission (Sat Nov 7, 09:00 IST).
 
