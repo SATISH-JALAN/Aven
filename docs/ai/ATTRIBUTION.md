@@ -15,6 +15,8 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `contracts/test/unit/AvenFairValue.t.sol` | AI | P2 unit + fuzz tests |
 | `contracts/src/AvenHook.sol`, `contracts/src/interfaces/IAvenHook.sol` | AI | P3 hook per ARCHITECTURE §6.4–§6.5, §8.1 |
 | `contracts/test/integration/AvenHook.t.sol`, `contracts/test/utils/AvenTestBase.sol`, `contracts/test/utils/PriceMath.sol` | AI | P3 integration tests (both token orders) and helpers |
+| `contracts/script/*.s.sol`, `contracts/script/base/AvenScript.sol` | AI | P5 deploy scripts (DeployCore, DeployTokens, DeployAven, CreatePools, Smoke) |
+| `contracts/test/unit/PriceMath.t.sol` | AI | P5 initial-price 1 bp test |
 | `contracts/test/vectors/GenVectors.t.sol` | AI | P4 differential vector generator |
 | `backend/core/**` (`src/*` incl. generated `src/abi.ts`, `test/*`, `scripts/*`, `package.json`, `tsconfig.json`), `backend/tsconfig.base.json` | AI | P4 TS port, differential test, scripts |
 | `contracts/test/mocks/MockHyperCorePx.sol` | AI | Etchable precompile mock with failure injection |

@@ -77,7 +77,7 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
 
 ## Phase 3: Deploy scripts + local chain (P5)
 
-- [ ] **3.1 Scripts** in `contracts/script/`:
+- [x] **3.1 Scripts** in `contracts/script/`:
   - `DeployCore` (PoolManager from `out-v4core` + test routers; prints the big-block steps);
   - `DeployTokens` (aETH 18 / aUSD 6; mints to the deployer, bot and shock addresses; approvals);
   - `DeployAven` (`perpAssetInfo` check `coin == "ETH"`, HookMiner salt via the CREATE2 proxy);

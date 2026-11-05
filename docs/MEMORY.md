@@ -14,13 +14,16 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P3 mocks + AvenHook | ✅ done 2026-11-06 (PLAN 1.2–1.4): 20 integration tests × 2 token orders, incl. all nine §9 named tests; 3 mutation checks caught | `contracts/src/AvenHook.sol` (9,337 B runtime) |
 | P4a TS port + differential | ✅ done 2026-11-06 (PLAN 2.1–2.3): **10,000/10,000 fee + 2,000/2,000 anchor vectors match exactly**; 2 mutation checks caught | `pnpm prove:diff` (~45 s) |
 | P4b ABIs, precompiles, addresses, verify | ✅ done 2026-11-06 (PLAN 2.4–2.5): 29 core tests; poolId/slot checked against `cast`, perpAssetInfo against real testnet bytes | live check on the local chain in PLAN 3.2 |
-| **P5 deploy scripts + local chain** | ⏭ next (PLAN 3.1–3.3) | — |
+| P5a deploy scripts | ✅ written 2026-11-06 (PLAN 3.1); initial price within 1 bp (fuzz) | end-to-end proof on the local chain in 3.2 |
+| **P5b local chain + runbook** | ⏭ next (PLAN 3.2–3.3) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
 
+- **2026-11-06: PoolManager owner = `address(0)`** (DeployCore default, `PM_OWNER` overrides). Nobody can ever set a protocol fee, so verify check B is exact and there are no admin keys. The canonical Uniswap PoolManager has a governance owner; ours deliberately doesn't.
+- **2026-11-06: Deploy state.** Scripts pass addresses via `contracts/deployments/<chainId>.wip.json` (gitignored); `CreatePools` writes the final §8.3 `<chainId>.json`. The bot and shock wallets approve routers themselves (the Arena holds their keys); `DeployTokens` only needs their addresses (`BOT_ADDRESS`, `SHOCK_ADDRESS`).
 - **2026-11-06: Node deps** are pinned to exact versions at least two weeks old: viem 2.57.10, zod 4.6.7, vitest 5.0.5, tsx 4.23.15, typescript 5.9.3, @types/node 22.20.5 (hono 4.13.13 and @hono/node-server 2.1.5 for the Arena). pnpm 12 needs `allowBuilds: {esbuild: true}` in `pnpm-workspace.yaml`.
 - **2026-11-06: Generated vectors** (`backend/data/vectors/*.json`, ~6.7 MB) are gitignored. Regenerate them with `pnpm prove:diff`. The TS differential suite skips when they're absent, unless `PROVE_DIFF=1`.
 - **2026-11-06: Replay data interval.** HYPE 1m candles for Oct 29 are no longer served (`candleSnapshot` 1m → 0 candles). 5m is available (73 candles for 18:00–24:00 UTC), as is hourly funding. Scenario A uses 5m, as the spec fallback allows.

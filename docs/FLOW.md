@@ -15,7 +15,7 @@ flowchart LR
   subgraph contracts["contracts/ (Solidity, Foundry)"]
     FV["AvenFairValue (library) ✅"]
     HK["AvenHook ✅"]
-    SC["script/*.s.sol 🔜P5"]
+    SC["script/*.s.sol ✅"]
     DEP["deployments/998.json 🔜P5"]
     REP["test/replay/Replay.t.sol 🔜P8"]
     VEC["test/vectors/GenVectors.t.sol ✅"]
@@ -87,9 +87,9 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 - **Path:** `_load(poolId)` only; no storage writes. Unknown pool → `PoolNotInitialized`.
 - **Exit:** `(feeZeroForOne, feeOneForZero)` or the full `Breakdown`. It equals what `beforeSwap` would charge in the same state (I6).
 
-## 4. Deployment to testnet 🔜P5
+## 4. Deployment: scripts ✅, local-chain proof 🔜3.2, testnet run 🔜 (Sayan)
 
-- **Entry:** `forge script` in `contracts/script/`. Keys come from `contracts/.env`.
+- **Entry:** `forge script` in `contracts/script/`. Keys come from `contracts/.env` (`DEPLOYER_PK`); `BOT_ADDRESS`/`SHOCK_ADDRESS` too. Shared plumbing is in `contracts/script/base/AvenScript.sol`; state between scripts goes in `deployments/<chainId>.wip.json`.
 - **Path:**
   1. `FOUNDRY_PROFILE=v4core forge build lib/v4-core/src/PoolManager.sol` → `contracts/out-v4core/` (byte-identical to Uniswap's canonical build, recon A.5);
   2. the deployer is made a HyperCore user and switched to big blocks (recon B.6);
