@@ -9,7 +9,9 @@
     "local:once": "tsx local-chain.ts --once",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json",
-    "fetch-market-data": "tsx fetch-market-data.ts"
+    "fetch-market-data": "tsx fetch-market-data.ts",
+    "replay": "tsx replay.ts",
+    "replay-to-web": "tsx replay-to-web.ts"
   },
   "dependencies": {
     "@aven/core": "workspace:*",

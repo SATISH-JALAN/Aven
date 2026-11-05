@@ -1,0 +1,58 @@
+{
+  "interval": "5m",
+  "lagSec": 60,
+  "limits": "oracleProxy = markClose / (1 + hourly funding premium) approximates the historical oracle; candle close approximates the mark; 5m steps; one arb per pool per step; parameters are the spec defaults, not tuned.",
+  "liquidity": "identical per pool: 1,000 base on the base side, range ~-50%/+50% around the start price",
+  "method": "Each step: warp to the candle, set mock oracle = oracleProxy and mark = candle close (perp 0); perp 1 = the same values ~lagSec earlier, linearly interpolated between candles (1m data not served). Arb agent = Arena bot algorithm, profit at the true oracle, unprofitable trades reverted. Seeded retail agent, same sequence on every pool. LP value = position principal + collected fees at the oracle; HODL = initial tokens at the oracle; LVR = HODL - LP value.",
+  "params": {
+    "baseFee": 500,
+    "fallbackFee": 3000,
+    "gapWeight": 50,
+    "maxFee": 10000,
+    "maxGapBps": 2000,
+    "premiumWeight": 50,
+    "stressTauSec": 60,
+    "stressThresholdBps": 50,
+    "stressWeight": 20
+  },
+  "pools": {
+    "avenDelayed": {
+      "arbTrades": 63,
+      "feesEarnedUsd": "501.6608",
+      "hodlValueUsd": "238509.5160",
+      "lpValueUsd": "238623.9860",
+      "lvrPct": "-0.047993",
+      "lvrUsd": "-114.4699",
+      "retailTrades": 44
+    },
+    "avenLive": {
+      "arbTrades": 64,
+      "feesEarnedUsd": "525.6512",
+      "hodlValueUsd": "238509.5160",
+      "lpValueUsd": "238650.7709",
+      "lvrPct": "-0.059224",
+      "lvrUsd": "-141.2549",
+      "retailTrades": 44
+    },
+    "fixed05": {
+      "arbTrades": 67,
+      "feesEarnedUsd": "84.3690",
+      "hodlValueUsd": "238509.5160",
+      "lpValueUsd": "238191.3360",
+      "lvrPct": "0.133403",
+      "lvrUsd": "318.1799",
+      "retailTrades": 44
+    },
+    "fixed30": {
+      "arbTrades": 46,
+      "feesEarnedUsd": "404.6869",
+      "hodlValueUsd": "238509.5160",
+      "lpValueUsd": "238516.2839",
+      "lvrPct": "-0.002837",
+      "lvrUsd": "-6.7679",
+      "retailTrades": 44
+    }
+  },
+  "scenario": "binance-halt",
+  "steps": 72
+}

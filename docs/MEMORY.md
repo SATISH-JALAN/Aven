@@ -19,13 +19,21 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P5c testnet runbook | ✅ written 2026-11-06 (`docs/DEPLOYMENTS.md`). **Testnet run BLOCKED on Sayan**: funded deployer + HyperCore user | — |
 | P6 Arena service | ✅ done 2026-11-06 (PLAN 4.1–4.4): 22 unit/API tests (auth and rate-limit mutations caught). **E2E gate passes on the local chain**: shock → bot arbs both pools → Aven fee > control fee → `lpKeptMoreUsd > 0` → `/verify` MATCH; trades reload after restart (156 s) | `backend/arena` |
 | P7 market data | ✅ done 2026-11-06 (PLAN 5.1): binance-halt and calm each have 72 × 5m HYPE candles + 8 funding samples, 0 gaps. Oct 29 18:00–24:00 HYPE range 88.96–95.24. volatile-2 is a placeholder (Sayan to pick) | `backend/data/raw/` |
-| **P8 replay engine** | ⏭ next (PLAN 5.2–5.3) | — |
+| P8 replay engine | ✅ done 2026-11-06 (PLAN 5.2–5.3). **Oct 29: avenLive +$141 vs HODL, avenDelayed +$114, fixed30 +$7, fixed05 −$318. Calm: Aven ≈ fixed30 (+$323 vs +$317), live ≈ delayed.** Spec defaults, no tuning. Hand-checked steps 1–2; sanity tests (flat → LVR 0; collected fees = expected within 0.01%) | `backend/data/replay/README.md` |
+| **P9/P11/P13 proofs + hardening** | ⏭ next (PLAN 6.1–6.4) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
 
+- **2026-11-06: Replay design.**
+  - 5m steps (1m isn't served).
+  - The `avenDelayed` lag is 60 s, linearly interpolated between candles.
+  - One arb attempt per pool per step, with profit measured at the true oracle.
+  - Seeded retail of $100–$3,000, the same sequence on every pool.
+  - 1,000 aHYPE of liquidity per pool, ±50% range.
+  - Every limit is written in `backend/data/replay/README.md` and in each `frontend/public/replay/*.json`.
 - **2026-11-06: Arena defaults** (`backend/.env`, all overridable): `MAX_TRADE_BASE` 5, `MAX_TRADE_QUOTE` 10,000, shock = buy base with `SHOCK_QUOTE` 40,000 aUSD, `MIN_NATIVE_BALANCE` 0.01 (auto-pause), `NATIVE_USD` 0 (testnet gas is valued at $0 in profit), poll 500 ms, 30 POSTs/min per client. Stats count only bot (`arb`) trades; shock swaps are recorded as `retail`.
 - **2026-11-06: PoolManager owner = `address(0)`** (DeployCore default, `PM_OWNER` overrides). Nobody can ever set a protocol fee, so verify check B is exact and there are no admin keys. The canonical Uniswap PoolManager has a governance owner; ours deliberately doesn't.
 - **2026-11-06: Deploy state.** Scripts pass addresses via `contracts/deployments/<chainId>.wip.json` (gitignored); `CreatePools` writes the final §8.3 `<chainId>.json`. The bot and shock wallets approve routers themselves (the Arena holds their keys); `DeployTokens` only needs their addresses (`BOT_ADDRESS`, `SHOCK_ADDRESS`).
@@ -65,6 +73,10 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- A mutation check showed the first replay fee sanity test was too weak: ratio-only asserts survive dropping one token's fees. It now asserts both tokens collect fees and that collected fees equal independently expected fees (0.01%).
+- Bash: avoid double-quoted `python -c "...$141..."` (bash expands `$1`) and writing `−` through Windows cp1252. Generate text with a script file, then use the Write tool.
+- The Claude Code safety check refuses long multi-heredoc bash lines it can't parse. Split them up.
 
 - `sqrtBig` originally seeded Newton with `Math.sqrt(Number(x))`. When the float seed landed below the root, the fix-up loop stepped by ±1 ~1e8 times (hang). Now it's integer Newton from a 2^ceil(bits/2) over-estimate, with a 300-size randomized floor test.
 - vitest hides `console.log` from passing tests, so e2e numbers must be asserted or written to a file to be seen.

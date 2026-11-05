@@ -1,0 +1,58 @@
+{
+  "interval": "5m",
+  "lagSec": 60,
+  "limits": "oracleProxy = markClose / (1 + hourly funding premium) approximates the historical oracle; candle close approximates the mark; 5m steps; one arb per pool per step; parameters are the spec defaults, not tuned.",
+  "liquidity": "identical per pool: 1,000 base on the base side, range ~-50%/+50% around the start price",
+  "method": "Each step: warp to the candle, set mock oracle = oracleProxy and mark = candle close (perp 0); perp 1 = the same values ~lagSec earlier, linearly interpolated between candles (1m data not served). Arb agent = Arena bot algorithm, profit at the true oracle, unprofitable trades reverted. Seeded retail agent, same sequence on every pool. LP value = position principal + collected fees at the oracle; HODL = initial tokens at the oracle; LVR = HODL - LP value.",
+  "params": {
+    "baseFee": 500,
+    "fallbackFee": 3000,
+    "gapWeight": 50,
+    "maxFee": 10000,
+    "maxGapBps": 2000,
+    "premiumWeight": 50,
+    "stressTauSec": 60,
+    "stressThresholdBps": 50,
+    "stressWeight": 20
+  },
+  "pools": {
+    "avenDelayed": {
+      "arbTrades": 66,
+      "feesEarnedUsd": "316.0567",
+      "hodlValueUsd": "196697.5119",
+      "lpValueUsd": "197020.9030",
+      "lvrPct": "-0.164410",
+      "lvrUsd": "-323.3910",
+      "retailTrades": 44
+    },
+    "avenLive": {
+      "arbTrades": 67,
+      "feesEarnedUsd": "316.1094",
+      "hodlValueUsd": "196697.5119",
+      "lpValueUsd": "197020.6570",
+      "lvrPct": "-0.164285",
+      "lvrUsd": "-323.1450",
+      "retailTrades": 44
+    },
+    "fixed05": {
+      "arbTrades": 61,
+      "feesEarnedUsd": "61.2527",
+      "hodlValueUsd": "196697.5119",
+      "lpValueUsd": "196762.0301",
+      "lvrPct": "-0.032800",
+      "lvrUsd": "-64.5181",
+      "retailTrades": 44
+    },
+    "fixed30": {
+      "arbTrades": 47,
+      "feesEarnedUsd": "309.7869",
+      "hodlValueUsd": "196697.5119",
+      "lpValueUsd": "197015.0031",
+      "lvrPct": "-0.161410",
+      "lvrUsd": "-317.4912",
+      "retailTrades": 44
+    }
+  },
+  "scenario": "calm",
+  "steps": 72
+}

@@ -135,7 +135,7 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - B = calm (2026-10-25 06:00–12:00);
   - C = placeholder;
   - outputs raw JSON + `normalized.csv` + `backend/data/raw/README.md`.
-- [ ] **5.2 Replay engine:** `contracts/test/replay/Replay.t.sol`.
+- [x] **5.2 Replay engine:** `contracts/test/replay/Replay.t.sol`.
   - 4 pools: fixed05, fixed30, avenDelayed (perpIndex 1, lagged 60 s), avenLive;
   - an arb agent;
   - a seeded retail agent;
@@ -143,7 +143,7 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - outputs `backend/data/replay/<scenario>.csv` + `.summary.json`.
 
   Check: a zero-move sanity test; hand-check a few steps; report honestly, with no tuning.
-- [ ] **5.3 `backend/scripts/replay-to-web.ts`:** writes `frontend/public/replay/<scenario>.json` (downsampled). Plus `backend/data/replay/README.md` (method, limits, rerun).
+- [x] **5.3 `backend/scripts/replay-to-web.ts`:** writes `frontend/public/replay/<scenario>.json` (downsampled). Plus `backend/data/replay/README.md` (method, limits, rerun).
 
 ## Phase 6: Proofs and hardening (P9, P11, P13 backend part)
 

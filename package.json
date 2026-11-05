@@ -2,12 +2,16 @@
   "name": "aven",
   "private": true,
   "packageManager": "pnpm@12.9.1",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "abi": "pnpm --filter @aven/core abi",
     "prove:diff": "pnpm --filter @aven/core prove:diff",
-    "verify": "pnpm --filter @aven/core verify"
+    "verify": "pnpm --filter @aven/core verify",
+    "replay:binance-halt": "pnpm --filter @aven/scripts replay binance-halt",
+    "replay:calm": "pnpm --filter @aven/scripts replay calm"
   }
 }
