@@ -10,6 +10,8 @@ dist/
 # foundry
 contracts/out/
 contracts/cache/
+contracts/out-v4core/
+contracts/cache-v4core/
 out/
 cache/
 # broadcast logs carry deployer addresses and raw txs; never commit them (record addresses in docs instead)

@@ -13,14 +13,14 @@
   },
   "lib/uniswap-hooks": {
     "tag": {
-      "name": "v1.2.1",
-      "rev": "acbd604c409a827f7f98c9517236da860c4fca1a"
+      "name": "v1.3.0-rc.0",
+      "rev": "b5f10574f943911635754dd76ed6ce95858b7d93"
     }
   },
   "lib/v4-core": {
     "rev": "d153b048868a60c2403a3ef5b2301bb247884d46"
   },
   "lib/v4-periphery": {
-    "rev": "7ebd04b161745b75ed0c24ba2df3bc7c25f65606"
+    "rev": "c6e4754dab11bd38c6f08ac51c3c868569e93d64"
   }
 }

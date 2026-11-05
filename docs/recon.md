@@ -1,206 +1,231 @@
-# Recon: external facts, verified
+# Recon: external facts, confirmed
 
-Every fact below has a source: a file path in installed deps (relative to `contracts/lib/`), a doc URL, or RPC/API output. Anything not verified is marked **UNVERIFIED** with a fallback.
-Recon run: 2026-11-05, ~15:45–16:30 UTC. Foundry 1.8.4, solc 0.8.26.
+Scope: P1 of `docs/planning/aven-claude-code-prompts.md`. It confirms the facts in `docs/spec/ARCHITECTURE.md` §2, §3 and §11 against our **installed** versions and the **live** chain.
 
-## 1. Uniswap v4
+Every line below has evidence: a file path and line (relative to `contracts/lib/` unless stated), a doc URL, or RPC/API output. Anything not confirmed is marked **UNVERIFIED** with a fallback.
 
-### Versions installed
+Run: 2026-11-05, 15:45–17:55 UTC. Foundry 1.8.4, solc 0.8.26, Windows / Git Bash.
 
-| Lib | Pin | Why |
+---
+
+## A. Dependencies and toolchain (`contracts/`)
+
+### A.1 Pins
+
+| Lib | Pin | Evidence and reason |
 |---|---|---|
-| `v4-core` | commit `d153b048868a60c2403a3ef5b2301bb247884d46` (`v4.0.0-19`, npm 1.0.2 + CI-only commits) | **Not the `v4.0.0` tag.** `v4.0.0` is v4-core's only git tag, but it defines `SwapParams` inside `IPoolManager`, and OZ `BaseHook` v1.2.1 imports it from `src/types/PoolOperation.sol`, so the tag does not compile with it. `git diff v4.0.0 d153b048 -- src/` shows a pure refactor: the param structs moved to `types/PoolOperation.sol`, with the same fields and the same `PoolManager` logic. This is the exact commit OZ uniswap-hooks v1.2.1 pins. |
-| `v4-periphery` | commit `7ebd04b161745b75ed0c24ba2df3bc7c25f65606` | v4-periphery has **no git tags** (`git ls-remote --tags` returns 0). `main` (`c6e4754`) **removed `BaseHook` and `HookMiner` from `src/utils`** in #510 ("remove hooks and move to hook repo"). `7ebd04b` is the commit OZ v1.2.1 pins and still has `src/utils/HookMiner.sol`. |
-| `uniswap-hooks` (OpenZeppelin) | tag `v1.2.1` (`acbd604c`) | Latest non-RC tag (`v1.3.0-rc.0` exists, not stable). |
-| `hyper-evm-lib` | tag `v1.1` (`b7bda146`) | Latest tag. |
-| `forge-std` | tag `v1.17.0` | Latest tag. |
+| `Uniswap/v4-core` | `d153b048868a60c2403a3ef5b2301bb247884d46` (`v4.0.0-19`, npm `1.0.2`) | `v4.0.0` is v4-core's only tag, but it predates `src/types/PoolOperation.sol`: there `SwapParams` lives in `IPoolManager`, and OZ `BaseHook` doesn't compile against it. `git diff v4.0.0 d153b048 -- src/` is a pure refactor (param structs moved; same `PoolManager` logic). `git diff d153b048 bea7f6d -- src/` is **empty**: `bea7f6d` is today's `main`, the commit ARCHITECTURE §2/§15 cites, and only CI commits differ. `d153b048` is the exact v4-core commit pinned by OZ uniswap-hooks. |
+| `Uniswap/v4-periphery` | `c6e4754dab11bd38c6f08ac51c3c868569e93d64` (`main`; the repo has **no tags**: `git ls-remote --tags` returns 0) | Matches ARCHITECTURE §15 (`c6e4754`). `BaseHook` was removed in #510 ("remove hooks and move to hook repo"), and `HookMiner` now lives at `test/shared/HookMiner.sol`. Periphery `main` pins v4-core `59d3ecf`; `git diff 59d3ecf d153b048 -- src/` is empty, so it agrees with our v4-core. |
+| `OpenZeppelin/uniswap-hooks` | tag `v1.3.0-rc.0` (`b5f10574f943911635754dd76ed6ce95858b7d93`, 2026-10-07) | The prompt asks for v1.3.x and the architecture says "v1.3.0". `git ls-remote --tags` shows **no final `v1.3.0`**; `v1.3.0-rc.0` is the only v1.3.x tag. Its `package.json` says `"version": "1.3.0"` and the `BaseHook.sol` header says "last updated v1.3.0". It pins the same v4-core (`d153b048`) and v4-periphery (`7ebd04b`) as `v1.2.1`. **It is a release candidate**; if `v1.3.0` ships during the event, re-pin. |
+| `foundry-rs/forge-std` | tag `v1.17.0` (`f3dae6e6`) | Latest tag. |
+| `hyperliquid-dev/hyper-evm-lib` (tests only) | tag `v1.1` (`b7bda146`) | Latest tag. ARCHITECTURE §15 read `4eb7ab0` (HEAD); the `PrecompileLib` facts used below hold at `v1.1`. |
 
-Pins are recorded in `contracts/foundry.lock` and the git submodule SHAs. Remappings are in `contracts/remappings.txt`.
+Pins are recorded in `contracts/foundry.lock` and the git submodule SHAs (`git submodule status`). No `forge init` template contracts were created; the Foundry layout (`src/ test/ script/ foundry.toml`) was written by hand.
 
-### BaseHook: import path and override signatures
+### A.2 `foundry.toml` and remappings
 
-- **Use:** `import {BaseHook} from "@openzeppelin/uniswap-hooks/base/BaseHook.sol";`. The remapping `@openzeppelin/uniswap-hooks/=lib/uniswap-hooks/src/` is from `uniswap-hooks/README.md:24`. The file is `uniswap-hooks/src/base/BaseHook.sol`.
-- Constructor: `constructor(IPoolManager _poolManager)`. It calls `_validateHookAddress(this)`, so the address flags must already match `getHookPermissions()` at deploy (`BaseHook.sol:49-52`).
-- `function getHookPermissions() public pure virtual returns (Hooks.Permissions memory permissions);` (`BaseHook.sol:69`)
-- `function _beforeInitialize(address, PoolKey calldata, uint160) internal virtual returns (bytes4)` (`BaseHook.sol:93`)
-- `function _beforeSwap(address, PoolKey calldata, SwapParams calldata, bytes calldata) internal virtual returns (bytes4, BeforeSwapDelta, uint24)` (`BaseHook.sol:237-240`)
-- Not chosen: `uniswap-hooks/src/fee/BaseOverrideFee.sol`. It uses **`afterInitialize`** (not `beforeInitialize` as our spec requires) and wraps `_getFee`. We subclass `BaseHook` directly to control the fallback path and the `FeeComputed` event.
+- `[profile.default]`: `solc_version = "0.8.26"`, `evm_version = "cancun"`, `optimizer_runs = 200`, `via_ir = false` (§11.2). `fs_permissions` gives read-write on `../data` and `./deployments`, and read on `./out-v4core`.
+- `[rpc_endpoints]`: `hyperevm_testnet = https://rpc.hyperliquid-testnet.xyz/evm`, `hyperevm_mainnet = https://rpc.hyperliquid.xyz/evm`.
+- `[profile.v4core]`: the PoolManager build (A.5).
+- `contracts/remappings.txt`: `@uniswap/v4-core/=lib/v4-core/`, `@uniswap/v4-periphery/=lib/v4-periphery/`, `@openzeppelin/uniswap-hooks/=lib/uniswap-hooks/`, `forge-std/=lib/forge-std/src/`. Plus the transitive ones the libs need: `@openzeppelin/contracts/`, `solmate/`, `permit2/`, `hyper-evm-lib/`.
 
-### SwapParams location
+### A.3 Facts confirmed in installed sources
 
-- `struct SwapParams { bool zeroForOne; int256 amountSpecified; uint160 sqrtPriceLimitX96; }` at file level in `v4-core/src/types/PoolOperation.sol:19`.
-- Import: `import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";`
-- (In the `v4.0.0` tag it was `IPoolManager.SwapParams`, `v4-core/src/interfaces/IPoolManager.sol:146`. Not used.)
-
-### LPFeeLibrary flags
-
-From `v4-core/src/libraries/LPFeeLibrary.sol:15-25`:
-
-| Name | Value |
+| Fact | Evidence |
 |---|---|
-| `LPFeeLibrary.DYNAMIC_FEE_FLAG` | `0x800000` (pass as `PoolKey.fee` to create a dynamic-fee pool) |
-| `LPFeeLibrary.OVERRIDE_FEE_FLAG` | `0x400000` (OR into the fee returned by `beforeSwap`) |
-| `LPFeeLibrary.REMOVE_OVERRIDE_MASK` | `0xBFFFFF` |
-| `LPFeeLibrary.MAX_LP_FEE` | `1000000` (fees are in hundredths of a bip: 500 = 0.05%, 3000 = 0.30%, 10000 = 1.00%) |
+| BaseHook import: `@openzeppelin/uniswap-hooks/src/base/BaseHook.sol` | file `uniswap-hooks/src/base/BaseHook.sol`; compiles in `test/recon/Recon.t.sol` |
+| `constructor(IPoolManager _poolManager)` calls `_validateHookAddress(this)` → `Hooks.validateHookPermissions(hook, getHookPermissions())`, so a wrong address reverts at deploy | `BaseHook.sol:61-63`, `:100-101` |
+| `function _beforeInitialize(address, PoolKey calldata, uint160) internal virtual returns (bytes4)` | `BaseHook.sol:119` |
+| `function _beforeSwap(address, PoolKey calldata, SwapParams calldata, bytes calldata) internal virtual returns (bytes4, BeforeSwapDelta, uint24)` | `BaseHook.sol:263-266` |
+| `getHookPermissions() public pure virtual returns (Hooks.Permissions memory)` | `BaseHook.sol:95` |
+| New in v1.3: `modifier onlyValidPools(IHooks hooks)` reverts `InvalidPool()` unless `hooks == this`. Usable for `getFee` / `previewFee`, which take a caller-supplied `PoolKey`. | `BaseHook.sol:83` |
+| `struct SwapParams { bool zeroForOne; int256 amountSpecified; uint160 sqrtPriceLimitX96; }` (file-level) | `v4-core/src/types/PoolOperation.sol:19` |
+| `DYNAMIC_FEE_FLAG = 0x800000`, `OVERRIDE_FEE_FLAG = 0x400000`, `MAX_LP_FEE = 1000000` | `v4-core/src/libraries/LPFeeLibrary.sol:15,19,25`; asserted in `test_feeFlags` |
+| Dynamic pools start at LP fee 0: `if (self.isDynamicFee()) return 0;` in `getInitialLPFee` | `LPFeeLibrary.sol:51-53` |
+| `BEFORE_INITIALIZE_FLAG = 1 << 13`, `BEFORE_SWAP_FLAG = 1 << 7` (OR = `0x2080`) | `v4-core/src/libraries/Hooks.sol:29,38`; asserted in `test_hookFlagBits` |
+| `Hooks.beforeSwap` reads the returned fee **only for dynamic-fee pools**: `if (key.fee.isDynamicFee()) lpFeeOverride = result.parseFee();` | `Hooks.sol:263` |
+| `PoolManager.swap` passes it through: `(amountToSwap, beforeSwapDelta, lpFeeOverride) = key.hooks.beforeSwap(...)` → `lpFeeOverride: lpFeeOverride` | `v4-core/src/PoolManager.sol:201-202,214` |
+| `Pool.swap` uses it **only when the override flag is set**: `params.lpFeeOverride.isOverride() ? params.lpFeeOverride.removeOverrideFlagAndValidate() : …` | `v4-core/src/libraries/Pool.sol:303-304`; `isOverride` at `LPFeeLibrary.sol:61`; `removeOverrideFlagAndValidate` at `:75` |
+| ⇒ Without the flag, a dynamic pool swaps at its stored LP fee, which is 0 (ARCHITECTURE §2.3; invariant I3) | the three rows above |
+| HookMiner: `@uniswap/v4-periphery/test/shared/HookMiner.sol`; `find(address deployer, uint160 flags, bytes memory creationCode, bytes memory constructorArgs) internal view returns (address, bytes32)`; `FLAG_MASK = Hooks.ALL_HOOK_MASK`; `MAX_LOOP = 160_444` (a 14-bit match needs ~16k tries on average) | `v4-periphery/test/shared/HookMiner.sol:10,14,23`. The remapping works directly, so no vendored copy is needed. It's MIT (`:1`). |
+| `LiquidityAmounts` (for replay LP accounting) | `v4-periphery/src/libraries/LiquidityAmounts.sol` |
+| `Deployers` | `v4-core/test/utils/Deployers.sol`: `deployFreshManagerAndRouters` `:91`, `deployMintAndApprove2Currencies` `:109`, `initPool` `:153,162`, `initPoolAndAddLiquidity` `:175`, `swap` `:214` |
+| `PoolSwapTest.swap(PoolKey, SwapParams, TestSettings, bytes)` | `v4-core/src/test/PoolSwapTest.sol:35` |
+| `PoolModifyLiquidityTest.modifyLiquidity(PoolKey, ModifyLiquidityParams, bytes)` | `v4-core/src/test/PoolModifyLiquidityTest.sol:33,41` |
 
-Hook flag bits (`v4-core/src/libraries/Hooks.sol:29,38`): `BEFORE_INITIALIZE_FLAG = 1 << 13`, `BEFORE_SWAP_FLAG = 1 << 7`.
+### A.4 `IDynamicFeeHook`
 
-### Test helpers (Deployers, PoolSwapTest, PoolModifyLiquidityTest, HookMiner)
+- Copied verbatim into `contracts/src/interfaces/IDynamicFeeHook.sol` from `Uniswap/v4-hooks-public@c45509f3cafb044219dcd08faff5b68370ac61d6:src/interfaces/IDynamicFeeHook.sol` (the commit ARCHITECTURE §15 cites).
+- Upstream is **MIT**: the file's SPDX header, the repo `LICENSE` ("Copyright (c) 2026 Universal Navigation Inc."), and GitHub API `license.spdx_id = MIT`. The header keeps the copyright and the source link.
+- `getFee(PoolKey calldata key) external view returns (uint24 feeE6ZeroForOne, uint24 feeE6OneForZero)` and `error PoolNotInitialized(PoolId poolId)` match §2.5.
 
-| Helper | File | Import |
+### A.5 PoolManager build
+
+| Build | PoolManager runtime | Result |
 |---|---|---|
-| `Deployers` | `v4-core/test/utils/Deployers.sol` | `@uniswap/v4-core/test/utils/Deployers.sol` |
-| `PoolSwapTest` | `v4-core/src/test/PoolSwapTest.sol` | `@uniswap/v4-core/src/test/PoolSwapTest.sol` |
-| `PoolModifyLiquidityTest` | `v4-core/src/test/PoolModifyLiquidityTest.sol` | `@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol` |
-| `HookMiner` | `v4-periphery/src/utils/HookMiner.sol` | `@uniswap/v4-periphery/src/utils/HookMiner.sol` |
+| Default profile (`via_ir = false`, runs 200) | **19,766 B** | fits; used by tests |
+| v4-core profile (`via_ir = true`, runs 44,444,444, `bytecode_hash = "none"`) via `FOUNDRY_PROFILE=v4core forge build --sizes lib/v4-core/src/PoolManager.sol` | **24,009 B** (initcode 24,194 B; margin 567 B under 24,576) | fits |
+| Uniswap's PoolManager on HyperEVM mainnet `0x12D4…6B1F` (`cast codesize`) | **24,009 B** | — |
 
-`HookMiner.find(address deployer, uint160 flags, bytes memory creationCode, bytes memory constructorArgs) internal view returns (address, bytes32)` (`HookMiner.sol:23`).
-All imports above are compile-checked by `contracts/test/recon/V4Imports.t.sol` (passes).
+- **Byte-identical check:** our `out-v4core` `deployedBytecode` vs `cast code` of the mainnet PoolManager. Same length, and **0 differing bytes** outside the single 32-byte immutable at offset 13,606 (`NoDelegateCall.original`, which on mainnet holds its own address `0x12d4…6b1f`). Our deployed PoolManager will be the canonical Uniswap build.
+- Tried `additional_compiler_profiles` + `compilation_restrictions` on `PoolManager.sol`. It works and gives 24,050 B (default `bytecode_hash`), but **every file that imports PoolManager** (`Deployers`, `PoolSwapTest`, all integration tests) then also compiles under via-IR/44M runs. That makes a cold build ~47s instead of ~9s, and tests would run a via-IR copy of `AvenHook` rather than the runs-200 artifact we deploy. Rejected; see Decisions.
 
-## 2. HyperCore precompiles
+---
 
-### L1Read.sol source
+## B. HyperEVM testnet (chain 998)
 
-- Official docs, "Interacting with HyperCore" (https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/hyperevm/interacting-with-hypercore) **attach** `L1Read.sol` as an unlabeled file embed. There's no stable URL, so I didn't fetch it from there.
-- The same file ships in `hyper-evm-lib/test/utils/L1Read.sol`. Constants are at lines 115–138; `MARK_PX_PRECOMPILE_ADDRESS` is at line 122 and `ORACLE_PX_PRECOMPILE_ADDRESS` at line 123.
+### B.1 Chain basics
 
-### markPx
+| Check | Result (2026-11-05) |
+|---|---|
+| `eth_chainId` / `cast chain-id` | `0x3e6` = **998** |
+| latest block | 68,830,576, ts 1793901113, **gasLimit 3,000,000** (small block), `baseFeePerGas` **100,000,000 wei (0.1 gwei)** |
+| `eth_gasPrice` | 0.1–0.112 gwei |
+| `eth_maxPriorityFeePerGas` | `0x0` (docs: "always returns zero") |
+| `eth_bigBlockGasPrice` | `0x5f5e100` (0.1 gwei). `bigBlockGasPrice` without the `eth_` prefix → "Method not found". |
 
-- Address: `0x0000000000000000000000000000000000000806` (`L1Read.sol:122`)
-- Calldata: `abi.encode(uint32 perpIndex)`, 32 bytes, no selector (`hyper-evm-lib/src/PrecompileLib.sol:211-215`)
-- Return: `abi.decode(result, (uint64))`, 32 bytes (`PrecompileLib.sol:214`). Confirmed on testnet: 32-byte return (§4).
+### B.2 No websocket on the official RPC (we poll)
 
-### oraclePx
+- `wss://rpc.hyperliquid-testnet.xyz/evm` (`cast block-number`) → `HTTP error: 405 Method Not Allowed`.
+- HTTPS with `Upgrade: websocket` headers → **HTTP 405**.
+- `eth_subscribe` over HTTP → `-32601 Method not found`.
+- The JSON-RPC docs page (https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/hyperevm/json-rpc) doesn't list websockets. ARCHITECTURE §3.1 says the same. **Confirmed: poll `eth_blockNumber`.**
 
-- Address: `0x0000000000000000000000000000000000000807` (`L1Read.sol:123`)
-- Calldata: `abi.encode(uint32 perpIndex)`. Return: `uint64` (`PrecompileLib.sol:217-221`)
-- The docs' own example calls `0x…0807` with `0x…0003` for "the third perp oracle price on testnet".
+### B.3 RPC limits that affect P4/P6/P9 (from the JSON-RPC docs, plus probes)
 
-### Scaling rule
+- `eth_call`, `eth_estimateGas`, `eth_getBalance`, `eth_getCode`, `eth_getStorageAt` and `eth_getTransactionCount` work **only against the latest block**: "Requests that require historical state are not supported". So the verifier can't re-read past precompile values; it must use the `FeeComputed` event inputs (as §7.3 already plans).
+- `eth_getLogs`: the docs say "limited to four topics and a 50-block query range". Probe from block 68,830,000: 50, 51 and 52-block ranges succeeded; 101 blocks → `-32008 Response is too big (max 1048576)`; 1,001 blocks → `-32005 rate limited`. **`verify --all` should scan in ≤ 50-block chunks filtered by hook address + `FeeComputed` topic.**
+- Rate limits: "IP based rate limits are the same as the API server" (same page).
 
-- **Perps: human price = raw / 10^(6 − szDecimals).** Quote from the docs: "divide the returned price by `10^(6 - szDecimals)` for perps" (Interacting with HyperCore page).
-- Cross-checked: `PrecompileLib.normalizedMarkPx = markPx * 10**szDecimals` gives "a fixed-point integer with 6 decimals" (`PrecompileLib.sol:154-158`), which is the same rule.
-- Confirmed live: matches the info API to 0.0 bps after scaling (§4).
-- On-chain `szDecimals` is available from `perpAssetInfo` precompile `0x…080a` (`L1Read.sol:126`). For testnet index 135 it returns `("HYPE", marginTableId 10, szDecimals 2, maxLeverage 10, onlyIsolated true)` (`cast call`, see §4).
+### B.4 CREATE2 deployer
 
-### Gas
+`eth_getCode 0x4e59b44847b379578588920cA78FbF26c0B4956C` on 998 → `0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3`, the standard deterministic-deployment-proxy runtime. **Deployed.**
 
-- Docs: "Precompiles have a gas cost of `2000 + 65 * (input_len + output_len)`". Note: input **plus** output; the handoff said output only. Also: "Precompiles called on invalid inputs such as invalid assets or vault address will return an error and consume all gas passed into the precompile call frame."
-- **Measured on testnet** (state-override probe contract, `eth_call` at latest, 2026-11-05):
+### B.5 Uniswap v4 on 998
 
-  | Call | Cap | Result | Gas used by the `staticcall` frame |
-  |---|---|---|---|
-  | markPx(135) | 100,000 | ok, 32 bytes | 3,693 |
-  | oraclePx(135) | 100,000 | ok, 32 bytes | 3,693 |
-  | oraclePx(99999) (invalid) | 100,000 | fail, 0 bytes | 100,512 (whole cap burned) |
-  | oraclePx(99999) (invalid) | 20,000 | fail, 0 bytes | 20,512 (whole cap burned) |
-  | oraclePx(135) | 3,000 | fail (OOG) | 3,512 |
+- Uniswap's deployments page (https://developers.uniswap.org/docs/protocols/v4/deployments, fetched via `/llms.mdx/docs/protocols/v4/deployments`) lists **HyperEVM: 999 only**. Its addresses match ARCHITECTURE §2.6 (PoolManager `0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F`, etc.). The testnet section lists Unichain Sepolia, Sepolia, Base Sepolia, Arbitrum Sepolia and interop-alpha-0/1, with **no HyperEVM testnet**.
+- `cast codesize` on 998: `0x12D4…6B1F` → **0**; `0x000000000004444c5dc75cb358380d2e3de08a90` → **0**.
+- Permit2 `0x000000000022D473030F116dDEE9F6B43aC78BA3` **does** exist on 998 (9,152 B).
+- **Result: deploy our own** PoolManager + `PoolSwapTest` + `PoolModifyLiquidityTest`.
 
-  So: the cap must be > ~3.2k, and every unit of the cap is lost on a bad index. **Use a 10,000-gas cap per read** (about 2.7× headroom). Worst case is 2 × 10k burned per swap.
-- Locally (no fork) the precompile addresses have no code: `staticcall` returns `success = true` with **0 bytes**. Readers must check `ret.length == 32`, not just `success` (test `test_noPrecompileLocally`).
+### B.6 Big blocks: exact steps
 
-### hyper-evm-lib
+Sources: the dual-block docs (https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/hyperevm/dual-block-architecture), the JSON-RPC docs, the testnet faucet docs (https://hyperliquid.gitbook.io/hyperliquid-docs/onboarding/testnet-faucet), and the official Python SDK `hyperliquid-dex/hyperliquid-python-sdk@2fdb18f` (`hyperliquid/exchange.py`, `utils/signing.py`, `utils/constants.py`).
 
-- Installed: `contracts/lib/hyper-evm-lib` @ v1.1. Read helpers in `src/PrecompileLib.sol`: `markPx(uint32)`, `oraclePx(uint32)`, `spotPx(uint64)`, `normalizedMarkPx(uint32)`, `normalizedOraclePx(uint32)`, `perpAssetInfo(uint32)`, plus balance and position reads. Address constants are in `src/common/HLConstants.sol`.
-- **Do not call these from the hook:** they `revert` on failure (`PrecompileLib__MarkPxPrecompileFailed`, etc.) and forward **all** gas (no cap). That breaks invariants 1 and 5. `HyperFairValue` implements its own gas-capped, non-reverting reads and may import only the address constants.
+- Small blocks: "1 seconds with a 3M gas limit". Big blocks: "1 minute with a 30M gas limit". The PoolManager deploy (24 KB → ≈ 4.8M gas of code deposit alone) is above the 3M small-block limit, so it **needs big blocks**.
+- **Requirement:** "Like any action, this requires an existing Core user to send". An address becomes a Core user by receiving a Core asset such as USDC.
+  - Check it on-chain with precompile `0x…0810` (coreUserExists, `L1Read.sol:133`), input `abi.encode(address)`: `0x0…01` → `1`, and the CREATE2 proxy → `0`.
+  - Or check it via the info API.
+- **Getting testnet USDC onto Core:**
+  - The faucet https://app.hyperliquid-testnet.xyz/drip gives 1,000 mock USDC, but **only to an address that has deposited on mainnet** ("you need to have deposited on mainnet with the same address").
+  - If the deployer key has never deposited on mainnet: from any wallet that has testnet USDC, send it on Core with `usdSend` (SDK `Exchange.usd_transfer(amount, destination)`, `exchange.py:579`) to the deployer address.
+- **Switch on**, as the deployer, against testnet. `Exchange(wallet, constants.TESTNET_API_URL).use_big_blocks(True)` (`exchange.py:1127`) builds `{"type":"evmUserModify","usingBigBlocks":true}`, signs it as an **L1 action** (`sign_l1_action(..., is_mainnet = False)`, `signing.py:240`; phantom agent), and POSTs `{action, nonce, signature, vaultAddress: null, expiresAfter}` to `https://api.hyperliquid-testnet.xyz/exchange` (`exchange.py:101-110`; `constants.py:2`).
+- **Check:** JSON-RPC `eth_usingBigBlocks(address)` → `true` (it returned `false` for the proxy on 998, so the method exists on testnet). After the deploy, the receipt's block `gasLimit` should be 30,000,000.
+- **Switch off** after the deploy: `use_big_blocks(False)` (same action with `false`), because the docs say the flag "must be unset to return to small blocks". Then `eth_usingBigBlocks` → `false`.
+- **UNVERIFIED** until we run it: that the action works on testnet with the signing above. The SDK code paths are confirmed, but no tx has been sent. Fallback: run it once early (P5 step 0). If testnet rejects it, deploy the PoolManager on a local anvil for tests only, and ask the team before changing the testnet plan.
 
-## 3. HyperEVM testnet
+### B.7 Testnet block explorer
 
-### Chain id, latest block, gas price
+**UNVERIFIED: no testnet explorer that shows HyperEVM txs and logs was found.**
 
-RPC `https://rpc.hyperliquid-testnet.xyz/evm`, 2026-11-05 ~15:45 UTC:
-- `eth_chainId` → `0x3e6` = **998**
-- `eth_blockNumber` → `0x41a27d5` = 68,822,997. Latest block: number 68,822,998, timestamp 1793893659, **gasLimit 3,000,000** (a small block), gasUsed 224,182
-- `eth_gasPrice` → `0x5f5e100` = **0.1 gwei** (baseFeePerGas 100,000,000)
+- Hyperliquid "HyperEVM tools" (https://hyperliquid.gitbook.io/hyperliquid-docs/builder-tools/hyperevm-tools) lists Blockscout `www.hyperscan.com`, Etherscan `hyperevmscan.io`, Hyperscan `hyperscan.com` and Owlscan `owlscan.org`, without network labels.
+- I probed with a real testnet tx `0xf86cde09…43509`:
+  - `hyperscan.com` and `www.hyperscan.com` Blockscout API → 404 (mainnet only).
+  - `testnet.hyperscan.com`, `testnet.hyperevmscan.io`, `owlscan.org`, `testnet.owlscan.org` → no DNS / no response.
+  - `testnet.purrsec.com/tx/…` → 404. Chainlink's testnet guide names purrsec, but it may be a JS app; check in a browser.
+  - Etherscan v2 `chainlist` → HyperEVM **999 only**; `chainid=998` → "unsupported chainid".
+  - Routescan → "chain not supported".
+- **Fallback:**
+  - `deployments/998.json` `explorer` points to our own web route `/tx/<hash>`, which renders the receipt and decoded logs from the RPC.
+  - `pnpm verify <tx>` prints everything from the RPC.
+  - README tx links use that route. If purrsec works in a browser, use it instead.
 
-### Uniswap v4 PoolManager on testnet
+---
 
-- Uniswap's official deployments page (https://developers.uniswap.org/docs/protocols/v4/deployments) lists **HyperEVM: 999** (mainnet): PoolManager `0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F`, PositionManager `0x0d7Ab5B3db668128Aff6F70C4eBC71D7d4DA9bf9`, Quoter `0x108Bfe38532C98f8Cd8D7Ab49c9dDAa3675a1c5e`, StateView `0x1656326235cb9E34Cb58CaDe53AE30789AB32A1A`, Universal Router 2.1.2 `0xeD270A1Bcdc63cf1356D695e7f40961d4819d6bF`, Permit2 `0x000000000022D473030F116dDEE9F6B43aC78BA3`. Its testnet section lists only Unichain Sepolia, Sepolia, Base Sepolia, Arbitrum Sepolia and interop-alpha. **There is no HyperEVM testnet.**
-- `cast codesize` on 998: `0x12D4…6B1F` → **0**; the Ethereum PoolManager `0x000000000004444c5dc75cb358380d2e3de08a90` → 0. On 999, `0x12D4…6B1F` → 24,009 bytes.
-- Permit2 `0x000000000022D473030F116dDEE9F6B43aC78BA3` **is deployed on 998** (9,152 bytes).
-- **Result: deploy our own PoolManager on 998.**
+## C. HyperCore reads
 
-### CREATE2 deployer (0x4e59b44847b379578588920cA78FbF26c0B4956C)
+### C.1 HYPE perp index and szDecimals (`POST /info {"type":"meta"}`, index = position in `universe`)
 
-- `eth_getCode` on 998 → `0x7fffff…6014600cf3` (the standard deterministic-deployment-proxy runtime). **Deployed.**
+| Network | Time (UTC) | Universe size | HYPE index | szDecimals | Other fields |
+|---|---|---|---|---|---|
+| testnet | 2026-11-05T17:54:30Z | 213 | **135** | **2** | maxLeverage 10, marginTableId 10, onlyIsolated true, marginMode strictIsolated |
+| mainnet | 2026-11-05T17:54:47Z | 235 | **159** | **2** | maxLeverage 10, marginTableId 52 |
 
-### Small vs big blocks
+### C.2 `perpAssetInfo` (`0x…080a`, input `abi.encode(uint32)`)
 
-Source: https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/hyperevm/dual-block-architecture
-- Small: "Fast block duration is set to 1 seconds with a 3M gas limit." Big: "Slow block duration is set to 1 minute with a 30M gas limit." The observed testnet block had `gasLimit 3,000,000`, which is consistent.
-- Switch: send the HyperCore action `{"type": "evmUserModify", "usingBigBlocks": true}`. It is set per HyperCore user; unset it to go back to small blocks.
-- Requirement: "Like any action, this requires an existing Core user to send." An address becomes a Core user by receiving a Core asset (e.g. USDC on Core).
-- JSON-RPC `bigBlockGasPrice` estimates the next big block's base fee.
-- **UNVERIFIED:** the page doesn't explicitly say testnet behaves the same. Fallback: try it on testnet with the deployer, and check the receipt's block gasLimit is 30M.
-- Implication: PoolManager runtime is ~24 KB (24,009 bytes on 999). At 200 gas/byte that's ≈ 4.8M gas of code deposit alone, above the 3M small-block limit, so **the PoolManager deploy needs big blocks**. The hook's size is unknown until it's built.
+- **Return encoding is `abi.encode(PerpAssetInfo)`, one dynamic struct** (leading `0x20` offset). It is **not** five flat values, and a flat `abi.decode(…, (string,uint32,uint8,uint8,bool))` reverts (seen in `test_forkRead_testnetHype` before the fix). The struct layout is `{string coin; uint32 marginTableId; uint8 szDecimals; uint8 maxLeverage; bool onlyIsolated}` (`hyper-evm-lib/src/PrecompileLib.sol:340`, `test/utils/L1Read.sol:41`).
+- testnet `perpAssetInfo(135)` → `{coin "HYPE", marginTableId 10, szDecimals 2, maxLeverage 10, onlyIsolated true}`: **coin == "HYPE" ✓, szDecimals matches meta ✓.**
+- mainnet `perpAssetInfo(159)` → `{coin "HYPE", marginTableId 52, szDecimals 2, maxLeverage 10, onlyIsolated false}`: ✓ ✓.
 
-### Block explorer
+### C.3 Prices: precompile vs info API (scaling `raw / 10^(6 − szDecimals)` = raw / 10^4)
 
-- **UNVERIFIED.** Chainlink's HyperEVM testnet guide (https://docs.chain.link/ccip/tools-resources/network-specific/hyperevm-testnet-rpc) names `https://testnet.purrsec.com/`, but it returned **404** to `curl` on 2026-11-05 (root and `/block/<n>`). `testnet.hyperevmscan.io` didn't resolve. Routescan's API says "chain not supported" for 998. Hyperliquid's own HyperEVM docs list no explorer.
-- `https://app.hyperliquid-testnet.xyz/explorer` (HyperCore explorer) returns 200. Whether it shows HyperEVM txs is unverified.
-- Fallback: the web app links each tx to its own receipt view (read from the RPC). README tx links point to purrsec if it works in a browser, else to the receipt JSON. Re-check purrsec in a browser.
+Each round: `metaAndAssetCtxs` + `allMids` first, then `eth_call` 0x806/0x807 at `latest`, about 1 s apart.
 
-## 4. HYPE perp index and live prices
+| Net | Round | API time | EVM block (block ts) | markPx raw → px | API markPx | Δ | oraclePx raw → px | API oraclePx | Δ | allMids |
+|---|---|---|---|---|---|---|---|---|---|---|
+| testnet | 1 | 17:54:31.635Z | 68,830,740 (17:54:34Z) | 789,260 → 78.9260 | 78.926 | 0.00 bp | 71,637,000 → 7163.7000 | 7163.7 | 0.00 bp | 78.926 |
+| testnet | 2 | 17:54:37.428Z | 68,830,746 (17:54:40Z) | 789,260 → 78.9260 | 78.926 | 0.00 bp | 71,637,000 → 7163.7000 | 7163.7 | 0.00 bp | 78.926 |
+| mainnet | 1 | 17:54:48.035Z | 50,471,916 (17:54:51Z) | 778,210 → 77.8210 | 77.809 | 1.54 bp | 778,089 → 77.8089 | 77.7885 | 2.62 bp | 77.8205 |
+| mainnet | 2 | 17:54:53.809Z | 50,471,921 (17:54:56Z) | 778,390 → 77.8390 | 77.846 | 0.90 bp | 778,220 → 77.8220 | 77.822 | 0.00 bp | 77.8515 |
 
-Method: `POST /info {"type":"meta"}` (index = position in `universe`), plus `{"type":"metaAndAssetCtxs"}` for prices. Precompiles were read with `eth_call` **at the same block** (`eth_blockNumber` taken right after the API call), using `data = abi.encode(uint32 index)`. Reproduce one read with `cast call --rpc-url $HYPEREVM_RPC 0x0000000000000000000000000000000000000806 $(cast abi-encode "f(uint32)" 135)`.
+**Gate: PASS.** The testnet precompiles equal the info API exactly after scaling. The mainnet gaps of ≤ 2.6 bp come from the 1–3 s between the API read and the EVM read (the oracle updates about every 3 s). The scaling rule is also stated in the docs ("divide the returned price by `10^(6 - szDecimals)` for perps", https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/hyperevm/interacting-with-hypercore) and matches hyper-evm-lib `normalizedMarkPx = markPx * 10**szDecimals` (`PrecompileLib.sol:154-158`).
 
-### Testnet
+The cross-check runs in Foundry too: `FORK_READ=1 forge test --match-test test_forkRead` reads the live testnet precompiles via `vm.rpc`, and passes.
 
-- `{"type":"meta"}` → HYPE at **index 135**, `szDecimals 2`, `maxLeverage 10`, `onlyIsolated true`, `marginMode strictIsolated`. Universe size 213.
-- Block 68,823,620:
+### C.4 ⚠️ Testnet HYPE market is degenerate (ARCHITECTURE §10.3 "thin or odd")
 
-  | | Precompile raw | Scaled (÷10^4) | Info API | Diff |
-  |---|---|---|---|---|
-  | markPx(135) | 826,000 | 82.6000 | 82.6 | 0.0 bps |
-  | oraclePx(135) | 71,575,500 | 7157.5500 | 7157.55 | 0.0 bps |
+- Testnet HYPE oracle ≈ **7,163.70** vs mark ≈ **78.93**, a premium of **−9,890 bp**. `allMids` HYPE equals the mark exactly, and the earlier `metaAndAssetCtxs` had `midPx: null` (no book). Mainnet HYPE ≈ 77.8.
+- Under §6.3 with default params, every **base-selling** swap is `withPressure` (premium < 0): 500 + 9,890 × 50 → clamped to **10,000 pips (1.00%)**, whatever the gap. Buys pay 500 + the gap term.
+- A pool initialised at the oracle (§11.3 step I) would price aHYPE at ~7,164 aUSD.
+- The demo story (the arb pays the gap; the shock pays near base) would be distorted for sells.
+- Same check for other testnet perps, earlier the same day: SOL (idx 0) +45 bp, BTC (idx 3) +28 bp, ETH (idx 4) +74 bp. All are sane and have books.
 
-- **Gate passed:** precompile = info API after scaling.
-- ⚠️ **Testnet HYPE market data is degenerate.** Oracle ≈ 7,157 vs mark ≈ 82.6, a premium of **−9,885 bps**. `midPx` is null (no book). Mainnet HYPE is ≈ 78. A later probe read oracle 6,807.10 and mark 81.20, so the oracle is drifting, not tracking the mark. A hook on testnet HYPE would see an absurd premium, and any pool seeded near either price would trip the sanity limit against the other.
-- Other testnet perps at the same block are sane (precompile = API in every case):
+### C.5 Precompile gas
 
-  | Perp | Index | szDec | Mark | Oracle | Premium | midPx |
-  |---|---|---|---|---|---|---|
-  | SOL | 0 | 2 | 90.4183 | 90.0100 | +45 bps | 90.48 |
-  | BTC | 3 | 5 | 76156.0 | 75947.1 | +28 bps | 76142.0 |
-  | ETH | 4 | 4 | 2267.5 | 2250.8 | +74 bps | 2267.3 |
+| Measurement (testnet, `oraclePx(135)`) | Value |
+|---|---|
+| `eth_estimateGas {to: 0x…0807, data: abi.encode(uint32 135)}` | **24,591** (= 21,000 intrinsic + 140 calldata + 3,451) |
+| Smallest `staticcall` gas cap that succeeds (binary search with a state-overridden probe contract via `eth_call`) | **3,112** |
+| Gas used by the caller's `staticcall` frame with cap 100k (cap + CALL overhead) | 3,693 |
+| Invalid index 99,999 with cap 30,000 | fails; frame used **30,512**, so the **whole cap is burned** (confirms "consume all gas passed into the precompile call frame") |
+| Doc formula `2000 + 65 × (input_len + output_len)` = 2000 + 65 × 64 | 6,160 |
 
-### Mainnet
+- **The formula is NOT confirmed as the exact charge.** The measured charge (≤ 3,112) is about half of it. Treat the formula as an upper bound.
+- Consequences:
+  - `precompileGas = 30,000` (§6.2) gives ~9.6× headroom.
+  - The `precompileGas ≥ 10,000` constructor rule is safe.
+  - The §6.7 estimate of ~17k for two reads is conservative; the measured cost is ~7.4k including CALL overhead. Re-measure in P11.
+- Locally (no fork) the precompile addresses have no code: `staticcall` returns `success = true` with **0 bytes** (`test_noPrecompileLocally`). The `readOk` rule "return ≥ 32 bytes and value > 0" (§6.3 Step 1) is what catches this.
 
-- `{"type":"metaAndAssetCtxs"}` on `https://api.hyperliquid.xyz/info` → HYPE at **index 159**, `szDecimals 2`, `maxLeverage 10`. Universe size 235.
-- Block 50,464,782 (RPC `https://rpc.hyperliquid.xyz/evm`): markPx raw 783,030 → **78.3030** (API 78.302, 0.1 bps); oraclePx raw 782,650 → **78.2650** (API 78.254, 1.4 bps; the oracle updates every 3s). Premium +5 bps.
-- Also: BTC index 0 (szDec 5), ETH index 1 (szDec 4).
+---
 
-## 5. Mock plan (local tests)
+## D. Mock plan: `contracts/test/recon/Recon.t.sol`
 
-- `contracts/test/recon/PrecompileMockPlan.t.sol` (no fork, passes):
-  - `test_noPrecompileLocally`: `0x…0806` and `0x…0807` have no code locally, and `staticcall` returns `success` with 0 bytes.
-  - `test_etchedMockReturnsScaledPrices`: `vm.etch` a mock at both addresses. Fed the recorded testnet raws (826,000 and 71,575,500), it decodes and scales to 82.60 and 7157.55.
-  - `test_gasCapContainsBurnAll`: a mock that burns all gas, called with a 30k cap, fails and the caller keeps running.
-- Plan: the production `MockHyperCore` (P2) is etched at `0x…0806` / `0x…0807` with `setPrices(oracle, mark)`. It takes `abi.encode(uint32)` and returns `abi.encode(uint64)`, the same ABI as the real precompiles.
-- `forge test --match-path "test/recon/*"`: 7 passed, 0 failed.
+`forge test --match-path "test/recon/*"` → **7 passed, 1 skipped** (offline). With `FORK_READ=1` → **8 passed** (testnet HYPE markRaw 789,260, oracleRaw 71,566,000).
+
+| Test | Proves |
+|---|---|
+| `test_feeFlags`, `test_hookFlagBits`, `test_swapParamsShape`, `test_pathsResolve` | every constant and import path in A.3 compiles and has the recorded value (BaseHook, PoolOperation, LPFeeLibrary, Hooks, PoolManager, Deployers, PoolSwapTest, PoolModifyLiquidityTest, HookMiner `test/shared`, LiquidityAmounts, our IDynamicFeeHook) |
+| `test_noPrecompileLocally` | no code at 0x806/0x807 offline; staticcall succeeds with 0 bytes |
+| `test_etchedStubReturnsScaledPrices` | `vm.etch` a stub at 0x806 and 0x807 (`abi.encode(uint32)` → `abi.encode(uint64)`) returns recorded raws that scale to 82.60 / 7157.55 |
+| `test_gasCapContainsBurnAll` | a stub that burns all gas costs the caller only the cap; the caller continues |
+| `test_forkRead_testnetHype` (skipped unless `FORK_READ=1`) | live `vm.rpc("hyperevm_testnet","eth_call",…)` to 0x80a/0x806/0x807: coin "HYPE", szDecimals 2, 32-byte non-zero prices (RealL1Read pattern, §3.5) |
+
+---
 
 ## Decisions
 
-1. **BaseHook:** OpenZeppelin `uniswap-hooks` v1.2.1, `@openzeppelin/uniswap-hooks/base/BaseHook.sol`. Override `getHookPermissions`, `_beforeInitialize` and `_beforeSwap`; don't use `BaseOverrideFee` (it's built on `afterInitialize`). Pin v4-core and v4-periphery to the commits OZ v1.2.1 pins (see §1) so there's one consistent v4 type set.
-2. **PoolManager:** **deploy our own** on 998 (none exists). Build from the pinned v4-core `PoolManager` (same logic as v4.0.0). It needs **big blocks**, so the deployer must first become a HyperCore user (receive testnet USDC on Core), then send `evmUserModify {usingBigBlocks: true}`.
-3. **Hook deployment:** use the existing **CREATE2 deployer `0x4e59b44847b379578588920cA78FbF26c0B4956C`** on 998. Mine the salt with `HookMiner.find(0x4e59…956C, BEFORE_INITIALIZE_FLAG | BEFORE_SWAP_FLAG, creationCode, abi.encode(poolManager, …))`; `forge script` routes `new Hook{salt: s}(…)` through that deployer. No custom factory.
-4. **HYPE perp index:** **testnet 135**, **mainnet 159** (both `szDecimals 2`). The replay uses mainnet 159.
-5. **Precompile read gas cap:** use the architecture default `Params.precompileGas = 30,000` (the constructor requires ≥ 10,000). The 3,693 measured above gives ~8× headroom; worst case on a bad index is 60k burned per swap. `readOk` = `success && ret.length >= 32 && raw > 0` for both reads (architecture §6.3 Step 1).
-6. **⚠️ Needs confirmation: Arena asset on testnet.** Testnet HYPE's oracle (≈7,157) is ~87× its mark (≈82.6), so the live hook would sit on fallback or max fees. Proposed: run the live Arena on **testnet ETH (index 4, szDec 4)**, or BTC (index 3, szDec 5), with mock tokens named accordingly. Keep HYPE for the mainnet-data replay. `perpIndex` and `szDecimals` are constructor immutables, so this only changes the deploy script. Alternative: keep HYPE and add a mark-vs-oracle sanity bound (e.g. |premium| > 2,000 bps → fallback). That is a FEE_SPEC change, so it needs sign-off either way.
+1. **BaseHook source:** OpenZeppelin `uniswap-hooks` **`v1.3.0-rc.0`**, imported as `@openzeppelin/uniswap-hooks/src/base/BaseHook.sol`. It's the only v1.3.x tag (no final 1.3.0 exists yet); it pins the same v4-core/periphery as stable v1.2.1, and it adds `onlyValidPools`. Re-pin to `v1.3.0` if it ships. Subclass `BaseHook` directly; `BaseOverrideFee` uses `afterInitialize`, not our `beforeInitialize`.
+2. **PoolManager:** **deploy our own** on 998; none exists (B.5).
+3. **Hook deployer:** the existing **CREATE2 proxy `0x4e59b44847b379578588920cA78FbF26c0B4956C`** (B.4). Mine with `HookMiner.find(0x4e59…956C, 0x2080, type(AvenHook).creationCode, abi.encode(poolManager, cfg, params, base, quote))`; `forge script` routes `new AvenHook{salt: s}(…)` through the proxy. No custom factory.
+4. **PoolManager build approach:** a **separate build** with `[profile.v4core]` (via_ir, runs 44,444,444, `bytecode_hash = "none"`): `FOUNDRY_PROFILE=v4core forge build lib/v4-core/src/PoolManager.sol` → `out-v4core/`. `DeployCore.s.sol` deploys it from that artifact (`vm.getCode("out-v4core/PoolManager.sol/PoolManager.json")`). The result is **byte-identical to Uniswap's HyperEVM mainnet PoolManager** (24,009 B). Tests and our contracts stay on the fast default profile, so tests exercise the exact AvenHook bytecode we deploy. Tests use a default-profile PoolManager (19,766 B), built from the same source with only different optimizer settings.
+5. **HYPE perpIndex + szDecimals:** testnet **135 / 2**; mainnet **159 / 2** (C.1, confirmed on-chain by `perpAssetInfo` in C.2). The replay uses mainnet data.
+6. **Gas cap:** keep `Params.precompileGas = 30,000` (§6.2); measured charge ≤ 3,112 (C.5).
+7. **Polling:** no websockets (B.2). Block poller via `eth_blockNumber`; `eth_getLogs` in ≤ 50-block chunks (B.3).
+8. **⚠️ Open, needs the team's call before P5: the live Arena asset (C.4).** Testnet HYPE's oracle is ~91× its mark, so every base-selling swap on the Aven pool would pay the 1.00% cap. Options:
+   - (a) keep HYPE as specified and say so on stage;
+   - (b) run the live Arena on testnet **ETH (idx 4, szDecimals 4)** or BTC (idx 3, szDecimals 5). Only the deploy config changes, since `perpIndex` / `szDecimals` are constructor inputs; §11.3 step G's `coin == "HYPE"` check would become `coin == <chosen>`;
+   - (c) add a premium sanity bound (FEE_SPEC change).
 
-## Alignment with `docs/description/AVEN_ARCHITECTURE.md` (2026-11-05)
-
-The architecture doc is normative. Here is how recon lines up with it.
-
-| Topic | Architecture says | Recon finding | Action |
-|---|---|---|---|
-| v4-core version | read at `bea7f6d` (main); pin "`v4.0.0` or recon-chosen commit" | Pinned `d153b048`. `git diff d153b048 bea7f6d -- src/` is **empty** (only CI commits in between). | Keep `d153b048`; source-identical to `bea7f6d` |
-| OZ uniswap-hooks | `BaseHook` "v1.3.0" | `git ls-remote --tags` lists **no `v1.3.0` tag**, only `v1.3.0-rc.0`. Latest stable is `v1.2.1`. | Keep `v1.2.1`. Its `BaseHook` constructor validates the hook address (§1). Revisit if 1.3.0 ships. |
-| HookMiner path | v4-periphery main `test/shared/HookMiner.sol` | At the pinned `7ebd04b` it is `src/utils/HookMiner.sol`; on `main` it moved to `test/shared/`. | Import `@uniswap/v4-periphery/src/utils/HookMiner.sol` (compile-checked) |
-| OZ remapping | `@openzeppelin/uniswap-hooks/=lib/uniswap-hooks/` | OZ README: `=lib/uniswap-hooks/src/` | Keep the README form; import is `@openzeppelin/uniswap-hooks/base/BaseHook.sol` |
-| Precompile gas | `2000 + 65×(in+out)` = 6,160 per read | Measured on 998: **3,693** gas for the whole `staticcall` frame (valid read); a bad index burns the full cap | `precompileGas = 30,000` default is safe |
-| CREATE2 deployer on 998 | [RECON] | **Deployed** (§3) | Hook via `0x4e59…956C` |
-| PoolManager on 998 | [RECON] | **None** (§3) | Deploy our own via big blocks |
-| PoolManager < 24 KB with `via_ir`, runs 44444444 | [RECON] | **Not yet checked.** Mainnet 999's PoolManager is 24,009 bytes, so the canonical build fits. | Check with `forge build --sizes` under v4-core's profile before deploying (P-deploy) |
-| Perp index for HYPE | from recon | testnet **135**, mainnet **159**, szDecimals 2. `perpAssetInfo(135)` returns coin `"HYPE"`, so the §11.3 step G assertion will pass. | — |
-| Testnet price sanity (§10.3 "thin or odd") | — | Testnet HYPE oracle ≈ 7,157 vs mark ≈ 82.6 (premium ≈ −9,885 bps). Under §6.3, every **base-selling** swap gets `withPressure`: 500 + 9,885 × 50 → clamped to **10,000 pips (max)**, whatever the gap. A pool seeded at oracle would also be ~87× off the mark. | **Open; see Decision 6.** Either use testnet ETH/BTC for the Arena, or add a premium sanity bound (spec change). |
+   The replay is unaffected (mainnet data).
+9. **Explorer:** none confirmed for 998 (B.7). Use our own `/tx/<hash>` route and the verify CLI until a working one is found.

@@ -6,10 +6,32 @@ out = "out"
 libs = ["lib"]
 solc_version = "0.8.26"
 evm_version = "cancun"
-via_ir = false
+# Our code (ARCHITECTURE §11.2): optimizer 200 runs, no via-IR. Tests use this profile too, so they exercise the
+# exact AvenHook bytecode we deploy.
 optimizer = true
 optimizer_runs = 200
+via_ir = false
 ffi = false
+fs_permissions = [
+  { access = "read-write", path = "../data" },
+  { access = "read-write", path = "./deployments" },
+  { access = "read", path = "./out-v4core" },
+]
 
 [rpc_endpoints]
-hyperevm_testnet = "${HYPEREVM_RPC}"
+hyperevm_testnet = "https://rpc.hyperliquid-testnet.xyz/evm"
+hyperevm_mainnet = "https://rpc.hyperliquid.xyz/evm"
+
+[fmt]
+line_length = 120
+
+# Separate build of the deployable PoolManager with v4-core's own profile (lib/v4-core/foundry.toml:
+# via_ir = true, optimizer_runs = 44444444, bytecode_hash = "none"). Build with:
+#   FOUNDRY_PROFILE=v4core forge build lib/v4-core/src/PoolManager.sol
+# DeployCore.s.sol loads out-v4core/PoolManager.sol/PoolManager.json via vm.getCode. See docs/recon.md §A.5.
+[profile.v4core]
+via_ir = true
+optimizer_runs = 44444444
+bytecode_hash = "none"
+out = "out-v4core"
+cache_path = "cache-v4core"
