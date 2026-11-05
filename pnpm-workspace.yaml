@@ -1,5 +1,3 @@
 packages:
-  - "packages/*"
-  - "services/*"
-  - "apps/*"
-  - "scripts"
+  - "backend/*"
+  - "frontend"

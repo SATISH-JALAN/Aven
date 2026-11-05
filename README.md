@@ -2,19 +2,19 @@
 
 **Every dynamic-fee hook trusts someone for its price. Ours reads the perp market itself.**
 
-Aven is a Uniswap v4 hook on HyperEVM that prices every swap from Hyperliquid's live perp market (HyperCore oracle + mark price, read in-block via precompiles), so LPs stop losing value to arbitrageurs. No oracle operator, keeper, owner or custody.
+Aven is a Uniswap v4 fee library and hook on HyperEVM. It prices every swap from Hyperliquid's live perp market: the HyperCore oracle and mark price, read in-block through precompiles. That way LPs stop losing value to arbitrageurs. There is no oracle operator, keeper, owner or custody.
 
 Built at ETHGlobal Mumbai 2026 (Uniswap track). Work in progress.
 
-| Path | What |
+| Folder | What |
 |---|---|
-| `contracts/` | Foundry: `HyperFairValue` library, `PerpAwareHook`, `FeeQuoter` |
-| `packages/core/` | TypeScript port of the fee math |
-| `services/arena/` | Arena bot, shock and verify scripts |
-| `apps/web/` | Arena + Replay web app |
-| `data/` | Raw market data and replay outputs |
-| `docs/spec/` | Specs |
-| `docs/planning/` | Planning files written **before kickoff** (ideas and specs only, no code) |
-| `docs/ai/` | AI prompt log and attribution |
+| `contracts/` | Foundry: `AvenFairValue` library, `AvenHook`, tests, deploy scripts |
+| `backend/` | TypeScript: fee-math port + verifier (`core`), Arena bot service (`arena`), data scripts, data |
+| `frontend/` | Next.js app: Home, Arena, Replay |
+| `docs/` | Spec, recon, [code flow](docs/FLOW.md), [project memory](docs/MEMORY.md), AI attribution, pre-kickoff planning |
+
+Working on the repo? Start with [AGENTS.md](AGENTS.md).
+
+Planning files in `docs/planning/` were written **before kickoff** (ideas and specs only, no code). AI use is disclosed in [docs/ai/](docs/ai/).
 
 License: MIT.

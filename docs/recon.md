@@ -24,7 +24,7 @@ Pins are recorded in `contracts/foundry.lock` and the git submodule SHAs (`git s
 
 ### A.2 `foundry.toml` and remappings
 
-- `[profile.default]`: `solc_version = "0.8.26"`, `evm_version = "cancun"`, `optimizer_runs = 200`, `via_ir = false` (§11.2). `fs_permissions` gives read-write on `../data` and `./deployments`, and read on `./out-v4core`.
+- `[profile.default]`: `solc_version = "0.8.26"`, `evm_version = "cancun"`, `optimizer_runs = 200`, `via_ir = false` (§11.2). `fs_permissions` gives read-write on `../backend/data` (was `../data` before the 2026-11-06 restructure) and `./deployments`, and read on `./out-v4core`.
 - `[rpc_endpoints]`: `hyperevm_testnet = https://rpc.hyperliquid-testnet.xyz/evm`, `hyperevm_mainnet = https://rpc.hyperliquid.xyz/evm`.
 - `[profile.v4core]`: the PoolManager build (A.5).
 - `contracts/remappings.txt`: `@uniswap/v4-core/=lib/v4-core/`, `@uniswap/v4-periphery/=lib/v4-periphery/`, `@openzeppelin/uniswap-hooks/=lib/uniswap-hooks/`, `forge-std/=lib/forge-std/src/`. Plus the transitive ones the libs need: `@openzeppelin/contracts/`, `solmate/`, `permit2/`, `hyper-evm-lib/`.
