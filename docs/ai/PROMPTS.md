@@ -136,3 +136,13 @@ clean the docs folder onnly keep the necessary files and rest remove it dont add
 ```text
 UCAN USE TESTNET ETH AND ALSO THE SITE IS NOT WORKING
 ```
+
+---
+
+## #8 — 2026-11-05T21:52:55Z — Backend build loop
+
+(An earlier, interrupted version of this prompt ended with "...U HAVE ALL THE INFO ALREADY EARLY MORNING".)
+
+```text
+RUN A LOOP AND COMPLETE THE BACKEND PART DONT DO MUCH IN FRONTEDN FOR NOW AS IT WILL BE DONE BY ME TEAMMATE U HAVE ALL THE INFO ALREADY ALSO PLAN EVERYTHING FIRST THEN START DOING IT
+```

@@ -9,13 +9,16 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P0 bootstrap | ✅ done | `5934448`, aligned in `f94f3b5` |
 | P1 recon | ✅ done; gate passed (precompile = info API after scaling) | `2a56c3b`; details in [recon.md](recon.md) |
 | Repo restructure | ✅ done 2026-11-06 | backend/, contracts/, frontend/; AGENTS.md, MEMORY.md, FLOW.md |
-| **P2 AvenFairValue** | ⏭ next | — |
+| Backend build loop | ▶ running, see [PLAN.md](PLAN.md) | started 2026-11-06 |
+| **P2 AvenFairValue** | ⏭ next (PLAN 1.1) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
 
+- **2026-11-06: Replay data interval.** HYPE 1m candles for Oct 29 are no longer served (`candleSnapshot` 1m → 0 candles). 5m is available (73 candles for 18:00–24:00 UTC), as is hourly funding. Scenario A uses 5m, as the spec fallback allows.
+- **2026-11-06: Backend first.** Sayan builds the backend (contracts + backend/) via a loop driven by docs/PLAN.md; the teammate does the frontend. Everything is proven on a local anvil chain with mock precompiles before Sayan runs the testnet deploy.
 - **2026-11-06: Live Arena asset = testnet ETH** (perp **index 4**, `szDecimals` **4**; `perpAssetInfo` coin `"ETH"`). Decided by Sayan, because testnet HYPE's oracle is ~91× its mark. Mock tokens are `aETH` (18 dec) / `aUSD` (6 dec); the deploy check is `coin == "ETH"`. The **replay stays HYPE on mainnet** (index 159). Testnet ETH premium is currently +37–39 bp, so base-buying swaps on the Aven pool pay ~+1,850 pips. For the clearest demo, shock by **buying** aETH, so the bot's arb is a **sell**, which shows the pure gap fee (recon C.6).
 - **2026-11-06: No testnet explorer.** Sayan confirmed purrsec is down, and nothing else covers chain 998. Tx links use our frontend route `/tx/<hash>` (receipt + decoded events via RPC) and `pnpm verify <tx>`.
 - **2026-11-06: Layout.** Code lives in `backend/` (core, arena, scripts, data), `contracts/` and `frontend/`, so teammates can work in parallel without confusion. Spec paths map via the table in AGENTS.md §2. Each tool has its own `.env.example`. `docs/spec/TOOLS.md` was removed (duplicate of prompts B7).
