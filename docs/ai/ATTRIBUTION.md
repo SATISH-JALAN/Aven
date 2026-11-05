@@ -11,6 +11,9 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `contracts/.env.example`, `backend/.env.example`, `frontend/.env.example` | AI | Placeholders only |
 | `backend/README.md`, `frontend/README.md` | AI | Folder guides |
 | `contracts/foundry.toml`, `contracts/remappings.txt`, `contracts/foundry.lock`, `.gitmodules` | AI | Toolchain config and dependency pins (P1) |
+| `contracts/src/AvenFairValue.sol` | AI | P2 library per ARCHITECTURE §6.2–§6.4 |
+| `contracts/test/unit/AvenFairValue.t.sol` | AI | P2 unit + fuzz tests |
+| `contracts/test/mocks/MockHyperCorePx.sol` | AI | Etchable precompile mock with failure injection |
 | `contracts/test/recon/Recon.t.sol` | AI | P1 recon checks; optional FORK_READ live read |
 | `contracts/src/interfaces/IDynamicFeeHook.sol` | Uniswap (MIT), copied by AI | Verbatim from Uniswap/v4-hooks-public@c45509f; AI added only the source/licence header |
 | `docs/PLAN.md` | AI | Backend build plan, ticked off per step |

@@ -22,7 +22,7 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
 
 ## Phase 1: Contracts (prompts P2, P3)
 
-- [ ] **1.1 `AvenFairValue` library** (`contracts/src/AvenFairValue.sol`, §6.2–§6.4)
+- [x] **1.1 `AvenFairValue` library** (`contracts/src/AvenFairValue.sol`, §6.2–§6.4)
   - constants;
   - the Config/Params/Inputs/Reason/Breakdown types;
   - `defaultParams`, `validateParams`;

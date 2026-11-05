@@ -13,7 +13,7 @@ _Last updated: 2026-11-06. Live Arena asset is testnet ETH (perp 4); tx links go
 ```mermaid
 flowchart LR
   subgraph contracts["contracts/ (Solidity, Foundry)"]
-    FV["AvenFairValue (library) 🔜P2"]
+    FV["AvenFairValue (library) ✅"]
     HK["AvenHook 🔜P3"]
     SC["script/*.s.sol 🔜P5"]
     DEP["deployments/998.json 🔜P5"]
@@ -47,7 +47,7 @@ flowchart LR
 
 ---
 
-## 1. A swap through the Aven pool (the product, on-chain) 🔜P2/P3
+## 1. A swap through the Aven pool (the product, on-chain): library ✅, hook 🔜P3
 
 **Entry:** any router calls `PoolManager.unlock()`. In the demo that's v4-core `PoolSwapTest.swap(key, params, testSettings, hookData)`; in production it's the Universal Router. The router's `unlockCallback` then calls `PoolManager.swap(key, SwapParams, hookData)` (`lib/v4-core/src/PoolManager.sol`).
 
@@ -166,11 +166,15 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 | `forge test --match-path "test/recon/*"` (`contracts/`) | `contracts/test/recon/Recon.t.sol` | v4 paths and constants, mock-etch plan, gas-cap containment | ✅ 7 pass, 1 skipped |
 | `FORK_READ=1 forge test --match-test test_forkRead` (`contracts/`) | same | live testnet `perpAssetInfo` / mark / oracle reads | ✅ passes |
 | `FOUNDRY_PROFILE=v4core forge build --sizes lib/v4-core/src/PoolManager.sol` (`contracts/`) | v4-core `PoolManager.sol` | canonical PoolManager, 24,009 B | ✅ |
-| unit, fuzz, integration, invariant, replay | `contracts/test/{unit,integration,invariant,replay}/` | §9 | 🔜 P2, P3, P8, P11 |
+| `forge test --match-path test/unit/AvenFairValue.t.sol` (`contracts/`) | `contracts/test/unit/AvenFairValue.t.sol` | §6.2–§6.4 math, reads, I2 (fuzz, 1,000 runs, fixed seed) | ✅ 34 pass |
+| integration, invariant, replay | `contracts/test/{integration,invariant,replay}/` | §9 | 🔜 P3, P8, P11 |
 | `pnpm test` | `backend/*`, `frontend/` | TS port, bot math, UI | 🔜 P4, P6, P10 |
 
 ## 11. What exists today ✅
 
+- `contracts/src/AvenFairValue.sol`: the product library. `readPrices` makes gas-capped, non-reverting reads of 0x807/0x806 (assembly, 32-byte buffer); `oracleWad`/`poolWad` do the scaling; `compute` runs §6.3 Steps 2–8; `advanceAnchor` is §6.4; `defaultParams`/`validateParams` are §6.2.
+- `contracts/test/mocks/MockHyperCorePx.sol`: etchable precompile mock. Price mode and perpAssetInfo mode; failure modes `setFail`/`setBurn`/`setEmpty`/`setOverflow`.
+- `contracts/test/unit/AvenFairValue.t.sol`: 34 unit + fuzz tests (worked example, direction matrix, top-of-block, clamps, fallbacks, scaling, anchor, validation, read failures).
 - `contracts/src/interfaces/IDynamicFeeHook.sol`: Uniswap's quoting interface (verbatim MIT copy).
 - `contracts/test/recon/Recon.t.sol`: recon checks (above).
 - `contracts/foundry.toml`: `default` profile (our code + tests) and `v4core` profile (deployable PoolManager); RPC aliases `hyperevm_testnet` / `hyperevm_mainnet`.

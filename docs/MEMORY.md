@@ -10,7 +10,8 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P1 recon | ✅ done; gate passed (precompile = info API after scaling) | `2a56c3b`; details in [recon.md](recon.md) |
 | Repo restructure | ✅ done 2026-11-06 | backend/, contracts/, frontend/; AGENTS.md, MEMORY.md, FLOW.md |
 | Backend build loop | ▶ running, see [PLAN.md](PLAN.md) | started 2026-11-06 |
-| **P2 AvenFairValue** | ⏭ next (PLAN 1.1) | — |
+| P2 AvenFairValue | ✅ done 2026-11-06 (PLAN 1.1): 34 unit + fuzz tests (1,000 runs each) | `contracts/src/AvenFairValue.sol` |
+| **P3 mocks + AvenHook** | ⏭ next (PLAN 1.2–1.4) | `MockHyperCorePx` already written in 1.1 |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
@@ -40,6 +41,12 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 1. **Big blocks on testnet: UNVERIFIED** until we send `evmUserModify`. The deployer must be a HyperCore user. The faucet only serves addresses that have deposited on mainnet; otherwise someone must `usdSend` testnet USDC to the deployer.
 2. Repo must be made **public** before submission (Sat Nov 7, 09:00 IST).
+
+## Spec additions (safety, behaviour-identical for valid configs; review welcome)
+
+- `validateParams` also rejects `decimals0` or `decimals1` > 18. Without it, `poolWad` could overflow and revert a swap (I1). §6.2 doesn't list this rule.
+- `readPrices` treats a returned word > `type(uint64).max` as a failed read. §6.3 says "decoded uint64 > 0"; a plain `abi.decode` would revert. It copies at most 32 bytes of return data.
+- `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
 

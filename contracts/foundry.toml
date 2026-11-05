@@ -18,6 +18,10 @@ fs_permissions = [
   { access = "read", path = "./out-v4core" },
 ]
 
+[profile.default.fuzz]
+runs = 1000
+seed = "0x4156454e" # fixed seed: reproducible runs
+
 [rpc_endpoints]
 hyperevm_testnet = "https://rpc.hyperliquid-testnet.xyz/evm"
 hyperevm_mainnet = "https://rpc.hyperliquid.xyz/evm"
