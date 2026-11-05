@@ -1,0 +1,5 @@
+{
+  // contracts/lib/* are Foundry dependency submodules (65 nested repos). Don't list them in Source Control.
+  "git.detectSubmodules": false,
+  "git.repositoryScanMaxDepth": 0
+}
