@@ -1,20 +1,13 @@
-<!-- INTERIM STAND-IN for Appendix B7 -->
-> **Interim stand-in.** Appendix B7 of `docs/planning/aven-claude-code-prompts.md` was not in the repo at bootstrap. The text below is copied verbatim from `docs/planning/perp-aware-pools-handoff.md` (§10 Tech stack). Replace this whole file with Appendix B7 verbatim once the prompts file is added.
+## B7 — Tools
 
-## 10. Tech stack
-
-| Layer | Tool |
+| Area | Tool |
 |---|---|
-| Contracts | Solidity 0.8.26, Foundry (forge, anvil, cast) |
-| Uniswap | v4-core, v4-periphery (`BaseHook`), HookMiner |
-| HyperEVM helpers | `hyper-evm-lib` (MIT) |
-| Network | HyperEVM testnet, chain 998 |
-| Bot + verifier | TypeScript, viem |
-| Frontend | Next.js (App Router), TypeScript, Tailwind |
-| Wallet | wagmi, viem, RainbowKit (custom chain 998) |
-| Charts | TradingView lightweight-charts (Arena), Recharts (Replay) |
-| Data | Hyperliquid info API |
-| Hosting | Vercel |
-| Workflow | GitHub, Claude Code, Uniswap AI skills |
-
-Cut on purpose: indexer, SDK package, factory, Pools/Liquidity/Build pages.
+| Contracts | Solidity 0.8.26, `evm_version` cancun, Foundry (forge, cast, anvil, fmt, snapshot, fuzz, invariant) |
+| Uniswap | `Uniswap/v4-core` (PoolManager, libraries, test routers, Deployers), `Uniswap/v4-periphery` (HookMiner in `test/shared`, LiquidityAmounts), `OpenZeppelin/uniswap-hooks` v1.3.x (BaseHook), local copy of `IDynamicFeeHook` from `Uniswap/v4-hooks-public` |
+| HyperEVM | read precompiles 0x806/0x807/0x80a; testnet RPC; big-block toggle; `hyperliquid-dev/hyper-evm-lib` (tests only, optional fork-read pattern) |
+| TS | Node 20, pnpm workspaces, TypeScript strict, viem, zod, vitest, tsx |
+| Service | Hono, SSE, cloudflared tunnel |
+| Web | Next.js (App Router), Tailwind, wagmi, TanStack Query, lightweight-charts, Recharts, qrcode |
+| Data | Hyperliquid info API (meta, candleSnapshot, fundingHistory, allMids) |
+| Analysis | slither (optional), forge gas report |
+| Hosting | Vercel (web); laptop + cloudflared or a small VM (arena) |

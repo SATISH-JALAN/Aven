@@ -2,62 +2,65 @@
 
 ## Product
 
-Aven is a perp-aware dynamic-fee library and reference hook for Uniswap v4 on HyperEVM. It stops LPs losing value to arbitrageurs (LVR). Before each swap, the hook reads HyperCore's oracle price (precompile `0x…0807`) and perp mark price (`0x…0806`) in the same block. It computes three signals:
+Aven is a Uniswap v4 fee library and hook on HyperEVM that prices every swap from Hyperliquid's in-block perp market, so LPs stop losing money to arbitrageurs (LVR). Before each swap, `AvenHook` reads HyperCore's oracle price (`0x…0807`) and perp mark price (`0x…0806`) in the same block. These reads go through `AvenFairValue`, an internal-function library any v4 hook can import. The hook combines three signals:
 
-- **Fair-value gap**, anchored at the pool price at the top of the block
-- **Perp premium**, mark vs oracle
-- **Mark stress**, against a time-weighted mark anchor
+- a fair-value gap, anchored at the pool price at the top of the block;
+- the perp premium (mark − oracle);
+- mark stress against a time-weighted anchor.
 
-From them it returns a clamped, direction-specific override fee, and the fee goes to LPs. There is no owner, keeper, signer, relayer, model, upgrade path or custody.
+From them it returns a clamped, direction-specific override fee, which goes to LPs. It emits `FeeComputed` with every input, so the fee can be recomputed off-chain. `AvenHook` implements Uniswap's `IDynamicFeeHook`, so anything that quotes Uniswap's dynamic-fee hooks can quote Aven. There is no oracle operator, keeper, model, owner, upgrade path or custody. Proofs: the Arena (a live bot vs a fixed-0.30% control pool on HyperEVM testnet), a Solidity↔TypeScript differential test, a mainnet-data replay (Oct 29 2026 Binance halt), and a verifier.
 
-The product is `AvenFairValue`, an internal-function library any v4 hook can import. Around it we ship:
+**Positioning (§4):** Uniswap's own `VolatilePairHook` learns from the pool's past; Aven reads the market's present.
 
-- `AvenHook`, the reference hook. It implements Uniswap's `IDynamicFeeHook.getFee` plus `previewFee`, and emits `FeeComputed` with every input.
-- The Arena: a live arbitrage bot against an Aven pool and a fixed-0.30% control pool on HyperEVM testnet.
-- A Foundry replay of Oct 29 2026 and other windows on mainnet data.
-- A verifier that recomputes every fee from logged inputs.
+## Sources of truth
 
-Built for ETHGlobal Mumbai 2026, Uniswap track.
+- **`docs/spec/ARCHITECTURE.md` is normative; read the relevant section before every task.** It wins over everything else.
+- `docs/spec/API.md` (B4), `DATA.md` (B5), `FRONTEND.md` (B6), `TOOLS.md` (B7): verbatim from `docs/planning/aven-claude-code-prompts.md` Part B.
+- `docs/recon.md`: facts verified in installed deps and on the live chain, plus decisions.
+- `docs/planning/aven-claude-code-prompts.md`: the build prompts (P0–P13) and their gates.
 
-## Sources of truth (in priority order)
+## Invariants (ARCHITECTURE §6.6, verbatim)
 
-1. `docs/description/AVEN_ARCHITECTURE.md`: **normative**; wins over everything below.
-2. `docs/recon.md`: facts verified on the live chain and from installed deps, plus decisions.
-3. `docs/spec/*.md`: interim stand-ins copied from the pre-kickoff handoff. Appendix B of `docs/planning/aven-claude-code-prompts.md` is **not in the repo yet**. Where the architecture doc says "as in prompts file B1/B4/B5/B6", ask instead of guessing.
+| # | Invariant | Proven by |
+|---|---|---|
+| I1 | A swap never reverts because of a precompile read | unit + invariant (failure injection) |
+| I2 | `fee ∈ [minFee, maxFee]`, or `fee == fallbackFee` with `reason ≠ OK` | fuzz + invariant |
+| I3 | The override flag is set on every `beforeSwap` return | integration (Swap event `fee` ≠ 0) |
+| I4 | The hook never holds tokens and returns `ZERO_DELTA` | invariant (balances 0) |
+| I5 | No state-changing external function except `beforeInitialize` / `beforeSwap` (onlyPoolManager) | code review + slither |
+| I6 | `previewFee(key, d).fee == fee charged` for the same pre-state | integration |
+| I7 | Solidity `compute` == TypeScript `compute` on every vector | differential (10k vectors) |
+| I8 | `FeeComputed` inputs are enough to recompute `fee` exactly | live verifier |
+| I9 | Anchor changes only when both reads succeed; top-of-block changes only on the first swap of a block | unit + invariant |
+| I10 | A pool with other currencies or a static fee can't initialize with the hook | unit |
 
-Names (from the architecture doc): `AvenFairValue`, `AvenHook`, `IAvenHook`, `IDynamicFeeHook` (local MIT copy), `MockHyperCorePx`. There is **no separate FeeQuoter contract**; quoting is `getFee` / `previewFee` on the hook. Older planning names (`HyperFairValue`, `PerpAwareHook`, `FeeQuoter`) are obsolete.
+## Design rules that must never be broken
 
-## Invariants (architecture §6.6)
+- Every `beforeSwap` return sets `OVERRIDE_FEE_FLAG` (`0x400000`), the fallback included. Dynamic pools start at LP fee 0 (§2.3).
+- Hook permissions are `beforeInitialize` + `beforeSwap` only (hook address low 14 bits = `0x2080`).
+- Precompile reads are non-reverting and gas-capped (§3.2). Each call forwards exactly `Params.precompileGas`. Never call hyper-evm-lib's `PrecompileLib` on the swap path; it reverts and forwards all gas.
+- Fee math is integer-only and identical in Solidity and TypeScript (BigInt; no floats in fee math).
+- The hook has no owner, setters, proxy, `receive` or token handling.
 
-1. **Never revert a swap on a bad read.** Reads are non-reverting `staticcall`s. `readOk` requires both calls to succeed, return ≥ 32 bytes, and decode to a value > 0. Otherwise use `fallbackFee` (`reason = READ_FAILED`). If gap > `maxGapBps`, use `fallbackFee` (`reason = GAP_TOO_LARGE`).
-2. **Fee is clamped or exactly fallback.** `fee ∈ [minFee, maxFee]`, or `fee == fallbackFee` with `reason ≠ OK`.
-3. **Always set `OVERRIDE_FEE_FLAG`** on every `beforeSwap` return, the fallback included. A dynamic pool's stored LP fee is 0.
-4. **No owner, no setters, no custody.** Everything is immutable. The hook holds no tokens, returns `ZERO_DELTA`, and has only `beforeInitialize` + `beforeSwap` permissions (address low bits `0x2080`). No `receive`, no proxy.
-5. **Same math in Solidity and TypeScript.** `packages/core/fee.ts` is a line-for-line BigInt port (no floats in fee math). A differential test (10k vectors) must match exactly. `previewFee` must equal what `beforeSwap` charges for the same pre-state.
-6. **Gas-capped precompile calls.** Every precompile call forwards exactly `Params.precompileGas` (default 30,000; constructor requires ≥ 10,000). Invalid input burns all forwarded gas.
-7. **The hook never calls hyper-evm-lib's `PrecompileLib` on the swap path** (it reverts and forwards all gas).
-8. Prices are normalised with `szDecimals` (perp: human = raw / 10^(6 − szDecimals)). An immutable `baseIsToken0` handles token order.
+## Hard scope rules
 
-## Hard rules
-
-- No perp hedging, vaults or perp trading, by the hook or by the bot.
+- No perp hedging; the bot never trades perps.
 - No CoreWriter calls, ever.
-- No custody: no contract holds user funds.
-- No admin keys, owners, pausers or upgradeability.
+- No custody, and no admin keys.
 - No extra sponsor integrations (Uniswap is the only partner track).
 - Never hard-code demo numbers in live views. Every number carries a source label and a "Live testnet" / "Replay" / "Recorded run" badge.
-- Never guess external APIs, addresses, signatures or scaling. Verify them from installed deps, official docs or RPC output, and record the finding with its source in `docs/recon.md`. If you can't verify something, mark it UNVERIFIED and use a fallback.
-- Never commit secrets. `.env*` is ignored; only `.env.example` with placeholders is committed.
+- Never guess external APIs, addresses, signatures or scaling. Verify them from installed deps, official docs or RPC output, and record the finding with its source in `docs/recon.md`. If you can't verify it, mark it UNVERIFIED with a fallback.
+- Never commit secrets: `.env*` is ignored; only `.env.example` (placeholders) is committed.
 - Never copy pre-event code or designs into the repo.
 
 ## Workflow
 
-- Work in small steps. Commit after each passing step.
-- Conventional commit messages (`feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`).
-- Run the relevant tests before committing (`forge test` in `contracts/`, `pnpm test` in TS packages). Don't commit red.
+- Small commits after each passing step, with conventional commit messages (`feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`, `data:`).
+- Run tests before committing (`forge test` in `contracts/`, `pnpm test` in TS packages). Don't commit red.
+- **Never weaken a test to make it pass.** Find the root cause, and don't change the spec without asking.
 - Foundry may not be on PATH on this machine; it lives at `~/.foundry/bin`.
 
 ## AI attribution (required by ETHGlobal)
 
 - Append every user prompt **verbatim** to `docs/ai/PROMPTS.md` as a new numbered entry with a timestamp (ISO 8601, UTC).
-- Keep `docs/ai/ATTRIBUTION.md` up to date: one row per file that AI wrote or helped with (`file | written by | notes`).
+- Keep `docs/ai/ATTRIBUTION.md` up to date: one row per file AI wrote or helped with (`file | written by | notes`).

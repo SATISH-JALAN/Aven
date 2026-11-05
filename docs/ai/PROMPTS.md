@@ -67,3 +67,40 @@ Gate: you can read the HYPE oracle and mark price from the testnet precompile an
 ```text
 i have put product description and technical architecture in docs/description read it properly so know everything about the project
 ```
+
+---
+
+## #3 — 2026-11-05T17:41:12Z — Prompts file added; run P1 (current version)
+
+````text
+i have added the prompt file too 
+analyize it too 
+
+Read CLAUDE.md and docs/spec/ARCHITECTURE.md §2, §3, §11. The architecture already states what upstream code and docs say; your job is to CONFIRM each fact in our installed versions and on the live chain, and record the evidence (file path + line, doc URL, or cast/RPC output) in docs/recon.md. Mark anything unconfirmed as UNVERIFIED with a fallback. Do not guess.
+
+A. Dependencies and toolchain (contracts/):
+   - forge init (no template contracts); install and pin: Uniswap/v4-core (tag v4.0.0 or the latest commit if needed for PoolOperation.sol), Uniswap/v4-periphery, OpenZeppelin/uniswap-hooks (v1.3.x), foundry-rs/forge-std. Optional, tests only: hyperliquid-dev/hyper-evm-lib.
+   - foundry.toml per §11.2: solc 0.8.26, evm_version cancun, our code optimizer_runs 200 / via_ir false; remappings @uniswap/v4-core/, @uniswap/v4-periphery/, @openzeppelin/uniswap-hooks/, forge-std/. rpc_endpoints: hyperevm_testnet, hyperevm_mainnet. fs_permissions for data/ and contracts/deployments/.
+   - Confirm and record: BaseHook path @openzeppelin/uniswap-hooks/src/base/BaseHook.sol and the exact _beforeInitialize/_beforeSwap signatures; SwapParams in v4-core src/types/PoolOperation.sol; LPFeeLibrary DYNAMIC_FEE_FLAG=0x800000, OVERRIDE_FEE_FLAG=0x400000, MAX_LP_FEE=1_000_000; Hooks BEFORE_INITIALIZE_FLAG=1<<13, BEFORE_SWAP_FLAG=1<<7; that Hooks.beforeSwap only reads the fee for dynamic-fee pools and Pool.swap only uses it when the override flag is set; HookMiner location (v4-periphery test/shared/HookMiner.sol; if the remapping is awkward, vendor a copy into contracts/test/utils with its license header); Deployers/PoolSwapTest/PoolModifyLiquidityTest paths.
+   - PoolManager build: can we compile v4-core's PoolManager with v4-core's own profile (via_ir true, optimizer_runs 44444444) alongside our code (additional_compiler_profiles or a separate build)? Record `forge build --sizes` for PoolManager (must be < 24,576 bytes).
+   - Copy Uniswap's IDynamicFeeHook interface (§2.5) into contracts/src/interfaces/IDynamicFeeHook.sol with an MIT header and a source link.
+
+B. HyperEVM testnet (chain 998, https://rpc.hyperliquid-testnet.xyz/evm) using cast:
+   - eth_chainId, latest block, base fee; confirm the RPC has no websocket (we will poll)
+   - eth_getCode of the CREATE2 deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C
+   - is a Uniswap v4 PoolManager deployed on 998? (Uniswap's deployments page lists 999 only: mainnet PoolManager 0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F.) If none on 998, record "deploy our own"
+   - big blocks: exact steps to send {"type":"evmUserModify","usingBigBlocks":true} for our deployer and to switch back; the deployer must first be a HyperCore user (receive USDC on Core)
+   - a testnet block explorer URL that shows HyperEVM txs and logs
+
+C. HyperCore reads:
+   - info API {"type":"meta"} on testnet AND mainnet: HYPE perpIndex (position in universe) and szDecimals
+   - cast call 0x...080a (perpAssetInfo) with abi.encode(uint32 perpIndex) on testnet: decode (string coin, uint32 marginTableId, uint8 szDecimals, uint8 maxLeverage, bool onlyIsolated); confirm coin == "HYPE" and szDecimals matches meta
+   - cast call 0x...0807 (oraclePx) and 0x...0806 (markPx) with abi.encode(uint32 perpIndex); convert raw / 10^(6 - szDecimals); compare with the info API (allMids / metaAndAssetCtxs). Record both values with timestamps.
+   - measure gas of one oraclePx eth_call (estimateGas) to confirm the precompile cost formula 2000 + 65*(in+out)
+
+D. A tiny offline Foundry test (contracts/test/recon/Recon.t.sol) that etches a stub at 0x0806/0x0807 and reads it, proving the mock plan works without a fork. Optionally a fork-read test using vm.rpc("eth_call", ...) against hyperevm_testnet (the hyper-evm-lib RealL1Read pattern, §3.5), skipped unless FORK_READ=1.
+
+Output: docs/recon.md filled in, ending with a "Decisions" section: BaseHook source, PoolManager (deploy own or existing), hook deployer (CREATE2 proxy or our own factory), PoolManager build approach, HYPE perpIndex + szDecimals on testnet and mainnet. Commit: "docs: recon of v4, HyperCore precompiles and HyperEVM testnet".
+
+do this
+````

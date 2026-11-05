@@ -1,17 +1,34 @@
-<!-- INTERIM STAND-IN for Appendix B4 -->
-> **Interim stand-in.** Appendix B4 of `docs/planning/aven-claude-code-prompts.md` was not in the repo at bootstrap. The text below is copied verbatim from `docs/planning/perp-aware-pools-handoff.md` (§8 Off-chain components (Arena bot, Verify script)). Replace this whole file with Appendix B4 verbatim once the prompts file is added.
+## B4 — API (services/arena)
 
-## 8. Off-chain components
+Base URL: `NEXT_PUBLIC_ARENA_API`. JSON. POST routes need header `x-admin-token`.
 
-**Arena bot (the live "wow" moment)**
-- Open-source TypeScript (viem) script in the repo; a demo/benchmark tool, not a product.
-- Trades **only our two spot pools** on HyperEVM testnet. Never trades perps; Hyperliquid is only where it reads fair price.
-- Each block: read oracle via `eth_call` to the precompile → read both pool prices → compute the swap that returns each pool to fair → quote fee (fixed vs `previewFee`) → trade if profit after fee and gas > 0 → log pool, size, fee, bot profit, LP fee income.
-- **Shock script:** one identical large swap in both pools to push them off fair (stands in for a market move). Say on stage: the shock is scripted, the bot is real.
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/health` | `{ok, chainId, block, botEnabled, version}` |
+| GET | `/config` | `{chainId, hook, poolManager, pools:{aven, control}, config, params, explorer}` |
+| GET | `/state` | `{block, ts, oracle:{raw, price}, mark:{raw, price}, pools:{control: PoolState, aven: PoolState}}` |
+| GET | `/stats` | `{since, control: PoolStats, aven: PoolStats, lpKeptMoreUsd, botProfitDiffUsd}` |
+| GET | `/trades?limit=50&pool=aven\|control` | `Trade[]`, newest first |
+| GET | `/bot/status` | `{enabled, lastRunBlock, lastError, balances}` |
+| GET | `/verify/:tx` | `VerifyResult` |
+| GET | `/stream` | SSE events: `state`, `trade`, `shock`, `bot` |
+| POST | `/shock` `{sizeBase?, direction?}` | `Shock` |
+| POST | `/bot/start` · `/bot/stop` | `{enabled}` |
+| POST | `/reset-stats` | `{since}` |
 
-**Verify script**
-- `verify <tx>`: decode `FeeComputed`, recompute with the TS port, print match/mismatch.
-- `verify --all`: every swap in the demo pool.
-- Proves the fee is exactly the formula on logged inputs; input-vs-history is checked approximately against candles.
-
-> The handoff defines no HTTP API for `services/arena` (endpoints, auth via `ARENA_ADMIN_TOKEN`, response shapes). Do not invent one; wait for Appendix B4.
+```ts
+type Reason = "OK" | "READ_FAILED" | "GAP_TOO_LARGE";
+type Breakdown = { fee: number; reason: Reason; gapBps: number; premiumBps: number; moveBps: number;
+  arb: boolean; withPressure: boolean };
+type PoolState = { poolId: string; price: number; gapBps: number; liquidity: string;
+  feePreview: { buyBase: Breakdown; sellBase: Breakdown } | { fixedPips: 3000 };
+  hookState?: { topBlock: number; sqrtPriceTopX96: string; anchorMark: string; anchorTime: number } };
+type PoolStats = { trades: number; botProfitUsd: number; lpFeeIncomeUsd: number; volumeUsd: number };
+type Trade = { id: string; ts: number; block: number; pool: "aven" | "control"; kind: "arb" | "retail";
+  direction: "buyBase" | "sellBase"; amountIn: string; amountOut: string; feePips: number;
+  feeUsd: number; botProfitUsd: number; lpFeeIncomeUsd: number; txHash: string;
+  breakdown?: Breakdown; verify?: { checkA: boolean; checkB: boolean } };
+type Shock = { id: string; ts: number; sizeBase: string; direction: string; txHashes: string[] };
+type VerifyResult = { match: boolean; checkA: boolean; checkB: boolean; onchainFee: number;
+  recomputedFee: number; swapEventFee: number; inputs: Record<string, string>; breakdown: Breakdown };
+```
