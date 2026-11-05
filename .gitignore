@@ -1,0 +1,28 @@
+# deps / builds
+node_modules/
+.pnpm-store/
+dist/
+.next/
+.vercel/
+.turbo/
+*.tsbuildinfo
+
+# foundry
+contracts/out/
+contracts/cache/
+out/
+cache/
+# broadcast logs carry deployer addresses and raw txs; never commit them (record addresses in docs instead)
+broadcast/
+contracts/broadcast/
+
+# secrets
+.env*
+!.env.example
+*.pem
+*.key
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/

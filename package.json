@@ -1,0 +1,6 @@
+{
+  "name": "aven",
+  "private": true,
+  "packageManager": "pnpm@12.9.1",
+  "scripts": {}
+}
