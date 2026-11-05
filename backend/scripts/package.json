@@ -1,0 +1,23 @@
+{
+  "name": "@aven/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Aven backend scripts: local chain, market data, replay export, demo.",
+  "scripts": {
+    "local:up": "tsx local-chain.ts",
+    "local:once": "tsx local-chain.ts --once",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@aven/core": "workspace:*",
+    "viem": "2.57.10"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

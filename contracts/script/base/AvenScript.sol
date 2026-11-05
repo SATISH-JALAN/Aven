@@ -66,6 +66,7 @@ abstract contract AvenScript is Script {
         vm.serializeBytes32(o, "hookSalt", w.hookSalt);
         vm.serializeUint(o, "perpIndex", w.perpIndex);
         string memory j = vm.serializeUint(o, "szDecimals", w.szDecimals);
+        vm.createDir(string.concat(vm.projectRoot(), "/deployments"), true);
         vm.writeJson(j, _wipPath());
     }
 }

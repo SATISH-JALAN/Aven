@@ -15,7 +15,8 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P4a TS port + differential | ✅ done 2026-11-06 (PLAN 2.1–2.3): **10,000/10,000 fee + 2,000/2,000 anchor vectors match exactly**; 2 mutation checks caught | `pnpm prove:diff` (~45 s) |
 | P4b ABIs, precompiles, addresses, verify | ✅ done 2026-11-06 (PLAN 2.4–2.5): 29 core tests; poolId/slot checked against `cast`, perpAssetInfo against real testnet bytes | live check on the local chain in PLAN 3.2 |
 | P5a deploy scripts | ✅ written 2026-11-06 (PLAN 3.1); initial price within 1 bp (fuzz) | end-to-end proof on the local chain in 3.2 |
-| **P5b local chain + runbook** | ⏭ next (PLAN 3.2–3.3) | — |
+| P5b local chain | ✅ done 2026-11-06 (PLAN 3.2): `pnpm local:once` deploys all 5 scripts on anvil with mock precompiles. Smoke swaps verify **MATCH on A and B**; ~2 min | `backend/scripts/src/localChain.ts` |
+| **P5c testnet runbook** | ⏭ next (PLAN 3.3); the actual testnet run is BLOCKED on Sayan | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
@@ -57,6 +58,10 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- On Windows, spawn long-running children (anvil) with `shell: false`. A `cmd.exe` wrapper leaves anvil orphaned when you kill the wrapper's pid, and the parent pipeline hangs.
+- `LiquidityAmounts.getLiquidityForAmounts(…, huge, …)` reverts with SafeCastOverflow: it computes both sides. Size from one side with `getLiquidityForAmount0/1`.
+- `contracts/deployments/` must exist for Foundry `fs_permissions` (it's committed with a README; scripts also `vm.createDir`).
 
 - Foundry `fs_permissions` can't resolve a path that doesn't exist yet: `vm.createDir` under `../backend/data` fails until the folder exists. `prove:diff` creates it first.
 - Building 10k JSON strings in a Foundry test runs out of gas through memory expansion unless you call `vm.pauseGasMetering()`. Also move per-item work into a helper to avoid stack-too-deep.

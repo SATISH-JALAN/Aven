@@ -67,21 +67,18 @@ contract CreatePools is AvenScript {
         controlKey = PoolKey(c0, c1, 3000, TICK_SPACING, IHooks(address(0)));
     }
 
-    /// Range ~-50%/+50% around the price, rounded to the tick spacing (6932 ticks ~ x0.5, 4055 ~ x1.5); the same
-    /// liquidity goes into both pools. Default size: 400 base per pool (deployer minted 1,000 aETH / 5M aUSD).
+    /// Range ~-50%/+50% around the price, rounded to the tick spacing (6932 ticks ~ x0.5, 4055 ~ x1.5). The position is
+    /// sized from the BASE amount only (LIQ_BASE, default 400 base; ~1.43M quote at $2,240), and the same liquidity goes
+    /// into both pools. For base = token0 the base side of an in-range position spans [P, upper]; for base = token1,
+    /// [lower, P].
     function _liquidity(FV.Config memory cfg, uint160 sqrtP) internal view returns (ModifyLiquidityParams memory mlp) {
         int24 tick = TickMath.getTickAtSqrtPrice(sqrtP);
         mlp.tickLower = _floorTick(tick - 6932);
         mlp.tickUpper = _floorTick(tick + 4055) + TICK_SPACING;
-        uint256 amt0 = vm.envOr("LIQ_AMOUNT0", uint256(0));
-        uint256 amt1 = vm.envOr("LIQ_AMOUNT1", uint256(0));
-        if (amt0 == 0 && amt1 == 0) {
-            uint256 big = type(uint128).max;
-            (amt0, amt1) = cfg.baseIsToken0 ? (uint256(400e18), big) : (big, uint256(400e18));
-        }
-        uint128 liq = LiquidityAmounts.getLiquidityForAmounts(
-            sqrtP, TickMath.getSqrtPriceAtTick(mlp.tickLower), TickMath.getSqrtPriceAtTick(mlp.tickUpper), amt0, amt1
-        );
+        uint256 baseAmt = vm.envOr("LIQ_BASE", uint256(400) * 10 ** (cfg.baseIsToken0 ? cfg.decimals0 : cfg.decimals1));
+        uint128 liq = cfg.baseIsToken0
+            ? LiquidityAmounts.getLiquidityForAmount0(sqrtP, TickMath.getSqrtPriceAtTick(mlp.tickUpper), baseAmt)
+            : LiquidityAmounts.getLiquidityForAmount1(TickMath.getSqrtPriceAtTick(mlp.tickLower), sqrtP, baseAmt);
         require(liq > 0, "zero liquidity");
         mlp.liquidityDelta = int256(uint256(liq));
     }

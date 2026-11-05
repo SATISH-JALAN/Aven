@@ -86,7 +86,7 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - writes `contracts/deployments/<chainId>.json` exactly per §8.3.
 
   Plus a unit test: `poolWad(sqrtP)` is within 1 bp of `oracleWad` for both token orders.
-- [ ] **3.2 Local chain:** `backend/scripts/local-chain.ts`.
+- [x] **3.2 Local chain:** `backend/scripts/local-chain.ts`.
   1. Starts anvil (chain 31337).
   2. Deploys the CREATE2 proxy if missing.
   3. Etches mock precompiles (`MockHyperCorePx` runtime) at 0x806/0x807/0x80a with ETH-like prices.
