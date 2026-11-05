@@ -154,6 +154,25 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
 - [ ] **6.3 `docs/SECURITY.md`:** maps each §10 threat to its test or a stated limit. Slither isn't installed; note it.
 - [ ] **6.4 `backend/scripts/demo.ts`:** reset → shock → bot → summary, saved to `frontend/public/arena-fallback.json`.
 
+## Phase 7: Load testing (Sayan, 2026-11-06: "at the end do load testing")
+
+- [ ] **7.1 On-chain load** on the local chain: many swaps per block on the Aven pool (both directions, mixed sizes, many blocks). Plus a burst of reads that fail or burn gas.
+  - Check: 0 reverts caused by reads (I1); every fee within I2; the `beforeSwap` gas distribution (p50/p95/max) stays far under the 3M small-block limit; top-of-block and anchor behave as specified under load.
+- [ ] **7.2 Arena API load** with `autocannon` against the local Arena service while the bot loop runs: `/health`, `/state`, `/stats`, `/trades`, `/config`, many concurrent `/stream` SSE clients, POST rate limits.
+  - Check: p50/p95/p99 latency, error rate 0 for reads, POSTs rejected past the limit, the bot loop never stalls, memory stays flat.
+- [ ] **7.3 Bot under stress:** repeated shocks + RPC failure injection (bad URL / timeouts) on the local chain.
+  - Check: the loop never crashes; nonces stay consistent; retries back off; auto-pause triggers on low balance.
+- [ ] **7.4 Report:** `docs/LOADTEST.md` with the commands, numbers and findings. Fix anything it finds (and add a regression test).
+
+## Testing rule for every step (Sayan, 2026-11-06)
+
+A step is ticked only when:
+- its own tests pass, **and** the whole suite still passes (`forge test` + `pnpm -r test`);
+- edge cases from the spec are covered;
+- no test was weakened.
+
+Record the test counts in the commit message body.
+
 ## Out of scope for this loop
 
 - Frontend pages (teammate, P10).
