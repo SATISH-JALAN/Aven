@@ -14,7 +14,7 @@ _Last updated: 2026-11-06. Live Arena asset is testnet ETH (perp 4); tx links go
 flowchart LR
   subgraph contracts["contracts/ (Solidity, Foundry)"]
     FV["AvenFairValue (library) ✅"]
-    HK["AvenHook 🔜P3"]
+    HK["AvenHook ✅"]
     SC["script/*.s.sol 🔜P5"]
     DEP["deployments/998.json 🔜P5"]
     REP["test/replay/Replay.t.sol 🔜P8"]
@@ -47,7 +47,7 @@ flowchart LR
 
 ---
 
-## 1. A swap through the Aven pool (the product, on-chain): library ✅, hook 🔜P3
+## 1. A swap through the Aven pool (the product, on-chain) ✅
 
 **Entry:** any router calls `PoolManager.unlock()`. In the demo that's v4-core `PoolSwapTest.swap(key, params, testSettings, hookData)`; in production it's the Universal Router. The router's `unlockCallback` then calls `PoolManager.swap(key, SwapParams, hookData)` (`lib/v4-core/src/PoolManager.sol`).
 
@@ -75,13 +75,13 @@ flowchart LR
 
 The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 
-## 2. Pool creation 🔜P3/P5
+## 2. Pool creation ✅ (hook checks; the testnet pool comes in P5)
 
 - **Entry:** `PoolManager.initialize(key, sqrtPriceX96)`.
 - **Path:** `Hooks.beforeInitialize` → `AvenHook._beforeInitialize`. It requires `key.fee == DYNAMIC_FEE_FLAG` (else `MustUseDynamicFee`) and `{currency0, currency1} == sorted(base, quote)` (else `WrongCurrencies`), then marks the pool initialized.
 - **Exit:** the pool exists, with LP fee 0 (§2.3), or the call reverts (I10).
 
-## 3. Quoting (read-only) 🔜P3
+## 3. Quoting (read-only) ✅
 
 - **Entry:** `AvenHook.getFee(key)` (`IDynamicFeeHook`) or `AvenHook.previewFee(key, zeroForOne)`. Called by routers, the Arena bot (`eth_call`) and the frontend.
 - **Path:** `_load(poolId)` only; no storage writes. Unknown pool → `PoolNotInitialized`.
@@ -167,7 +167,8 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 | `FORK_READ=1 forge test --match-test test_forkRead` (`contracts/`) | same | live testnet `perpAssetInfo` / mark / oracle reads | ✅ passes |
 | `FOUNDRY_PROFILE=v4core forge build --sizes lib/v4-core/src/PoolManager.sol` (`contracts/`) | v4-core `PoolManager.sol` | canonical PoolManager, 24,009 B | ✅ |
 | `forge test --match-path test/unit/AvenFairValue.t.sol` (`contracts/`) | `contracts/test/unit/AvenFairValue.t.sol` | §6.2–§6.4 math, reads, I2 (fuzz, 1,000 runs, fixed seed) | ✅ 34 pass |
-| integration, invariant, replay | `contracts/test/{integration,invariant,replay}/` | §9 | 🔜 P3, P8, P11 |
+| `forge test --match-path test/integration/AvenHook.t.sol` (`contracts/`) | `contracts/test/integration/AvenHook.t.sol` (`AvenHookTest` base = token0, `AvenHookBaseToken1Test` base = token1) | all nine §9 named tests, I1/I3/I4/I6/I8/I9/I10, constructor validation via mined CREATE2, gas overhead | ✅ 20 + 20 pass |
+| invariant, replay | `contracts/test/{invariant,replay}/` | §9 | 🔜 P8, P11 |
 | `pnpm test` | `backend/*`, `frontend/` | TS port, bot math, UI | 🔜 P4, P6, P10 |
 
 ## 11. What exists today ✅
@@ -175,6 +176,10 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 - `contracts/src/AvenFairValue.sol`: the product library. `readPrices` makes gas-capped, non-reverting reads of 0x807/0x806 (assembly, 32-byte buffer); `oracleWad`/`poolWad` do the scaling; `compute` runs §6.3 Steps 2–8; `advanceAnchor` is §6.4; `defaultParams`/`validateParams` are §6.2.
 - `contracts/test/mocks/MockHyperCorePx.sol`: etchable precompile mock. Price mode and perpAssetInfo mode; failure modes `setFail`/`setBurn`/`setEmpty`/`setOverflow`.
 - `contracts/test/unit/AvenFairValue.t.sol`: 34 unit + fuzz tests (worked example, direction matrix, top-of-block, clamps, fallbacks, scaling, anchor, validation, read failures).
+- `contracts/src/AvenHook.sol`: the reference hook (OZ BaseHook). Entry points: `beforeInitialize`/`beforeSwap` (PoolManager only), and the views `getFee`/`previewFee`/`poolState`/`config`/`params`. Internals: `_load` (top-of-block → reads → anchor), `_requireInitialized`, `_config`/`_params` (immutables → structs).
+- `contracts/src/interfaces/IAvenHook.sol`: `PoolState`, the `FeeComputed` event, errors, views; it extends `IDynamicFeeHook`.
+- `contracts/test/utils/AvenTestBase.sol`: v4 Deployers + mocks at 0x806/0x807 + a hook at a 0x2080 address + Aven/control pools; helpers `swapLogged`, `nextBlock`, `inputsOf`.
+- `contracts/test/utils/PriceMath.sol`: `sqrtPriceFromWad` (inverse of `poolWad`; reused by CreatePools in P5).
 - `contracts/src/interfaces/IDynamicFeeHook.sol`: Uniswap's quoting interface (verbatim MIT copy).
 - `contracts/test/recon/Recon.t.sol`: recon checks (above).
 - `contracts/foundry.toml`: `default` profile (our code + tests) and `v4core` profile (deployable PoolManager); RPC aliases `hyperevm_testnet` / `hyperevm_mainnet`.

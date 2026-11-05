@@ -222,6 +222,8 @@ library AvenFairValue {
         if (b.moveBps > p.stressThresholdBps) raw += (b.moveBps - p.stressThresholdBps) * p.stressWeight;
         if (raw < p.minFee) raw = p.minFee;
         if (raw > p.maxFee) raw = p.maxFee;
+        // casting to 'uint24' is safe because raw was just clamped to maxFee <= 100_000 (validateParams)
+        // forge-lint: disable-next-line(unsafe-typecast)
         b.fee = uint24(raw);
         b.reason = Reason.OK;
     }
@@ -241,6 +243,8 @@ library AvenFairValue {
             newMark = markRaw;
         } else {
             int256 a = int256(uint256(anchorMark));
+            // casting to 'uint64' is safe because the result lies between anchorMark and markRaw, both uint64 (fuzzed)
+            // forge-lint: disable-next-line(unsafe-typecast)
             newMark = uint64(uint256(a + (int256(uint256(markRaw)) - a) * int256(dt) / int256(uint256(tau))));
         }
         newTime = nowTs;
@@ -253,6 +257,8 @@ library AvenFairValue {
     }
 
     function _abs(int256 x) private pure returns (uint256) {
+        // casting to 'uint256' is safe because x >= 0 or -x > 0; |premiumBps| < 2^64 * 1e4, so -x never overflows
+        // forge-lint: disable-next-line(unsafe-typecast)
         return x >= 0 ? uint256(x) : uint256(-x);
     }
 }

@@ -41,17 +41,17 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - anchor math;
   - every validateParams rule;
   - fuzz: never reverts, I2 holds.
-- [ ] **1.2 Mocks + test base**:
+- [x] **1.2 Mocks + test base**:
   - `contracts/test/mocks/MockHyperCorePx.sol` (`set`, `setFail`, `setBurn`, `setEmpty`, and a perpAssetInfo mode for 0x80a);
   - `contracts/test/utils/AvenTestBase.sol` (etches 0x806/0x807, `setOracle`/`setMark`).
-- [ ] **1.3 `IAvenHook` + `AvenHook`** (§6.4–§6.5, §8.1):
+- [x] **1.3 `IAvenHook` + `AvenHook`** (§6.4–§6.5, §8.1):
   - permissions 0x2080;
   - immutables;
   - `_beforeInitialize` checks;
   - `_load` / `_beforeSwap` with the override flag always set;
   - `getFee` / `previewFee` (`onlyValidPools` + `PoolNotInitialized`);
   - `poolState`, `config`, `params`.
-- [ ] **1.4 Integration tests** (`contracts/test/integration/AvenHook.t.sol`): an Aven pool and a control pool with identical liquidity.
+- [x] **1.4 Integration tests** (`contracts/test/integration/AvenHook.t.sol`): an Aven pool and a control pool with identical liquidity.
   - Check: **all nine §9 named tests**;
   - arb pays more than the reverse;
   - Swap.fee == FeeComputed.fee;

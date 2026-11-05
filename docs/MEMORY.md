@@ -11,7 +11,8 @@ The running record of status, decisions and open items. It saves you from re-rea
 | Repo restructure | ✅ done 2026-11-06 | backend/, contracts/, frontend/; AGENTS.md, MEMORY.md, FLOW.md |
 | Backend build loop | ▶ running, see [PLAN.md](PLAN.md) | started 2026-11-06 |
 | P2 AvenFairValue | ✅ done 2026-11-06 (PLAN 1.1): 34 unit + fuzz tests (1,000 runs each) | `contracts/src/AvenFairValue.sol` |
-| **P3 mocks + AvenHook** | ⏭ next (PLAN 1.2–1.4) | `MockHyperCorePx` already written in 1.1 |
+| P3 mocks + AvenHook | ✅ done 2026-11-06 (PLAN 1.2–1.4): 20 integration tests × 2 token orders, incl. all nine §9 named tests; 3 mutation checks caught | `contracts/src/AvenHook.sol` (9,337 B runtime) |
+| **P4 TS core + differential** | ⏭ next (PLAN 2.1–2.5) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
@@ -49,6 +50,10 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- `vm.expectRevert` does **not** enforce against an inline-assembly `CREATE2` in the test's own frame; the test passed with valid args too. Do the CREATE2 in an external self-call (`this.deployRaw`). Found by a mutation check, 2026-11-06.
+- Measured hook overhead in tests: ~46.9k gas per swap (Aven swap minus identical control swap), with the mock precompile, which costs more than the real one (≤ 3.1k/read). §6.7 estimated 35–45k; re-measure in PLAN 7.1.
+- Mutation checks run on the hook (2026-11-06): no override flag → 5 tests fail; top-of-block reset every swap → 2 fail; anchor advancing on a failed read → 1 fails.
 
 - `perpAssetInfo` (0x80a) returns **one struct** (`abi.encode(PerpAssetInfo)`), not five flat values.
 - Offline, precompile addresses have no code: `staticcall` succeeds with **0 bytes**. Always check the return length.

@@ -13,6 +13,8 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `contracts/foundry.toml`, `contracts/remappings.txt`, `contracts/foundry.lock`, `.gitmodules` | AI | Toolchain config and dependency pins (P1) |
 | `contracts/src/AvenFairValue.sol` | AI | P2 library per ARCHITECTURE §6.2–§6.4 |
 | `contracts/test/unit/AvenFairValue.t.sol` | AI | P2 unit + fuzz tests |
+| `contracts/src/AvenHook.sol`, `contracts/src/interfaces/IAvenHook.sol` | AI | P3 hook per ARCHITECTURE §6.4–§6.5, §8.1 |
+| `contracts/test/integration/AvenHook.t.sol`, `contracts/test/utils/AvenTestBase.sol`, `contracts/test/utils/PriceMath.sol` | AI | P3 integration tests (both token orders) and helpers |
 | `contracts/test/mocks/MockHyperCorePx.sol` | AI | Etchable precompile mock with failure injection |
 | `contracts/test/recon/Recon.t.sol` | AI | P1 recon checks; optional FORK_READ live read |
 | `contracts/src/interfaces/IDynamicFeeHook.sol` | Uniswap (MIT), copied by AI | Verbatim from Uniswap/v4-hooks-public@c45509f; AI added only the source/licence header |
