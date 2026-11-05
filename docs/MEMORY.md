@@ -12,13 +12,16 @@ The running record of status, decisions and open items. It saves you from re-rea
 | Backend build loop | ▶ running, see [PLAN.md](PLAN.md) | started 2026-11-06 |
 | P2 AvenFairValue | ✅ done 2026-11-06 (PLAN 1.1): 34 unit + fuzz tests (1,000 runs each) | `contracts/src/AvenFairValue.sol` |
 | P3 mocks + AvenHook | ✅ done 2026-11-06 (PLAN 1.2–1.4): 20 integration tests × 2 token orders, incl. all nine §9 named tests; 3 mutation checks caught | `contracts/src/AvenHook.sol` (9,337 B runtime) |
-| **P4 TS core + differential** | ⏭ next (PLAN 2.1–2.5) | — |
+| P4a TS port + differential | ✅ done 2026-11-06 (PLAN 2.1–2.3): **10,000/10,000 fee + 2,000/2,000 anchor vectors match exactly**; 2 mutation checks caught | `pnpm prove:diff` (~45 s) |
+| **P4b ABIs, precompiles, addresses, verify** | ⏭ next (PLAN 2.4–2.5) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
 
+- **2026-11-06: Node deps** are pinned to exact versions at least two weeks old: viem 2.57.10, zod 4.6.7, vitest 5.0.5, tsx 4.23.15, typescript 5.9.3, @types/node 22.20.5 (hono 4.13.13 and @hono/node-server 2.1.5 for the Arena). pnpm 12 needs `allowBuilds: {esbuild: true}` in `pnpm-workspace.yaml`.
+- **2026-11-06: Generated vectors** (`backend/data/vectors/*.json`, ~6.7 MB) are gitignored. Regenerate them with `pnpm prove:diff`. The TS differential suite skips when they're absent, unless `PROVE_DIFF=1`.
 - **2026-11-06: Replay data interval.** HYPE 1m candles for Oct 29 are no longer served (`candleSnapshot` 1m → 0 candles). 5m is available (73 candles for 18:00–24:00 UTC), as is hourly funding. Scenario A uses 5m, as the spec fallback allows.
 - **2026-11-06: Backend first.** Sayan builds the backend (contracts + backend/) via a loop driven by docs/PLAN.md; the teammate does the frontend. Everything is proven on a local anvil chain with mock precompiles before Sayan runs the testnet deploy.
 - **2026-11-06: Live Arena asset = testnet ETH** (perp **index 4**, `szDecimals` **4**; `perpAssetInfo` coin `"ETH"`). Decided by Sayan, because testnet HYPE's oracle is ~91× its mark. Mock tokens are `aETH` (18 dec) / `aUSD` (6 dec); the deploy check is `coin == "ETH"`. The **replay stays HYPE on mainnet** (index 159). Testnet ETH premium is currently +37–39 bp, so base-buying swaps on the Aven pool pay ~+1,850 pips. For the clearest demo, shock by **buying** aETH, so the bot's arb is a **sell**, which shows the pure gap fee (recon C.6).
@@ -50,6 +53,9 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- Foundry `fs_permissions` can't resolve a path that doesn't exist yet: `vm.createDir` under `../backend/data` fails until the folder exists. `prove:diff` creates it first.
+- Building 10k JSON strings in a Foundry test runs out of gas through memory expansion unless you call `vm.pauseGasMetering()`. Also move per-item work into a helper to avoid stack-too-deep.
 
 - `vm.expectRevert` does **not** enforce against an inline-assembly `CREATE2` in the test's own frame; the test passed with valid args too. Do the CREATE2 in an external self-call (`this.deployRaw`). Found by a mutation check, 2026-11-06.
 - Measured hook overhead in tests: ~46.9k gas per swap (Aven swap minus identical control swap), with the mock precompile, which costs more than the real one (≤ 3.1k/read). §6.7 estimated 35–45k; re-measure in PLAN 7.1.

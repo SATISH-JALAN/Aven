@@ -60,13 +60,13 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
 
 ## Phase 2: TypeScript core (P4)
 
-- [ ] **2.1 Workspace:**
+- [x] **2.1 Workspace:**
   - root `package.json` scripts;
   - `tsconfig.base.json`;
   - `backend/core` package `@aven/core` (TS strict, ESM, viem, zod, vitest).
-- [ ] **2.2 `fee.ts` + `state.ts`:** a line-for-line BigInt port of §6.3/§6.4 (no floats).
+- [x] **2.2 `fee.ts` + `state.ts`:** a line-for-line BigInt port of §6.3/§6.4 (no floats).
   - Check: unit tests mirroring 1.1 (worked example etc.).
-- [ ] **2.3 Differential proof:**
+- [x] **2.3 Differential proof:**
   - `contracts/test/vectors/GenVectors.t.sol` writes `backend/data/vectors/{fee,anchor}-vectors.json` (10,000 + 2,000, fixed seed, covering the edge classes);
   - `backend/core/test/differential.test.ts`;
   - `pnpm prove:diff`.

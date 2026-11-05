@@ -18,14 +18,14 @@ flowchart LR
     SC["script/*.s.sol 🔜P5"]
     DEP["deployments/998.json 🔜P5"]
     REP["test/replay/Replay.t.sol 🔜P8"]
-    VEC["test/vectors/GenVectors.t.sol 🔜P4"]
+    VEC["test/vectors/GenVectors.t.sol ✅"]
   end
   subgraph chain["HyperEVM (chain 998)"]
     PM["Uniswap v4 PoolManager (ours, canonical build)"]
     PC["HyperCore precompiles 0x806 mark / 0x807 oracle"]
   end
   subgraph backend["backend/ (TypeScript)"]
-    CORE["core: fee.ts, verify.ts, abi.ts 🔜P4"]
+    CORE["core: fee.ts ✅, state.ts ✅, price.ts ✅, verify.ts/abi.ts 🔜P4b"]
     ARENA["arena: poller, bot, shock, API+SSE 🔜P6"]
     SCR["scripts: fetch-market-data, replay-to-web 🔜P7/P8"]
     DATA["data/: raw, replay, vectors, arena"]
@@ -132,10 +132,10 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
   `--all` scans logs in ≤ 50-block chunks (recon B.3).
 - **Exit:** MATCH or MISMATCH plus every intermediate value. The CLI prints them; the API returns them as JSON.
 
-## 7. Differential proof (Solidity ≡ TypeScript) 🔜P4
+## 7. Differential proof (Solidity ≡ TypeScript) ✅
 
-- **Entry:** `pnpm prove:diff`.
-- **Path:** `contracts/test/vectors/GenVectors.t.sol` (`vm.writeJson`, fixed seed) → `backend/data/vectors/fee-vectors.json` + `anchor-vectors.json` → `backend/core/test/differential.test.ts` (vitest) recomputes each vector in TS.
+- **Entry:** `pnpm prove:diff` → `backend/core/scripts/prove-diff.ts`.
+- **Path:** `contracts/test/vectors/GenVectors.t.sol` (`GEN_VECTORS=1`, fixed seed, 9 coverage classes, written line by line with `vm.writeLine`) → `backend/data/vectors/fee-vectors.json` + `anchor-vectors.json` → `backend/core/test/differential.test.ts` (vitest) recomputes each vector in TS.
 - **Exit:** 10,000/10,000 fee vectors and 2,000/2,000 anchor vectors match, or the test fails (I7).
 
 ## 8. Replay (mainnet history, offline) 🔜P7/P8
@@ -169,7 +169,9 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 | `forge test --match-path test/unit/AvenFairValue.t.sol` (`contracts/`) | `contracts/test/unit/AvenFairValue.t.sol` | §6.2–§6.4 math, reads, I2 (fuzz, 1,000 runs, fixed seed) | ✅ 34 pass |
 | `forge test --match-path test/integration/AvenHook.t.sol` (`contracts/`) | `contracts/test/integration/AvenHook.t.sol` (`AvenHookTest` base = token0, `AvenHookBaseToken1Test` base = token1) | all nine §9 named tests, I1/I3/I4/I6/I8/I9/I10, constructor validation via mined CREATE2, gas overhead | ✅ 20 + 20 pass |
 | invariant, replay | `contracts/test/{invariant,replay}/` | §9 | 🔜 P8, P11 |
-| `pnpm test` | `backend/*`, `frontend/` | TS port, bot math, UI | 🔜 P4, P6, P10 |
+| `pnpm test` (root) | `backend/core/test/fee.test.ts`, `differential.test.ts` | TS port mirrors the Solidity unit tests; vectors (skipped if absent) | ✅ 18 pass |
+| `pnpm prove:diff` (root) | `backend/core/scripts/prove-diff.ts` | I7: 10,000 fee + 2,000 anchor vectors, exact | ✅ |
+| `pnpm test` (arena, frontend) | `backend/arena`, `frontend/` | bot math, UI | 🔜 P6, P10 |
 
 ## 11. What exists today ✅
 
@@ -184,4 +186,10 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 - `contracts/test/recon/Recon.t.sol`: recon checks (above).
 - `contracts/foundry.toml`: `default` profile (our code + tests) and `v4core` profile (deployable PoolManager); RPC aliases `hyperevm_testnet` / `hyperevm_mainnet`.
 - `contracts/lib/*`: pinned dependencies (recon A.1).
-- `backend/`, `frontend/`: README + `.env.example` only.
+- `backend/core` (`@aven/core`):
+  - `src/fee.ts`: exact BigInt port of AvenFairValue, plus `calculateSwapFee`;
+  - `src/state.ts`: top-of-block and anchor rules, `load()` = `AvenHook._load`;
+  - `src/price.ts`: `sqrtPriceFromWad`, `sqrtBig`, display helpers;
+  - `scripts/prove-diff.ts`, `scripts/run.ts`: forge runner that adds `~/.foundry/bin` to PATH.
+- `contracts/test/vectors/GenVectors.t.sol`: the vector generator (runs only with `GEN_VECTORS=1`).
+- `frontend/`: README + `.env.example` only.

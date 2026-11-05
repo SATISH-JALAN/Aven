@@ -1,3 +1,6 @@
 packages:
   - "backend/*"
   - "frontend"
+# esbuild (used by tsx and vitest) runs an install script that checks its platform binary.
+allowBuilds:
+  esbuild: true
