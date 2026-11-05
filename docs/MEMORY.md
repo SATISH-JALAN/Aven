@@ -16,6 +16,8 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 ## Decisions (with date and reason)
 
+- **2026-11-06: Live Arena asset = testnet ETH** (perp **index 4**, `szDecimals` **4**; `perpAssetInfo` coin `"ETH"`). Decided by Sayan, because testnet HYPE's oracle is ~91× its mark. Mock tokens are `aETH` (18 dec) / `aUSD` (6 dec); the deploy check is `coin == "ETH"`. The **replay stays HYPE on mainnet** (index 159). Testnet ETH premium is currently +37–39 bp, so base-buying swaps on the Aven pool pay ~+1,850 pips. For the clearest demo, shock by **buying** aETH, so the bot's arb is a **sell**, which shows the pure gap fee (recon C.6).
+- **2026-11-06: No testnet explorer.** Sayan confirmed purrsec is down, and nothing else covers chain 998. Tx links use our frontend route `/tx/<hash>` (receipt + decoded events via RPC) and `pnpm verify <tx>`.
 - **2026-11-06: Layout.** Code lives in `backend/` (core, arena, scripts, data), `contracts/` and `frontend/`, so teammates can work in parallel without confusion. Spec paths map via the table in AGENTS.md §2. Each tool has its own `.env.example`. `docs/spec/TOOLS.md` was removed (duplicate of prompts B7).
 - **2026-11-06: Git.** Commits are authored by `Sayan Roy <169074736+mesayanroy@users.noreply.github.com>` (repo-local config). There are no AI co-author tags; history was rewritten once, before the first push. Only `main`. Never push without Sayan's explicit go-ahead.
 - **2026-11-06: VS Code.** `.vscode/settings.json` hides the 65 dependency submodule repos from Source Control (`git.detectSubmodules: false`).
@@ -33,13 +35,8 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 ## Open questions (need a decision)
 
-1. **Arena asset on testnet (decide before P5).** Testnet HYPE's oracle (~7,164) is ~91× its mark (~78.9). Every base-selling Aven swap would pay the 1.00% cap. Options:
-   - (a) keep HYPE and explain it;
-   - (b) use testnet ETH (idx 4, szDec 4) or BTC (idx 3, szDec 5). Recommended; only the deploy config changes;
-   - (c) add a premium sanity bound, which is a spec change.
-2. **Big blocks on testnet: UNVERIFIED** until we send `evmUserModify`. The deployer must be a HyperCore user. The faucet only serves addresses that have deposited on mainnet; otherwise someone must `usdSend` testnet USDC to the deployer.
-3. **Testnet explorer: none found** that shows HyperEVM txs/logs. Ask Sayan to try `testnet.purrsec.com` in a browser. Fallback: our own `/tx/<hash>` route + the verify CLI.
-4. Repo must be made **public** before submission (Sat Nov 7, 09:00 IST).
+1. **Big blocks on testnet: UNVERIFIED** until we send `evmUserModify`. The deployer must be a HyperCore user. The faucet only serves addresses that have deposited on mainnet; otherwise someone must `usdSend` testnet USDC to the deployer.
+2. Repo must be made **public** before submission (Sat Nov 7, 09:00 IST).
 
 ## Gotchas learned
 

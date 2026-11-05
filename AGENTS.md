@@ -41,6 +41,8 @@ The spec and the build prompts still use the original paths. **Translate them wi
 | root `.env.example` | `contracts/.env.example`, `backend/.env.example`, `frontend/.env.example` (each tool reads its own folder) |
 | `docs/spec/TOOLS.md` (B7) | removed; it's in the prompts file, Part B7 |
 | `contracts/…` | unchanged |
+| Live Arena asset: HYPE, `aHYPE`, `coin == "HYPE"` (P5, §8.3, §11.3) | **testnet ETH: perp index 4, szDecimals 4, `aETH`, `coin == "ETH"`**. The replay still uses HYPE mainnet (index 159). |
+| Explorer links (`explorer` in §8.3, B4 `/config`, B6 tx links) | our frontend route `/tx/<hash>`; no HyperEVM testnet explorer exists |
 
 **Ownership for parallel work:** contracts → `contracts/`, backend → `backend/`, frontend → `frontend/`. These cross-team contracts are frozen, and changes to them need both sides to agree:
 - `contracts/deployments/<chainId>.json` (ARCHITECTURE §8.3);

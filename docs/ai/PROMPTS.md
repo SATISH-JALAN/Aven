@@ -128,3 +128,11 @@ there are too many branches created ig check that i dont think so so many branch
 ```text
 clean the docs folder onnly keep the necessary files and rest remove it dont add unnecessary folders and also make a memory.md file agents.md file to mention some rules like dont push the code until i say and dont add the claude tag in it and also create a flow.md file in which add how the code in flowing like what is the entry point what is the exit point and much moe also update them with changes u make and also i make a decision that put the backend code in backend folder put frontend in folder and contracts in contract only keep the necessary folders in root directory like gitignore frontend backend contracts and needed parts so that the root directory is clean and my team mates and work on the project simultaneously so he also dont get confused and i too
 ```
+
+---
+
+## #7 — 2026-11-05T21:38:54Z — Arena asset and explorer decisions
+
+```text
+UCAN USE TESTNET ETH AND ALSO THE SITE IS NOT WORKING
+```

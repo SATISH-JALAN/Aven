@@ -4,7 +4,7 @@ How every part runs: where it **starts** (entry point), what it calls, and where
 
 **Status:** ✅ exists in the repo · 🔜 planned (the build prompt that creates it). Section numbers (§) refer to [spec/ARCHITECTURE.md](spec/ARCHITECTURE.md).
 
-_Last updated: 2026-11-06. Restructured into `backend/ contracts/ frontend/`; only recon code exists so far._
+_Last updated: 2026-11-06. Live Arena asset is testnet ETH (perp 4); tx links go to our own `/tx/<hash>` page (no testnet explorer). Only recon code exists so far._
 
 ---
 
@@ -95,8 +95,8 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
   2. the deployer is made a HyperCore user and switched to big blocks (recon B.6);
   3. `DeployCore.s.sol`: PoolManager from `out-v4core`, plus PoolSwapTest and PoolModifyLiquidityTest;
   4. switch big blocks off;
-  5. `DeployTokens.s.sol`: aHYPE / aUSD, minted to the deployer, bot and shock addresses;
-  6. `DeployAven.s.sol`: checks `perpAssetInfo` (`coin`, `szDecimals`), mines a salt with HookMiner (flags `0x2080`), deploys through CREATE2 proxy `0x4e59…956C`;
+  5. `DeployTokens.s.sol`: **aETH** (18 dec) / aUSD (6 dec), minted to the deployer, bot and shock addresses;
+  6. `DeployAven.s.sol`: checks `perpAssetInfo(4)` (`coin == "ETH"`, `szDecimals == 4`), mines a salt with HookMiner (flags `0x2080`), deploys through CREATE2 proxy `0x4e59…956C`;
   7. `CreatePools.s.sol`: initial price from `oraclePx`, Aven pool + control pool, identical liquidity;
   8. `Smoke.s.sol`: one swap each direction on both pools.
 - **Exit:** **`contracts/deployments/998.json`** (§8.3). It's the single source of addresses for `backend/` and `frontend/`; tx links go into the docs.
@@ -150,7 +150,7 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 
 ## 9. Frontend 🔜P10
 
-- **Entry:** a browser opens the Vercel URL. Next.js App Router pages: `/` (Home), `/arena`, `/replay`.
+- **Entry:** a browser opens the Vercel URL. Next.js App Router pages: `/` (Home), `/arena`, `/replay`, and `/tx/[hash]`. That last one is our explorer stand-in: it shows the receipt and decoded `FeeComputed`/`Swap` from `NEXT_PUBLIC_RPC`, plus the verify result.
 - **Path:**
   - Arena reads `NEXT_PUBLIC_ARENA_API` (`/config`, `/state`, `/stats`, `/trades`, `/stream` SSE, `/verify/:tx`);
   - direct chain reads go through `NEXT_PUBLIC_RPC` (wagmi/viem, chain 998);

@@ -180,6 +180,24 @@ The cross-check runs in Foundry too: `FORK_READ=1 forge test --match-test test_f
 - The demo story (the arb pays the gap; the shock pays near base) would be distorted for sells.
 - Same check for other testnet perps, earlier the same day: SOL (idx 0) +45 bp, BTC (idx 3) +28 bp, ETH (idx 4) +74 bp. All are sane and have books.
 
+### C.6 Testnet ETH (chosen Arena asset)
+
+`POST /info {"type":"meta"}` at 2026-11-05T21:37:13Z → ETH at **index 4**, `szDecimals` **4**, maxLeverage 25, marginTableId 53. `perpAssetInfo(4)` (0x80a) → `{coin "ETH", marginTableId 53, szDecimals 4, maxLeverage 25, onlyIsolated false}`, which matches meta.
+
+Scaling is raw / 10^(6−4) = raw / 100, so the price resolution is $0.01 ≈ 0.04 bp at ~$2,240.
+
+| Time (UTC) | markPx raw → px | API mark | oraclePx raw → px | API oracle | API midPx | premium |
+|---|---|---|---|---|---|---|
+| 21:37:16 | 224,839 → 2248.39 | 2248.39 | 224,002 → 2240.02 | 2240.02 | 2249.05 | +37 bp |
+| 21:37:24 | 224,828 → 2248.28 | 2248.28 | 223,990 → 2239.90 | 2239.9 | 2249.05 | +37 bp |
+| 21:37:33 | 224,650 → 2246.50 | 2246.95 | 223,803 → 2238.03 | 2238.56 | 2249.05 | +37 bp |
+| 21:37:52 | 224,690 → 2246.90 | 2246.9 | 223,802 → 2238.02 | 2238.02 | 2247.45 | +39 bp |
+| 21:38:00 | 224,620 → 2246.20 | 2246.53 | 223,730 → 2237.30 | 2237.97 | 2246.85 | +39 bp |
+
+Precompile = API exactly when the two reads land in the same oracle update. The 21:37:33 and 21:38:00 gaps (≤ 3 bp) are reads straddling an update.
+
+The market is sane and has a live book. **Note for the demo:** the testnet premium (+37–39 bp) is larger than mainnet's (single digits). Under §6.3, swaps that **buy** base pay an extra ≈ 37 × 50 = 1,850 pips (with pressure); swaps that sell base don't.
+
 ### C.5 Precompile gas
 
 | Measurement (testnet, `oraclePx(135)`) | Value |
@@ -222,10 +240,5 @@ The cross-check runs in Foundry too: `FORK_READ=1 forge test --match-test test_f
 5. **HYPE perpIndex + szDecimals:** testnet **135 / 2**; mainnet **159 / 2** (C.1, confirmed on-chain by `perpAssetInfo` in C.2). The replay uses mainnet data.
 6. **Gas cap:** keep `Params.precompileGas = 30,000` (§6.2); measured charge ≤ 3,112 (C.5).
 7. **Polling:** no websockets (B.2). Block poller via `eth_blockNumber`; `eth_getLogs` in ≤ 50-block chunks (B.3).
-8. **⚠️ Open, needs the team's call before P5: the live Arena asset (C.4).** Testnet HYPE's oracle is ~91× its mark, so every base-selling swap on the Aven pool would pay the 1.00% cap. Options:
-   - (a) keep HYPE as specified and say so on stage;
-   - (b) run the live Arena on testnet **ETH (idx 4, szDecimals 4)** or BTC (idx 3, szDecimals 5). Only the deploy config changes, since `perpIndex` / `szDecimals` are constructor inputs; §11.3 step G's `coin == "HYPE"` check would become `coin == <chosen>`;
-   - (c) add a premium sanity bound (FEE_SPEC change).
-
-   The replay is unaffected (mainnet data).
-9. **Explorer:** none confirmed for 998 (B.7). Use our own `/tx/<hash>` route and the verify CLI until a working one is found.
+8. **Live Arena asset: testnet ETH (perp index 4, szDecimals 4). Decided by Sayan, 2026-11-06.** This replaces testnet HYPE, whose oracle is ~91× its mark (C.4). Evidence is in C.6. Mock tokens become `aETH` (18 dec) / `aUSD` (6 dec), and the §11.3 step G check becomes `coin == "ETH"`. The replay keeps HYPE on mainnet data (index 159), as §7.4/§7.5 specify.
+9. **Explorer: none. Decided 2026-11-06.** Sayan confirmed `testnet.purrsec.com` doesn't work in a browser either, and B.7 found no other testnet explorer. Tx and log links point to our own frontend route `/tx/<hash>` (receipt + decoded `FeeComputed`/`Swap` from the RPC), plus `pnpm verify <tx>`. `deployments/998.json` `explorer` is set to that route's base URL when the frontend is deployed.
