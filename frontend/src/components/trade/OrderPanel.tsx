@@ -146,7 +146,7 @@ export function OrderPanel() {
       <div className="mt-auto pt-5">
         {!s.wallet.authenticated && s.wallet.enabled ? (
           <button onClick={s.wallet.login} className="btn btn-primary w-full">
-            Log in to trade
+            Connect wallet to trade
           </button>
         ) : s.wallet.wrongChain ? (
           <button onClick={() => void s.wallet.switchChain()} className="btn btn-primary w-full">

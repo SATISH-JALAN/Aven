@@ -125,7 +125,7 @@ function Quickstart() {
       <Steps
         items={[
           { t: "Open Trade", b: <>The chart and order book are Hyperliquid&apos;s live ETH perp. The panel on the right shows what the Aven pool would charge you, and why.</> },
-          { t: "Log in", b: <>Privy wallet login. The app asks you to switch to {config.chainName} if needed.</> },
+          { t: "Connect wallet", b: <>Connect your wallet (via Privy). The app asks you to switch to {config.chainName} if needed.</> },
           { t: "Go long or short", b: <>Long buys aETH, short sells it, on the Aven pool. Demo tokens are open-mint, so the app mints what you need first.</> },
           { t: "Check the fee", b: <>Every trade links to its proof: the inputs the hook logged and the fee recomputed in your browser.</> },
         ]}

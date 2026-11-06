@@ -71,8 +71,8 @@ export function useSwap() {
   /** Why a swap can't run right now (null = ready). Ordered so the first blocker is the one to fix. */
   const blocker = (amount: number): string | null => {
     if (a.mode !== "LIVE" || !d || d.swapRouter.length !== 42) return "Needs the live deployment";
-    if (!w.enabled) return "Login is not configured";
-    if (!w.authenticated || !w.address) return "Log in to trade";
+    if (!w.enabled) return "Wallet connect is not configured";
+    if (!w.authenticated || !w.address) return "Connect wallet to trade";
     if (w.wrongChain) return `Switch to ${appChain.name}`;
     if (!(amount > 0)) return "Enter an amount";
     return null;

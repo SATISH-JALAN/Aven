@@ -30,5 +30,5 @@ Verify recomputes fees **in the browser** with the exact BigInt port (`@aven/cor
 - **Landing graphics.** `components/landing/ParticleField.tsx` is a three.js point cloud sampled from the emblem. GSAP tweens its states (assemble, lens opens, market stream), and there's a static SVG fallback without WebGL. The preloader plays once per session.
 - **Palette.** Near-black with a HyperCore green. Mint `#97fce4` and pink `#ff4fb8` are UI accents only. Type: Instrument Serif / Michroma / Manrope / JetBrains Mono.
 - **Colour.** Monochrome ink; colour only for meaning. Chart series were validated with the dataviz palette checker against the dark surface (see `globals.css`).
-- **Login.** Privy (`NEXT_PUBLIC_PRIVY_APP_ID`). Without an app id the button reads "Login off" and the rest works.
+- **Connect wallet.** Privy (`NEXT_PUBLIC_PRIVY_APP_ID`), wallet connections only (no email sign-in). Without an app id the button reads "Wallet off" and the rest works.
 - **Config.** One file: `src/config.ts` (chain, RPC, explorer, addresses, source-line links).

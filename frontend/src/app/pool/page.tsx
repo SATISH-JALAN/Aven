@@ -250,7 +250,7 @@ function AddLiquidity() {
   const blocker = !live
     ? "Needs the live deployment"
     : !lq.wallet.enabled
-      ? "Login is not configured"
+      ? "Wallet connect is not configured"
       : !lq.wallet.authenticated
         ? null
         : lq.wallet.wrongChain
@@ -307,7 +307,7 @@ function AddLiquidity() {
           <div className="mt-auto pt-5">
             {lq.wallet.enabled && !lq.wallet.authenticated ? (
               <button onClick={lq.wallet.login} className="btn btn-primary w-full">
-                Log in to add liquidity
+                Connect wallet to add liquidity
               </button>
             ) : lq.wallet.wrongChain ? (
               <button onClick={() => void lq.wallet.switchChain()} className="btn btn-primary w-full">

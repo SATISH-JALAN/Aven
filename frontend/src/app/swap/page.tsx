@@ -105,7 +105,7 @@ export default function SwapPage() {
           <div className="p-1 pt-2">
             {!s.wallet.authenticated && s.wallet.enabled ? (
               <button onClick={s.wallet.login} className="btn btn-primary h-14 w-full rounded-2xl text-[17px]">
-                Log in
+                Connect wallet
               </button>
             ) : s.wallet.wrongChain ? (
               <button onClick={() => void s.wallet.switchChain()} className="btn btn-primary h-14 w-full rounded-2xl text-[17px]">
