@@ -296,3 +296,9 @@ Use 0x4412…34Ee
 how to get the dedicated hyperevm rpc and where to getthe backend/.env all that u mentioned
 ```
 
+---
+
+## #26 — 2026-11-07T00:00:00Z (approx.) — Arena started on mainnet
+
+The user pasted their terminal output: the Arena is listening on chain 999, and the health check returned `{"ok":true,"chainId":999,"block":50561879,"botEnabled":false,"version":"0.1.0"}`.
+

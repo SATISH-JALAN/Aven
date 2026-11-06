@@ -29,6 +29,10 @@ The running record of status, decisions and open items. It saves you from re-rea
   - API: ≤ 71 ms p99 at ~1.6–2.7k req/s, 0 errors; 200 SSE clients, no leak; rate limit exact.
   - Stress: 348/348 verified, 0 nonce errors; bot 64 iterations over 75 blocks under API load.
   - **4 bugs found and fixed** (viem block-number cache, 4 s receipt polling, /state thundering herd, out of gas on the first swap of a block), each with a regression test. | docs/LOADTEST.md |
+| **First live Arena test on mainnet** | ✅ 2026-11-07 (DEPLOYMENTS.md §M.5).
+  - Shock 188 bp → bot arb on Aven paid **9,950 pips** vs 3,000 on control. **LPs kept $97.25 more** (demo-token $ at the oracle).
+  - Aven arb verify MATCH A+B on real HyperCore oracle/mark.
+  - All txs carried the 2-gwei cap and paid ~0.1 gwei; 0.000083 HYPE spent. | Alchemy RPC, `backend/.env` |
 | **🚀 Deployed on HyperEVM mainnet (999)** | ✅ 2026-11-06, block 50,557,638 (DEPLOYMENTS.md §M.5).
   - Hook `0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080` on Uniswap's PoolManager `0x12D4…6B1F`.
   - Aven pool `0x659c…d1df`, control pool `0x4bf2…81b6`.

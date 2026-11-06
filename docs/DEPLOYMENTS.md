@@ -193,6 +193,18 @@ Checks after the deploy, all on mainnet:
 
 The deploy key was removed from `contracts/.env` afterwards.
 
+**First live Arena test on mainnet (2026-11-07, Alchemy RPC, `POLL_MS` 2000, gas cap 2 gwei):**
+
+| Step | Result |
+|---|---|
+| Before | Oracle $2,228.00; both pools at $2,231.50 (15 bp). Aven quotes 500 buy / 1,400 sell |
+| **Shock** (40,000 aUSD → aETH on both pools) | [`0xb14e…`](https://hyperevmscan.io/tx/0xb14e2e882c4cf701ab022e22f68068e3a54cda4f38bbea8d9a45d3a63776f17f) control, [`0x4f70…`](https://hyperevmscan.io/tx/0x4f70aa22483255d5140d786afd0945c0d825303d84a2bea1844a6c049e80d4c1) Aven (fee 500, verify MATCH). Both pools ~188 bp above the oracle |
+| **Bot arb, Aven pool** | [`0xfce1…`](https://hyperevmscan.io/tx/0xfce164020d09a93c06fc212d41e7a24abde051339aa4d9013ed26c86e5ba868f): **fee 9,950 pips** = 500 + 186 bp gap × 50 + 3 bp premium × 50. Real oracle 222704 / mark 222620; verify **MATCH A + B** |
+| **Bot arb, control pool** | [`0xc0f7…`](https://hyperevmscan.io/tx/0xc0f7dfe4c58a0d0e2866d770798de177a79c3a6706b9e7c6d1c0f6745a81cd96): fee 3,000 pips |
+| **Outcome** | LP fee income **$210.48 (Aven) vs $113.23 (control): LPs kept $97.25 more**. Bot profit $92.88 vs $297.77. The Aven pool stays 97 bp off because a further arb wouldn't cover its fee; the control pool is at 27 bp |
+| Gas | All 4 txs status 1, `maxFeePerGas` = 2 gwei (the cap), paid 0.10–0.12 gwei. Test cost **0.000083 HYPE**; balance 0.016417 HYPE |
+
+
 ## T. HyperEVM testnet (998): kept for reference
 
 Exact commands to deploy Aven on HyperEVM testnet (chain 998), in order (ARCHITECTURE §11.3). Every step has already been proven end to end on a local chain (`pnpm --filter @aven/scripts local:once`: same five scripts, mock precompiles). **Only Sayan runs this**: it needs the funded keys. Blocked as of 2026-11-06: no testnet HYPE could be obtained.
