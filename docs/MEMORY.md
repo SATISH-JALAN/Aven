@@ -33,7 +33,7 @@ The running record of status, decisions and open items. It saves you from re-rea
   - Fork of 999: all 5 scripts on Uniswap's canonical PoolManager, smoke A+B MATCH. Full app: 8,800 vs 3,000 pips, LPs kept $64.05 more, `verify --all` 4/4.
   - Deep tests: fuzz 10× (90/0); invariants × 4 seeds (16,384 calls, 0 reverts); on-chain load; diff 10k+2k; Arena e2e; load test on the hardened code (p99 ≤ 63 ms, 0 errors, 0 nonce errors).
   - **Found and fixed:** the deploy scripts read precompiles directly, which gets 0 bytes in forge's simulation on a live chain, so `DeployAven` would have failed on mainnet → `vm.rpc` path. Backend B-1…B-5 (rate-limit spoofing, RPC-amplifying GETs, SSE cap, `NATIVE_USD` guard, admin token length); 8 mutations caught.
-  - **Budget:** ~0.008 HYPE ($0.62) of gas for the deploy + 200 bot swaps + 10 shocks; fund 0.11 HYPE (survives 10× gas). | `contracts/script/base/AvenScript.sol`, `backend/arena/src/{server,config,arena}.ts` |
+  - **Budget (corrected on re-check):** the base fee is volatile (0.10–10.8 gwei over 3 h), so every tx is capped at 2 gwei: forge `--with-gas-price`, Arena `MAX_GAS_PRICE_GWEI`. The deploy + 200 bot swaps + 10 shocks cost $0.43 calm / $1.29 median / **max $7.07 at the cap**. Fund 0.03 / 0.10 / 0.02 HYPE; buy ~$20. | `contracts/script/base/AvenScript.sol`, `backend/arena/src/{server,config,arena,chain}.ts` |
 | **Backend plan** | ✅ every step done or BLOCKED on Sayan (testnet deploy) | docs/PLAN.md |
 | P3–P13 | not started | — |
 
@@ -50,7 +50,9 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
   - **PoolManager:** reuse **Uniswap's canonical PoolManager** `0x12D4…6B1F` on 999. It's identical to our build (recon §E.2), so no big blocks and no HyperCore-user step. `DeployCore` defaults `POOL_MANAGER` to it on chain 999.
   - **Asset:** mainnet **ETH, perp 1, szDecimals 4**, so `aETH`/`aUSD` and `EXPECT_COIN=ETH` stay.
   - **RPC:** the Arena and the deploy need a **dedicated HyperEVM RPC**. The public one allows 100 requests/min per IP; the Arena makes 118/min idle and ~1,900/min active.
-  - **Funding:** 0.02 / 0.08 / 0.01 HYPE for deployer / bot / shock (DEPLOYMENTS.md §M.2). Buy ~$10–15 of HYPE, not 5–10 HYPE.
+  - **Funding:** 0.03 / 0.10 / 0.02 HYPE for deployer / bot / shock (DEPLOYMENTS.md §M.2). Buy ~$20 of HYPE, not 5–10 HYPE.
+  - **Route:** the official one only (DEPLOYMENTS.md §M.3): USDC + a little ETH on Arbitrum → Hyperliquid deposit (≥ 5 USDC; less is lost) → spot buy (≥ 10 USDC) → "Transfer to/from EVM" → three NEW MetaMask accounts. Never put the main key in `.env`.
+  - **Gas cap:** every mainnet tx is capped at 2 gwei (deploy: `$FEES`; Arena: `MAX_GAS_PRICE_GWEI=2`, required on 999).
 
 - **2026-11-06: Solidity imports are root-style** (`src/…`, `test/…`, `script/…`), never `./` or `../`. Reason: the Nomic Foundation Solidity extension on Windows names sources with backslashes, so relative imports showed false "Source not found" errors in the editor. Forge resolves both forms; the runtime bytecode is identical (only the metadata hash changed); forge 90/0/5.
 
@@ -91,7 +93,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 0. **Mainnet deploy (Sayan):**
    - get a **dedicated HyperEVM RPC** that handles ~30–40 requests/s;
-   - buy ~$10–15 of HYPE and fund the deployer, bot and shock wallets (DEPLOYMENTS.md §M.2–M.3);
+   - buy ~$20 of HYPE via the official route and fund three NEW accounts with 0.03 / 0.10 / 0.02 HYPE (DEPLOYMENTS.md §M.2–M.3);
    - run §M.4.
 0a. **Decide C-5 (SECURITY.md §6.2):** keep open-mint demo tokens (anyone can swap, including judges, but also grief the pools) or deploy owner-mint demo tokens.
 0b. **Frontend (teammate):**
@@ -109,6 +111,8 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- **The HyperEVM RPC's `eth_feeHistory` returns only 5 blocks, whatever count you ask for.** A "1,024-block" fee window built on it is really 5 blocks. Sample block headers to measure gas. Mainnet base fee measured 0.10–10.8 gwei within 3 h: always cap `maxFeePerGas`.
 
 - **`forge script` can't read HyperCore precompiles in its simulation.** On a live HyperEVM chain the precompile addresses have no code (`eth_getCode` = 0x). Forge runs every script in its own EVM first, where a `staticcall` to them "succeeds" with 0 bytes. Scripts must read them with `vm.rpc("eth_call")` (`AvenScript._precompileCall`). The hook's own reads inside a simulated swap take the fallback path, so give Smoke a bigger gas multiplier. Found by the pre-mainnet audit; a fork with mocks etched can't show it.
 - **The public HyperEVM RPC allows 100 requests/min per IP** (official docs). A polling bot at 500 ms already needs 118/min. Measure an app's request rate with a counting proxy before going live.

@@ -210,15 +210,23 @@ describe("pre-mainnet hardening (audit 2026-11-06)", () => {
 describe("config (pre-mainnet audit)", () => {
   const base = { BOT_PK: `0x${"11".repeat(32)}`, SHOCK_PK: `0x${"22".repeat(32)}`, ARENA_ADMIN_TOKEN: "admin-token-123" };
   it("refuses mainnet (999) with NATIVE_USD = 0: the bot would value real gas at $0", () => {
+    const mainnetOk = { MAX_GAS_PRICE_GWEI: "2", ARENA_ADMIN_TOKEN: "x".repeat(24) };
     expect(() => configSchema.parse({ ...base, CHAIN_ID: "999" })).toThrow(/NATIVE_USD/);
     expect(() => configSchema.parse({ ...base, CHAIN_ID: "999", NATIVE_USD: "0" })).toThrow(/NATIVE_USD/);
-    expect(configSchema.parse({ ...base, CHAIN_ID: "999", NATIVE_USD: "78.46", ARENA_ADMIN_TOKEN: "x".repeat(24) }).NATIVE_USD).toBe(78.46);
+    expect(configSchema.parse({ ...base, ...mainnetOk, CHAIN_ID: "999", NATIVE_USD: "78.46" }).NATIVE_USD).toBe(78.46);
     expect(configSchema.parse({ ...base, CHAIN_ID: "998" }).NATIVE_USD).toBe(0); // testnet HYPE has no value
   });
   it("refuses a short admin token on mainnet (it guards actions that spend real gas)", () => {
     expect(() => configSchema.parse({ ...base, CHAIN_ID: "999", NATIVE_USD: "78.46" })).toThrow(/ARENA_ADMIN_TOKEN/); // 15 chars
-    expect(configSchema.parse({ ...base, CHAIN_ID: "999", NATIVE_USD: "78.46", ARENA_ADMIN_TOKEN: "a".repeat(24) }).CHAIN_ID).toBe(999);
+    expect(configSchema.parse({ ...base, CHAIN_ID: "999", NATIVE_USD: "78.46", MAX_GAS_PRICE_GWEI: "2", ARENA_ADMIN_TOKEN: "a".repeat(24) }).CHAIN_ID).toBe(999);
     expect(configSchema.parse({ ...base, CHAIN_ID: "998" }).ARENA_ADMIN_TOKEN).toBe("admin-token-123"); // testnet: 8+ is enough
+  });
+  it("refuses mainnet (999) without a gas price cap: the base fee spikes past 10 gwei", () => {
+    const ok = { ...base, CHAIN_ID: "999", NATIVE_USD: "78.46", ARENA_ADMIN_TOKEN: "y".repeat(24) };
+    expect(() => configSchema.parse(ok)).toThrow(/MAX_GAS_PRICE_GWEI/);
+    expect(() => configSchema.parse({ ...ok, MAX_GAS_PRICE_GWEI: "0" })).toThrow(/MAX_GAS_PRICE_GWEI/);
+    expect(configSchema.parse({ ...ok, MAX_GAS_PRICE_GWEI: "2" }).MAX_GAS_PRICE_GWEI).toBe(2);
+    expect(configSchema.parse({ ...base, CHAIN_ID: "31337" }).MAX_GAS_PRICE_GWEI).toBe(0); // local: no cap by default
   });
   it("ARENA_TRUST_PROXY is off unless set to 1/true", () => {
     expect(configSchema.parse(base).ARENA_TRUST_PROXY).toBe(false);

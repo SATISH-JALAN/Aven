@@ -38,6 +38,11 @@ export const configSchema = z.object({
   NATIVE_USD: z.coerce.number().min(0).default(0),
   POLL_MS: z.coerce.number().int().positive().default(500),
   POST_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(30),
+  /**
+   * Gas price cap in gwei for bot trades and shocks; 0 = no cap. Required (> 0) on mainnet 999, where the base fee was
+   * measured at 0.10-10.8 gwei within 3 hours (2026-11-06). Suggested: 2.
+   */
+  MAX_GAS_PRICE_GWEI: z.coerce.number().min(0).default(0),
   /** Trust X-Forwarded-For (its LAST entry, the one our own proxy adds). Only behind a proxy such as cloudflared. */
   ARENA_TRUST_PROXY: z
     .string()
@@ -54,6 +59,9 @@ export const configSchema = z.object({
   // doesn't cover their real HYPE gas cost (pre-mainnet audit, docs/SECURITY.md).
   if (c.CHAIN_ID === 999 && !(c.NATIVE_USD > 0)) {
     ctx.addIssue({ code: "custom", path: ["NATIVE_USD"], message: "NATIVE_USD must be > 0 on mainnet (999): set it to the HYPE price in USD" });
+  }
+  if (c.CHAIN_ID === 999 && !(c.MAX_GAS_PRICE_GWEI > 0)) {
+    ctx.addIssue({ code: "custom", path: ["MAX_GAS_PRICE_GWEI"], message: "MAX_GAS_PRICE_GWEI must be > 0 on mainnet (999), e.g. 2: the base fee spikes past 10 gwei" });
   }
   // Mainnet: the admin token guards actions that spend real gas, so it must be long and random (e.g. openssl rand -hex 24).
   if (c.CHAIN_ID === 999 && c.ARENA_ADMIN_TOKEN.length < 24) {

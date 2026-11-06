@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Count chain reads made by Arena.state(); the chain module is mocked so no RPC is needed.
-const calls = { oracle: 0, balances: 0, verify: 0 };
-vi.mock("../src/chain.ts", () => ({
+const calls = { oracle: 0, balances: 0, verify: 0, sent: 0 };
+vi.mock("../src/chain.ts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../src/chain.ts")>()),
+  writeWithMargin: async () => {
+    calls.sent++;
+    return "0xhash";
+  },
   withRetry: async <T>(fn: () => Promise<T>) => fn(),
   readOracle: async () => {
     calls.oracle++;
@@ -93,5 +98,36 @@ describe("RPC-backed GETs are cached (pre-mainnet audit: the public RPC allows 1
     expect(await arena.verify(tx)).toBeNull();
     expect(await arena.verify(tx.toUpperCase().replace("0X", "0x") as `0x${string}`)).toBeNull();
     expect(calls.verify).toBe(1);
+  });
+});
+
+describe("gas cap on mainnet (pre-mainnet audit)", () => {
+  const dd = { ...d, swapRouter: "0x0000000000000000000000000000000000000004", params: {} };
+  const keys = { aven: {}, control: {} };
+  const mk = (gasPrice: bigint, capGwei: number) =>
+    new Arena({ DATA_DIR: ".", MAX_GAS_PRICE_GWEI: capGwei, SHOCK_QUOTE: 40_000, SHOCK_BASE: 15 } as never, {
+      d: dd,
+      keys,
+      shock: { account: { address: "0x5c" } },
+      publicClient: { getBlockNumber: async () => 100n, getGasPrice: async () => gasPrice },
+    } as never);
+  it("the bot skips a whole iteration during a gas spike: no reads, no sends, a clear reason", async () => {
+    calls.sent = 0;
+    calls.balances = 0;
+    const a = new Arena({ DATA_DIR: ".", MAX_GAS_PRICE_GWEI: 2, MIN_NATIVE_BALANCE: 0 } as never, {
+      d: dd,
+      keys,
+      bot: { account: { address: "0xb0" } },
+      publicClient: { getBlockNumber: async () => 100n, getGasPrice: async () => 3_000_000_000n },
+    } as never);
+    expect(await a.botIteration(100n)).toEqual([]);
+    expect(calls.balances).toBe(0);
+    expect(calls.sent).toBe(0);
+    expect((a as unknown as { lastError: string }).lastError).toMatch(/above the cap.*bot waits/);
+  });
+  it("a shock during a gas spike sends NOTHING (checked before the first of its two swaps)", async () => {
+    calls.sent = 0;
+    await expect(mk(5_000_000_000n, 2).shock({})).rejects.toThrow(/above the cap/);
+    expect(calls.sent).toBe(0);
   });
 });

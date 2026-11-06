@@ -173,6 +173,10 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
 - [x] **8.5 Backend audit + fixes** (B-1…B-5), each with a mutation-checked test.
 - [x] **8.6 Script fix:** precompile reads via `vm.rpc` on live chains; checked inside forge's simulation against mainnet.
 - [x] **8.7 Budget chart** (DEPLOYMENTS.md §M.2) and the Arena's RPC request rate (SECURITY.md §6.4).
+- [x] **8.7b Re-check (Sayan: "real money is not a joke"):**
+  - gas measured over 3 h (0.10–10.8 gwei); the earlier "flat" claim was corrected;
+  - gas cap added to the Arena + forge fee flags (5 mutations caught);
+  - official funding route (recon §E.6).
 - [ ] **8.8 Deploy to mainnet:** BLOCKED on Sayan (dedicated RPC + funded wallets, DEPLOYMENTS.md §M.3–M.4).
 
 ## Testing rule for every step (Sayan, 2026-11-06)

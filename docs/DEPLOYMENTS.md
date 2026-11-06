@@ -18,46 +18,67 @@ Facts are from recon §E, checked 2026-11-06.
 | Perp | **ETH, index 1, `szDecimals` 4**: `PERP_INDEX=1`, `EXPECT_COIN=ETH` |
 | Routers | our `PoolSwapTest` + `PoolModifyLiquidityTest` (1.35M + 1.28M gas) |
 | Tokens | `aETH`/`aUSD` demo tokens: worthless, open mint (SECURITY.md §6.2 C-5) |
-| Block speed | 1 s small blocks (3M gas, p50 37% full); base fee 0.127–0.133 gwei |
+| Block speed and gas | 1 s small blocks (3M gas). **The base fee is volatile:** over 3 h on 2026-11-06 it ranged 0.10–10.8 gwei (p50 0.37, p75 1.1, p90 3.5), with blocks 98–99% full at peaks. Every tx is therefore capped at **2 gwei** (forge `--with-gas-price`; Arena `MAX_GAS_PRICE_GWEI`) |
 | **RPC** | **A dedicated HyperEVM RPC endpoint is required.** The public `rpc.hyperliquid.xyz/evm` allows 100 requests/min per IP, and the Arena makes 118/min idle and ~1,900/min active (SECURITY.md §6.4). Use the public endpoint only for one-off reads |
 | Scripts | precompile reads go through `vm.rpc` on a live chain (`AvenScript._precompileCall`). A direct read gets no data in forge's simulation and would have broken `DeployAven` (audit fix) |
 
 ### M.2 HYPE budget
 
-Gas was measured on a mainnet fork against Uniswap's real PoolManager (recon §E.5). Swaps are priced at the worst observed case (the first swap on a fresh pool). HYPE = gas × gas price × 1.3 (30% margin), and HYPE = $78.46 (2026-11-06).
+Gas comes from the mainnet fork against Uniswap's real PoolManager (recon §E.5). Swaps are priced at the worst observed case (the first swap on a fresh pool). The gas price comes from 79 small-block samples over 3 h (recon §E.1). **Every tx is capped at 2 gwei**, so the right-hand column is the most this plan can ever cost. HYPE = $77.86 (2026-11-06 16:00 UTC).
 
-| Wallet | What it pays for | Gas | HYPE at 0.133 gwei (+30%) | HYPE at a 10× spike (+30%) |
-|---|---|---|---|---|
-| **DEPLOYER** | 2 routers, 2 tokens, 6 mints + 4 approvals, hook, 2 pool inits, 2 liquidity positions, 4 smoke swaps | 8,115,614 | 0.00140 | 0.0140 |
-| **BOT** | 2 approvals + **200 bot swaps** (100 Aven at 200,067 + 100 control at 136,928) | 33,792,474 | 0.00584 | 0.0584 |
-| **SHOCK** | 2 approvals + **10 shocks** (each 1 Aven + 1 control swap) | 3,462,924 | 0.00060 | 0.0060 |
-| **Total gas** | | **45,371,012** | **0.00784 ≈ $0.62** | **0.0785 ≈ $6.15** |
-| Bot auto-pause floor (`MIN_NATIVE_BALANCE`, stays in the wallet) | | | 0.01 ≈ $0.78 | 0.01 |
+| Wallet | What it pays for | Gas | Calm (0.12 gwei) | Median (0.37) | Busy (1.1) | **Cap (2 gwei) = max** |
+|---|---|---|---|---|---|---|
+| **DEPLOYER** | 2 routers, 2 tokens, 6 mints + 4 approvals, hook, 2 pool inits, 2 liquidity positions, 4 smoke swaps | 8,115,614 | 0.0010 | 0.0030 | 0.0091 | **0.0162** |
+| **BOT** | 2 approvals + **200 bot swaps** (100 Aven + 100 control) | 33,792,474 | 0.0041 | 0.0123 | 0.0377 | **0.0676** |
+| **SHOCK** | 2 approvals + **10 shocks** (each 1 Aven + 1 control swap) | 3,462,924 | 0.0004 | 0.0013 | 0.0039 | **0.0069** |
+| **Total** | | **45,371,012** | **0.0055 ($0.43)** | **0.0166 ($1.29)** | **0.0506 ($3.94)** | **0.0907 ($7.07)** |
 
-**Recommended funding:**
+Other costs:
+- **Moving HYPE from Core to HyperEVM:** 200k gas at the next block's base fee, paid in HYPE on Core (official docs). That's ≤ 0.0004 HYPE at 2 gwei.
+- **Upfront balance:** a tx needs gas limit × max fee available when it's sent. The largest is the hook deploy, 2.75M × 2 gwei = 0.0055 HYPE.
+- **The bot's auto-pause floor** (`MIN_NATIVE_BALANCE` 0.01 HYPE) stays in its wallet.
+
+**Fund the wallets with:**
 
 | Wallet | Amount |
 |---|---|
-| DEPLOYER | **0.02 HYPE** |
-| BOT | **0.08 HYPE** |
-| SHOCK | **0.01 HYPE** |
-| **Total** | **0.11 HYPE ≈ $8.60** |
+| DEPLOYER | **0.03 HYPE** |
+| BOT | **0.10 HYPE** |
+| SHOCK | **0.02 HYPE** |
+| **Total** | **0.15 HYPE ≈ $11.70** |
 
-That covers the whole plan **even at 10× today's gas price**. At today's price, 0.08 HYPE pays for about 2,000 bot swaps.
+That covers the whole plan at the 2-gwei cap, plus the bot's floor and a re-run of the smoke step.
 
-**Buy about $10–15 of HYPE (≈ 0.13–0.19 HYPE).** That's dollars, not 5–10 HYPE: 5–10 HYPE would be $390–785, about 50× more than needed. Guides cite a ~$10 minimum order on Hyperliquid (UNVERIFIED).
+**Buy about $20 of HYPE (≈ 0.26 HYPE)**, which is above Hyperliquid's spot minimum order (next section), and keep the rest as buffer. That's **dollars, not 5–10 HYPE** (5–10 HYPE would be $390–780).
 
-For reference, deploying our own PoolManager instead would add 5,266,090 gas at the 0.1 gwei big-block price, about 0.0007 HYPE. Not needed.
+### M.3 From USDC in MetaMask to HYPE on HyperEVM (official route)
 
-### M.3 Getting HYPE onto HyperEVM
+Each fact below is quoted from Hyperliquid's official docs (recon §E.6).
 
-UNVERIFIED steps are marked; check them in the Hyperliquid app.
+1. **Prepare MetaMask.**
+   - Have the USDC **on Arbitrum**, plus a little **ETH on Arbitrum** for the deposit's gas ("USDC and ETH (gas to deposit) on Arbitrum").
+   - USDC on another chain: the app's deposit address also accepts USDC from Ethereum, Base or Polygon, or bridge to Arbitrum first.
+2. **Deposit at least 5 USDC.** Open https://app.hyperliquid.xyz/trade, connect MetaMask, click **Deposit** and enter **≥ $20–25** of USDC. Official: *"The minimum deposit amount is 5 USDC. If you send an amount less than this, it will not be credited and be lost forever."* Deposits are credited in under a minute.
+3. **Buy HYPE on spot (HYPE/USDC).**
+   - Minimum order is **10 of the quote token**, so 10 USDC (official `MinTradeSpotNtl`). Buy ~$20.
+   - Base-tier taker fee: **0.070%**, about $0.014 on $20.
+4. **Move HYPE to HyperEVM.** In **Balances**, click **"Transfer to/from EVM"** (or **"EVM <-> Core Transfer"** on Portfolio).
+   - HYPE arrives as the **native gas token** on HyperEVM, at the account that sent it.
+   - It costs 200k gas in HYPE on Core.
+   - **Only HYPE** may go to the system address `0x2222…2222`; other tokens sent there are lost.
+5. **Add HyperEVM to MetaMask:**
+   - chain ID **999**;
+   - RPC `https://rpc.hyperliquid.xyz/evm`;
+   - symbol **HYPE**;
+   - explorer `https://hyperevmscan.io/`.
 
-1. Deposit USDC to Hyperliquid **from the deployer address** (Arbitrum bridge). Guides cite a 5 USDC minimum (UNVERIFIED).
-2. Buy HYPE on the HYPE/USDC spot market (~$10–15).
-3. Move HYPE from HyperCore spot to HyperEVM by sending it to **`0x2222222222222222222222222222222222222222`**. It arrives at the same address on HyperEVM. **Only HYPE goes to 0x2222**; other tokens sent there can be lost. Hyperliquid's docs say this direction costs a small HYPE gas fee on HyperCore.
-4. On HyperEVM, send 0.08 HYPE to BOT and 0.01 HYPE to SHOCK (21,000 gas each).
-5. Check each wallet with `cast balance <address> --ether --rpc-url <RPC>`.
+   Known MetaMask issue on HyperEVM (official FAQ): "Invalid transaction envelope type … 0x2". The docs suggest another wallet such as **Rabby** if it happens.
+6. **Never put your main MetaMask key in a `.env` file.**
+   - Create **three new accounts**: deployer, bot and shock.
+   - Send them **0.03 / 0.10 / 0.02 HYPE** on HyperEVM from your main account.
+   - Export only those new accounts' keys, into `contracts/.env` (deployer) and `backend/.env` (bot, shock).
+7. **Don't buy "HYPE" on other chains** with MetaMask Swaps. Gas on HyperEVM is **native HYPE on chain 999**; a token named HYPE on Arbitrum/Base/Ethereum isn't it.
+8. **Check:** `cast balance <address> --ether --rpc-url https://rpc.hyperliquid.xyz/evm` for each wallet.
 
 ### M.4 Runbook
 
@@ -67,17 +88,21 @@ cd contracts
 set -a && . ./.env && set +a
 export PERP_INDEX=1 EXPECT_COIN=ETH
 cast chain-id --rpc-url $HYPEREVM_RPC                                     # must print 999
+cast call 0x0000000000000000000000000000000000000807 0x0000000000000000000000000000000000000000000000000000000000000001 --rpc-url $HYPEREVM_RPC  # must be > 0: your RPC serves the oracle precompile
+export FEES="--with-gas-price 2gwei --priority-gas-price 0"             # cap: no tx pays more than 2 gwei/gas
+cast gas-price --rpc-url $HYPEREVM_RPC                                    # wait until it's below 2000000000 (2 gwei) before each script
 cast call 0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F "protocolFeeController()(address)" --rpc-url $HYPEREVM_RPC   # expect 0x0
 forge build
-forge script script/DeployCore.s.sol:DeployCore     --rpc-url $HYPEREVM_RPC --broadcast --slow   # logs "PoolManager reused"
-forge script script/DeployTokens.s.sol:DeployTokens --rpc-url $HYPEREVM_RPC --broadcast --slow
-forge script script/DeployAven.s.sol:DeployAven     --rpc-url $HYPEREVM_RPC --broadcast --slow   # perpAssetInfo(1) must be ETH
-forge script script/CreatePools.s.sol:CreatePools   --rpc-url $HYPEREVM_RPC --broadcast --slow   # pools at the live oracle
-forge script script/Smoke.s.sol:Smoke               --rpc-url $HYPEREVM_RPC --broadcast --slow --gas-estimate-multiplier 200
+forge script script/DeployCore.s.sol:DeployCore     --rpc-url $HYPEREVM_RPC --broadcast --slow $FEES   # logs "PoolManager reused"
+forge script script/DeployTokens.s.sol:DeployTokens --rpc-url $HYPEREVM_RPC --broadcast --slow $FEES
+forge script script/DeployAven.s.sol:DeployAven     --rpc-url $HYPEREVM_RPC --broadcast --slow $FEES   # perpAssetInfo(1) must be ETH
+forge script script/CreatePools.s.sol:CreatePools   --rpc-url $HYPEREVM_RPC --broadcast --slow $FEES   # pools at the live oracle
+forge script script/Smoke.s.sol:Smoke               --rpc-url $HYPEREVM_RPC --broadcast --slow $FEES --gas-estimate-multiplier 200
 cd .. && CHAIN_ID=999 HYPEREVM_RPC=<RPC> pnpm verify <each Aven smoke tx>   # MATCH on A and B
 ```
 
 - **Dry-run first:** each command without `--broadcast` simulates against live mainnet and spends nothing. `DeployCore` and `DeployTokens` simulate standalone. The later scripts need the earlier ones' addresses, so they can only be simulated after those are broadcast.
+- **Why `$FEES`:** forge sets `maxFeePerGas` = 2 gwei and a 0 tip, so no deploy tx ever pays more than gasUsed × 2 gwei. If the base fee is above the cap, the tx waits in the mempool rather than overpaying. Run each script when `cast gas-price` shows < 2 gwei.
 - **Why `--gas-estimate-multiplier 200` on Smoke:** forge's simulation can't run the precompiles, so inside it the hook takes its cheaper fallback path. The real swap reads real prices and costs a little more. The extra gas limit is reserved, not spent.
 - **Arena on mainnet:** set these in `backend/.env`:
   - `CHAIN_ID=999`;
@@ -86,6 +111,7 @@ cd .. && CHAIN_ID=999 HYPEREVM_RPC=<RPC> pnpm verify <each Aven smoke tx>   # MA
   - `NATIVE_USD=<HYPE price>` (the config refuses 0 on 999);
   - `ARENA_ADMIN_TOKEN=$(openssl rand -hex 24)` (≥ 24 characters on 999);
   - `ARENA_TRUST_PROXY=1` only behind cloudflared;
+  - `MAX_GAS_PRICE_GWEI=2` (required on 999: above it the bot waits and shocks are refused; every tx carries maxFeePerGas = the cap);
   - `MAX_TRADE_BASE=100`, `MAX_TRADE_QUOTE=250000`, `MIN_NATIVE_BALANCE=0.01`.
 
   Then run `pnpm --filter @aven/arena start`.

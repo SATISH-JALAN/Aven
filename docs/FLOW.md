@@ -129,7 +129,11 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 - **Admin entry:** `POST /shock` sends one identical swap on both pools from the **shock wallet**. Also `POST /bot/start`, `/bot/stop` and `/reset-stats`. All of these need `x-admin-token`, which is checked **before** the per-client POST limit.
   - **Client identity:** the socket address, or with `ARENA_TRUST_PROXY=1` the **last** `X-Forwarded-For` entry.
 - **RPC-backed GETs:** `/verify/:tx` is cached per tx and limited per client (`ARENA_VERIFY_LIMIT_PER_MIN`, 429). `/bot/status` balances are cached per block. `/stream` is capped at `ARENA_MAX_SSE_CLIENTS` (503).
-- **Config guards for chain 999:** `NATIVE_USD` > 0 and `ARENA_ADMIN_TOKEN` ≥ 24 characters, or the Arena refuses to start.
+- **Config guards for chain 999:** `NATIVE_USD` > 0, `ARENA_ADMIN_TOKEN` ≥ 24 characters and `MAX_GAS_PRICE_GWEI` > 0, or the Arena refuses to start.
+- **Gas cap** (`MAX_GAS_PRICE_GWEI`):
+  - `botIteration` reads `eth_gasPrice` first and skips the whole iteration above the cap;
+  - `shock` checks it before its first swap;
+  - `writeWithMargin` sets `maxFeePerGas` = the cap on every tx.
 - **State reads:** `GET /state` is single-flight per block. The block is max(poller's last block, newest block from our own shock/bot receipts), so right after a shock it never serves the pre-shock block.
 - **Exit:**
   - REST JSON and the SSE stream to the frontend ([spec/API.md](spec/API.md));

@@ -29,6 +29,9 @@ import {
   swapArgs,
   withRetry,
   writeWithMargin,
+  checkGasCap,
+  GasPriceTooHigh,
+  gweiToWei,
   type Chain,
 } from "./chain.ts";
 import {
@@ -82,6 +85,10 @@ export class Arena implements ArenaApi {
    * fair" right after a shock). state() uses max(lastBlock, ownTxBlock); the poller and its SSE emits are unchanged.
    */
   private ownTxBlock = 0n;
+  /** MAX_GAS_PRICE_GWEI in wei; 0 = no cap. */
+  private get gasCapWei(): bigint {
+    return gweiToWei(this.cfg.MAX_GAS_PRICE_GWEI ?? 0);
+  }
   /** GET /bot/status reads 6 balances over RPC: computed at most once per block (single-flight, like state()). */
   private balanceCache: { block: bigint; value: Promise<[Awaited<ReturnType<typeof balances>>, Awaited<ReturnType<typeof balances>>]> } | null = null;
   /** GET /verify/:tx: a mined tx's verification never changes, so cache it (bounded; failures are not cached). */
@@ -155,6 +162,12 @@ export class Arena implements ArenaApi {
     const made: Trade[] = [];
     try {
       this.stats_.iterations++;
+      // Mainnet gas guard first: during a spike the bot spends neither gas nor RPC reads, and resumes by itself.
+      const gasPrice = await this.c.publicClient.getGasPrice();
+      if (this.gasCapWei > 0n && gasPrice > this.gasCapWei) {
+        this.lastError = `${new GasPriceTooHigh(gasPrice, this.gasCapWei).message} (bot waits)`;
+        return made;
+      }
       const bal = await balances(this.c, this.c.bot.account.address);
       if (Number(formatUnits(bal.native, 18)) < this.cfg.MIN_NATIVE_BALANCE) {
         this.botEnabled = false;
@@ -168,7 +181,7 @@ export class Arena implements ArenaApi {
         return made;
       }
       for (const pool of ["control", "aven"] as const) {
-        const t = await this.tryArb(pool, px.oracleRaw, b);
+        const t = await this.tryArb(pool, px.oracleRaw, b, gasPrice);
         if (t) made.push(t);
       }
       this.lastRunBlock = Number(b);
@@ -181,7 +194,7 @@ export class Arena implements ArenaApi {
     return made;
   }
 
-  private async tryArb(pool: PoolName, oracleRaw: bigint, b: bigint): Promise<Trade | null> {
+  private async tryArb(pool: PoolName, oracleRaw: bigint, b: bigint, gasPrice: bigint): Promise<Trade | null> {
     const cfg = this.c.d.config;
     const slot0 = await withRetry(() => readPool(this.c, pool));
     // Quote: control is a fixed 3000; Aven asks the hook (the same fee beforeSwap will charge, I6).
@@ -204,11 +217,10 @@ export class Arena implements ArenaApi {
     const sim = await simulateSwap(this.c, this.c.bot, key, plan.zeroForOne, plan.amountIn, plan.sqrtPriceLimitX96);
     const oraclePrice = rawToPrice(oracleRaw, cfg.szDecimals);
     const v = valueSwap(cfg, decodeBalanceDelta(sim.delta), oraclePrice, feePips);
-    const gasPrice = await this.c.publicClient.getGasPrice();
     const gasEstUsd = (Number(formatUnits(250_000n * gasPrice, 18)) * this.cfg.NATIVE_USD) || 0;
     if (botProfitUsd(v, gasEstUsd) <= 0) return null;
 
-    const hash = await writeWithMargin(this.c, this.c.bot, sim.request as never); // margin: see chain.ts withGasMargin
+    const hash = await writeWithMargin(this.c, this.c.bot, sim.request as never, this.gasCapWei); // margin + fee cap: chain.ts
     const receipt = await this.c.publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
     this.noteOwnTxBlock(receipt.blockNumber);
     if (receipt.status !== "success") throw new Error(`swap reverted: ${hash}`);
@@ -290,6 +302,8 @@ export class Arena implements ArenaApi {
     const amountIn = dir === "sellBase" ? toUnits(sizeBase, baseDec) : toUnits(sizeBase * oraclePrice, quoteDec);
     const zeroForOne = zeroForOneOf(cfg, dir);
     const limit = zeroForOne ? MIN_SQRT_PRICE + 1n : MAX_SQRT_PRICE - 1n;
+    // Check the cap BEFORE the first swap, so a spike can't leave a half-sent shock (one pool moved, the other not).
+    checkGasCap(await this.c.publicClient.getGasPrice(), this.gasCapWei);
     const hashes: Hex[] = [];
     for (const pool of ["control", "aven"] as const) {
       hashes.push(
@@ -298,7 +312,7 @@ export class Arena implements ArenaApi {
           abi: poolSwapTestAbi,
           functionName: "swap",
           args: swapArgs(this.c.keys[pool], zeroForOne, amountIn, limit),
-        } as never),
+        } as never, this.gasCapWei),
       );
     }
     const b = await this.c.publicClient.getBlockNumber();

@@ -242,11 +242,33 @@ All reads below are read-only (`eth_*` calls and info-API reads); nothing was si
 | Block time | **1 s** (p50, p90 and max all 1 s) |
 | Block gas limits | 118 × **3,000,000** (small) + 2 × 30,000,000 (big) |
 | Small-block fill | p50 37.2 %, p90 64.0 %, max 99.2 % |
-| `eth_gasPrice` (next small block) | 124,975,686 – 133,004,821 wei (0.125–0.133 gwei) |
+| `eth_gasPrice` (next small block), ~13:00 UTC | 124,975,686 – 133,004,821 wei (0.125–0.133 gwei); at 15:44 UTC 192,553,889 wei (0.19 gwei) and the base fee near 1 gwei (see below) |
 | `eth_bigBlockGasPrice` | 100,000,000 wei (0.1 gwei) |
-| Base fee over the last 1,024 blocks (`eth_feeHistory`) | p50 0.1272, p90/p99/max 0.133 gwei: flat |
+| Base fee, **79 small-block samples over 2.9 h** (block headers, every 135th block, 2026-11-06 ~13:00–16:00 UTC) | min 0.100, p25 0.122, **p50 0.365**, p75 1.116, p90 3.506, **max 10.771 gwei**; hourly median 0.133 → 0.563 → 1.116 gwei. Blocks 98–99% full at the peak |
+| ⚠️ Correction | An earlier version said "flat over 1,024 blocks". That was wrong: this RPC's `eth_feeHistory` returns **only 5 blocks** whatever count you ask for (checked with 0x14, 0x100 and 0x400). Sample block headers instead |
 
-An Aven swap (~167k gas on the fork, E.5) uses ~5.6 % of a small block.
+An Aven swap (~167k gas on the fork, E.5) uses ~5.6 % of a small block. `eth_maxPriorityFeePerGas` = 0.
+
+### E.6 Funding route: official Hyperliquid docs (fetched 2026-11-06)
+
+- **Deposit:**
+  - "The minimum deposit amount is 5 USDC. If you send an amount less than this, it will not be credited and be lost forever."
+  - "…credited to the account that sent it in less than 1 minute."
+  - "CCTP is the preferred method…"; "The legacy bridge is deprecated."
+  - Sources: https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/bridge2 and …/hypercore/usdc.md.
+- **What a wallet needs:** "USDC and ETH (gas to deposit) on Arbitrum". The deposit address also takes "USDC on Arbitrum/Ethereum/Base/Polygon". Source: …/onboarding/how-to-start-trading.
+- **Spot minimum:** error `MinTradeSpotNtl`: "Order must have minimum value of 10 {quote_token}." Source: …/for-developers/api/error-responses.
+- **Spot fee, tier 0:** taker 0.070%, maker 0.040%. Source: …/trading/fees.
+- **Core → EVM:**
+  - "…clicking the 'Transfer to/from EVM' button on the Balances table…"
+  - "HYPE is received on the EVM side … as the native gas token"
+  - "A transfer from HyperCore to HyperEVM costs 200k gas at the base gas price of the next HyperEVM block" (paid in HYPE on Core)
+  - The tokens are credited to "the sender of the sendAsset action".
+  - "…this only works for HYPE; sending other assets will lead to them being lost."
+  - Sources: …/hyperevm/hypercore-less-than-greater-than-hyperevm-transfers and …/onboarding/how-to-use-the-hyperevm.
+- **MetaMask network:** chain 999, RPC `https://rpc.hyperliquid.xyz/evm`, symbol HYPE, explorers https://hyperevmscan.io/ and https://www.hyperscan.com/.
+- **MetaMask FAQ:** "Invalid transaction envelope type: specified type '0x2'…" — "a known issue with MetaMask; you can try a different wallet like Rabby". Source: …/support/faq/hyperevm-issues/gas-problem-on-evm.
+- **forge flags** (local `forge script --help`): `--with-gas-price` = "max fee per gas for EIP1559 transactions"; `--priority-gas-price` = max priority fee.
 
 ### E.2 Uniswap v4 on 999
 
