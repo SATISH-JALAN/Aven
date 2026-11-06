@@ -29,6 +29,12 @@ The running record of status, decisions and open items. It saves you from re-rea
   - API: ≤ 71 ms p99 at ~1.6–2.7k req/s, 0 errors; 200 SSE clients, no leak; rate limit exact.
   - Stress: 348/348 verified, 0 nonce errors; bot 64 iterations over 75 blocks under API load.
   - **4 bugs found and fixed** (viem block-number cache, 4 s receipt polling, /state thundering herd, out of gas on the first swap of a block), each with a regression test. | docs/LOADTEST.md |
+| **🚀 Deployed on HyperEVM mainnet (999)** | ✅ 2026-11-06, block 50,557,638 (DEPLOYMENTS.md §M.5).
+  - Hook `0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080` on Uniswap's PoolManager `0x12D4…6B1F`.
+  - Aven pool `0x659c…d1df`, control pool `0x4bf2…81b6`.
+  - 23 txs, all succeeded, 0.001044 HYPE (~$0.08).
+  - Live hook bytecode = the audited build. Smoke swaps read the REAL HyperCore oracle/mark and verify MATCH A+B (fees 700 / 500 pips).
+  - Account `0x4412…34Ee` has 0.0165 HYPE left. | `contracts/deployments/999.json` |
 | **Pre-mainnet audit + mainnet fork rehearsal** | ✅ done 2026-11-06 (SECURITY.md §6, recon §E, DEPLOYMENTS.md §M); **not deployed yet**.
   - Fork of 999: all 5 scripts on Uniswap's canonical PoolManager, smoke A+B MATCH. Full app: 8,800 vs 3,000 pips, LPs kept $64.05 more, `verify --all` 4/4.
   - Deep tests: fuzz 10× (90/0); invariants × 4 seeds (16,384 calls, 0 reverts); on-chain load; diff 10k+2k; Arena e2e; load test on the hardened code (p99 ≤ 63 ms, 0 errors, 0 nonce errors).
@@ -46,7 +52,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
     - The **Arena `/state` fix** is kept, because the bug affects any chain. `state()` serves max(poller block, newest block in our own receipts), so right after a shock it no longer serves the pre-shock block. Mutation-checked test in `backend/arena/test/state.test.ts`.
     - The **prompt log** is kept (ETHGlobal disclosure).
   - Before anything is deployed: a mainnet budget, a full re-test and a security audit. Results go in DEPLOYMENTS.md (mainnet section) and SECURITY.md.
-- **2026-11-06: One account for everything (Sayan).** Deployer = bot = shock = Sayan's MetaMask Account 2 (`0xFF844…AB535`), which holds 0.0176 native HYPE on HyperEVM.
+- **2026-11-06: One account for everything (Sayan).** Deployer = bot = shock = **`0x4412A5313aFd9b6f447EcE820Ce55a30A20034Ee`**. Sayan confirmed it; the key he pasted derives to it, not to the screenshot's `0xFF844…AB535`, so the deploy waited for his confirmation. It had 0.017544 native HYPE on HyperEVM.
   - **Tested on a local chain:** one key as bot + shock concurrently gave 35 txs, 0 reverted, contiguous nonces (viem's shared `nonceManager` is keyed by address), 12 shocks + 21 arbs, verify 21/21.
   - **Budget:** 0.0176 HYPE covers the whole deploy even at the 2-gwei cap. The full 200-swap test needs ~0.08 HYPE more.
   - **Risk accepted:** the key sits in two `.env` files; keep only demo funds in that account.
@@ -96,7 +102,11 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 - **Replay scenario C (`volatile-2`):** pick a window (`backend/scripts/scenarios.json`; placeholder Oct 29 00:00–06:00 is skipped by default).
 
-0. **Mainnet deploy (Sayan):**
+0. **Mainnet deploy: ✅ DONE 2026-11-06** (DEPLOYMENTS.md §M.5). Next:
+   - **Rotate the key.** It was pasted into chat. Move anything of value out of `0x4412…34Ee`, and use it for demo funds only.
+   - **Arena on mainnet** needs a dedicated RPC (below) and `backend/.env` with `BOT_PK`=`SHOCK_PK`= that key, `CHAIN_ID=999`, `NATIVE_USD`, `MAX_GAS_PRICE_GWEI=2` and a 24+ character admin token. Sayan should write the key into the file himself, not paste it in chat.
+   - **Bot testing:** 0.0165 HYPE left, about 60 bot swaps at median gas before the 0.01 auto-pause. Top up ~0.08 HYPE for the full 200-swap test.
+0-old. **Mainnet deploy (Sayan), original plan:**
    - get a **dedicated HyperEVM RPC** that handles ~30–40 requests/s;
    - one account (Account 2, 0.0176 HYPE now): enough to deploy. Top up ~0.08 HYPE (MetaMask Swap to native HYPE on HyperEVM is fine) for the full bot test (DEPLOYMENTS.md §M.2–M.3);
    - run §M.4.

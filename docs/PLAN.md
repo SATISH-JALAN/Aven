@@ -177,7 +177,10 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - gas measured over 3 h (0.10–10.8 gwei); the earlier "flat" claim was corrected;
   - gas cap added to the Arena + forge fee flags (5 mutations caught);
   - official funding route (recon §E.6).
-- [ ] **8.8 Deploy to mainnet:** BLOCKED on Sayan (dedicated RPC + funded wallets, DEPLOYMENTS.md §M.3–M.4).
+- [x] **8.8 Deploy to mainnet:** done 2026-11-06 (DEPLOYMENTS.md §M.5).
+  - 23 txs succeeded, 0.001044 HYPE.
+  - Live hook = audited build; smoke swaps MATCH A+B on real HyperCore reads.
+- [ ] **8.9 Arena on mainnet:** BLOCKED on Sayan (dedicated RPC; `backend/.env`).
 
 ## Testing rule for every step (Sayan, 2026-11-06)
 

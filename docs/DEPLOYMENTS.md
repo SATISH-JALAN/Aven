@@ -1,6 +1,6 @@
 # DEPLOYMENTS.md — mainnet (999) and testnet (998) runbooks
 
-- **§M HyperEVM mainnet (999)** is the deploy path (Sayan, 2026-11-06). It was rehearsed on a fork of mainnet and audited (SECURITY.md §6), and is **not deployed yet**.
+- **§M HyperEVM mainnet (999)** is the deploy path (Sayan, 2026-11-06). It was rehearsed on a fork of mainnet and audited (SECURITY.md §6), and was **deployed on 2026-11-06** (§M.5).
 - **§T HyperEVM testnet (998)** is kept for reference. Nobody could get testnet HYPE.
 
 **Only Sayan runs a deploy:** it needs the funded keys.
@@ -133,16 +133,41 @@ cd .. && CHAIN_ID=999 HYPEREVM_RPC=<RPC> pnpm verify <each Aven smoke tx>   # MA
   - update MEMORY.md;
   - remove `DEPLOYER_PK` from `contracts/.env`.
 
-### M.5 Deployed (chain 999)
+### M.5 Deployed (chain 999) — 2026-11-06, block 50,557,638
+
+**23 transactions, all succeeded; total cost 0.001044 HYPE (~$0.08)** at 0.10–0.18 gwei. Deployer = bot = shock = `0x4412A5313aFd9b6f447EcE820Ce55a30A20034Ee` (one account). Record: `contracts/deployments/999.json`.
 
 | What | Address / tx |
 |---|---|
-| PoolManager | `0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F` (Uniswap, reused) |
-| PoolSwapTest / PoolModifyLiquidityTest | _pending_ |
-| aETH / aUSD | _pending_ |
-| AvenHook | _pending_ |
-| Aven pool id / control pool id | _pending_ |
-| Smoke swaps (verify MATCH) | _pending_ |
+| PoolManager (Uniswap, **reused**) | [`0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F`](https://hyperevmscan.io/address/0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F) |
+| PoolSwapTest | [`0xFe6baCe2E548fD06735A4242BBD46A3c842E02B1`](https://hyperevmscan.io/address/0xFe6baCe2E548fD06735A4242BBD46A3c842E02B1) (tx [`0x54a2dac3…`](https://hyperevmscan.io/tx/0x54a2dac3276f554d8e71880a507fc67d86c1fc24cddf647e74920cfbe6735329)) |
+| PoolModifyLiquidityTest | [`0x4da494CB3f82c3d01c2D720BB23B38E505141A5b`](https://hyperevmscan.io/address/0x4da494CB3f82c3d01c2D720BB23B38E505141A5b) (tx [`0x247e62d3…`](https://hyperevmscan.io/tx/0x247e62d306f3a8f4dcada47a9bd6cdedc9a6c03ae008e3b9a08fc352eef030d7)) |
+| aETH (18 dec) / aUSD (6 dec) | [`0xD4a26168e47acc1b514aF23Fb5a360d171745756`](https://hyperevmscan.io/address/0xD4a26168e47acc1b514aF23Fb5a360d171745756) / [`0xFC91A98c4bDbF5b20a2Da89e514C66295051efd6`](https://hyperevmscan.io/address/0xFC91A98c4bDbF5b20a2Da89e514C66295051efd6) |
+| **AvenHook** | [`0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080`](https://hyperevmscan.io/address/0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080) (salt `0x7b9d`, tx [`0x9f676a77…`](https://hyperevmscan.io/tx/0x9f676a77fc3ff4e49da4f1d6f99b4449d8ecbf83c16bf82365a0a045f62ed8fe)) |
+| Aven pool id (dynamic fee, hook) | `0x659c1cbd66a079592fd333ec44f76b4878aabfe5d9c17b7a14faaabbe7e0d1df` (init tx [`0xbc5a67aa…`](https://hyperevmscan.io/tx/0xbc5a67aab105bc658d5c492f3429b1c851a40ffe32240dab1c5e9b14b490d1fc)) |
+| Control pool id (static 0.30%) | `0x4bf2e188c58f409792aae72afe12c7d025ce093d4ca92d8a100a810d8b1681b6` (init tx [`0x2bbe4045…`](https://hyperevmscan.io/tx/0x2bbe4045f4d3430defe470968e2c37bf2c6c4d056d329997313178646891edd6)) |
+| **Smoke swaps on Aven (verify MATCH A + B)** | [`0x7b28ee95…`](https://hyperevmscan.io/tx/0x7b28ee95600b0f2967542ec98b43f52435edab12a9ee6acf43e6c1306f337eed): fee 700 pips · [`0x2dd33f42…`](https://hyperevmscan.io/tx/0x2dd33f423c553cf4abd89af9ea725690039fb1105e883071a6c931bcea57f3a9): fee 500 pips |
+| Smoke swaps on control | [`0x32f4e1d0…`](https://hyperevmscan.io/tx/0x32f4e1d086ce2c88b4619071f9f8d0c2bec8f785f2f36b9bbc19b5cf204020e6) · [`0xbdafa2d6…`](https://hyperevmscan.io/tx/0xbdafa2d6701422bfc582475d262d4872cd5b1ef12e743c9fffb4cb64d8409ff8) |
+
+Checks after the deploy, all on mainnet:
+
+- **Routers:** both point at Uniswap's PoolManager (`manager()`).
+- **Tokens:** symbols and decimals are correct, 1,400 aETH / 7,000,000 aUSD were minted to the account, and both routers have max allowance.
+- **Hook:**
+  - live code is byte-identical to the audited build (9,337 B, 35 immutables masked);
+  - address bits are `0x2080`;
+  - `config()` = (perp 1, szDecimals 4, baseIsToken0, 18, 6); `params()` = the §6.2 defaults; `poolManager()` = Uniswap's.
+- **Pools:**
+  - both at sqrtPrice 3742639779956839250570048 (tick −199216): $2,231.50 vs the oracle's $2,231.53 (−0.13 bp);
+  - Aven LP fee 0 (dynamic), control 3000, protocol fee 0;
+  - hook `poolState(aven).initialized` = true.
+- **Smoke:**
+  - the Aven swaps read the **real** HyperCore oracle/mark in-block (oracle 223100 / mark 223052, reason OK, gap 2 bp, premium −2 bp);
+  - `pnpm verify` gives MATCH on A and B (on-chain = recomputed = Swap event);
+  - Aven swap gas 190,521 / 174,097 (the real precompile is cheaper than the mock).
+- **Gas margin:** the hook deploy was sent with `--gas-estimate-multiplier 120` (limit 2.69M, used 2,111,487) so it fits small blocks.
+
+The deploy key was removed from `contracts/.env` afterwards.
 
 ## T. HyperEVM testnet (998): kept for reference
 

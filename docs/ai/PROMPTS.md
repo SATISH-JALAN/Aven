@@ -267,3 +267,24 @@ The user attached a MetaMask screenshot: Account 2 `0xFF844…AB535`, 0.0176 HYP
 like i havve this check it and continu what u were doing
 ```
 
+---
+
+## #23 — 2026-11-06T16:55:00Z (approx.) — Start the mainnet deployment
+
+The user attached a MetaMask screenshot (Account 2 `0xFF844…AB535`, 0.0176 HYPE on HyperEVM) and pasted a private key. **The key is redacted here and never stored in the repo.** It derives to `0x4412A5313aFd9b6f447EcE820Ce55a30A20034Ee` (0.017544 HYPE on HyperEVM), not to the screenshot's address, so the deploy was paused for confirmation.
+
+```text
+[private key redacted]
+this account have the .0175 hype start the deployment part when u need more just tell me i will add more funds how much u need so that everything is safe and precise.....be very carefull while deploying as it is real money
+```
+
+---
+
+## #24 — 2026-11-06T17:00:00Z (approx.) — Deployer confirmation (answer to a question)
+
+Asked which account should deploy (the pasted key controls `0x4412…34Ee`, the screenshot shows `0xFF844…AB535`). The user chose:
+
+```text
+Use 0x4412…34Ee
+```
+
