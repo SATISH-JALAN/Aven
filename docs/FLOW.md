@@ -152,6 +152,19 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
   `--all` scans logs in ≤ 50-block chunks (recon B.3).
 - **Exit:** MATCH or MISMATCH plus every intermediate value. The CLI prints them; the API returns them as JSON.
 
+## 6b. Mainnet health check ✅ `pnpm health` (`backend/scripts/health.ts`, helpers in `src/health.ts`)
+
+- **Entry:** `CHAIN_ID=999 [HYPEREVM_RPC=…] pnpm health [txHash …]`. Read-only: no key, no transaction, ~70 RPC calls (the public RPC is the default on 999).
+- **Path:** `loadDeployments(chainId)` →
+  1. chain id, hook code, address bits `0x2080`, `hook.poolManager/config/params` vs the deployment file;
+  2. `PoolManager.protocolFeeController` = 0x0;
+  3. `readPerpAssetInfo`, `readOracleMark`;
+  4. per pool `readSlot0` (price, LP fee, protocol fee), price vs oracle (`pushStatus`, 25 bp), `poolState` and `previewFee` both ways on Aven;
+  5. `eth_call` of `PoolSwapTest.swap` from the deployer (it holds demo tokens and approved the router), both pools, both directions;
+  5b. Uniswap's own periphery on 999: `V4Quoter.quoteExactInputSingle`, then `UniversalRouter.execute(V4_SWAP)` (2.0 and 2.1.2) via `eth_call` with state overrides for the two Permit2 allowances; `minOut = quote` must pass and `quote + 1` must revert;
+  6. `verifyTx` on the given txs (default: the four Aven txs in DEPLOYMENTS.md §M.5).
+- **Exit:** one `[ ok ]`/`[FAIL]`/`[info]` line per check; exit code 1 if any check fails.
+
 ## 7. Differential proof (Solidity ≡ TypeScript) ✅
 
 - **Entry:** `pnpm prove:diff` → `backend/core/scripts/prove-diff.ts`.
@@ -177,13 +190,13 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
     - `LiveTicker`: oracle/mark via `@aven/core/precompiles` `readOracleMark` straight from `NEXT_PUBLIC_RPC` (perp from the deployment, else the recon index);
     - then `GapStory`, `Marquee`, `Features` (bento cards), `SwapStory` (fees from `@aven/core/fee` `compute`), `Stats`, `ReplayTeaser` (`public/replay/binance-halt.json`) and `BigRows`;
   - `/trade`: one-screen trading terminal (`src/components/trade/*`):
-    - `MarketBar`: Hyperliquid ETH-PERP mark, 24h change, oracle, premium, funding, volume, open interest; plus the Aven pool price, gap and fees;
+    - `MarketBar`: Hyperliquid ETH-PERP mark, 24h change, oracle, premium, funding, volume, open interest; plus the Aven pool price, gap and fees, and the plain pool's price and gap (gaps turn amber when `pushState` says pushed);
     - `PriceChart`: TradingView `lightweight-charts` 5.2.1, Hyperliquid candles + volume, an oracle line, and (LIVE) both pool prices and arb markers;
     - `OrderBook`: Hyperliquid `l2Book`, read-only;
     - `OrderPanel`: Long = buy aETH, Short = sell aETH, spot on the Aven or plain pool (no leverage). The quote is `indicativeOut` × `feeFor`; it sends through `useSwap`;
     - `Activity`: arb feed, all trades, your trades, shocks, who earned what, and the proof drawer from `arena/Tape.tsx`;
   - `/swap`: a single swap card that routes to either pool and shows both quotes;
-  - `/pool`: who earns (LPs vs the arb bot) from live or recorded `/stats`, backed by the mainnet replay; cost per swap; add liquidity (`useAddLiquidity`);
+  - `/pool`: one tile per pool (Aven and plain) with price, gap, fees and a push status: "Pushed +N bp above/below the oracle" or "At the oracle" (`pushState`, threshold `PUSH_BPS` = 30), the last non-bot swap that pushed it and the bot's last arb back with its fee (`poolActivity`, from `/trades` or the recording); then who earns (LPs vs the arb bot) from live or recorded `/stats`, backed by the mainnet replay; cost per swap; add liquidity (`useAddLiquidity`);
   - `/replay`: four-pool replay with playback, results, share link + QR, and method notes in a collapsible `Details` drawer;
   - `/docs/[[...slug]]`: GitBook-style docs (`src/components/docs/*`): `DocsShell` (sidebar with Ctrl+K search, content column, "On this page" scrollspy), `Doc` primitives (anchored headings, callouts, code with copy, tables, steps, link cards), 12 pages in four groups (`pages.tsx`). `/docs/verify` embeds `VerifyTool` (the old `/verify` page);
   - `/verify/[tx]`: our explorer stand-in and fee proof.
@@ -201,6 +214,7 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
   - `src/lib/steps.ts` `feeSteps`: every §6.3 intermediate value with the core BigInt helpers, cross-checked against `compute()` (`consistent`).
   - Replay reads `public/replay/<scenario>.json`; playback is a GSAP tween over the step index.
   - `src/lib/hl.ts`: Hyperliquid info API from the browser (`candleSnapshot`, `l2Book`, `metaAndAssetCtxs`; CORS open, recon C.7) for the Trade page. There is no mempool view (recon C.7).
+  - `src/lib/pressure.ts` (pure): `pushState(gapBps)` and `poolActivity(pool, trades)` for the push status above.
   - `src/lib/trade-math.ts` (pure): `tokenSide`, `feeFor`, `indicativeOut`, `planLiquidity`, and the exact contract args `swapArgs`, `liquidityArgs`, `liquidityNeeds`, `withGasMargin` (estimate × 1.3 + 30k).
   - `src/lib/swap.ts` `useSwap` (Trade, Swap): from the user's Privy wallet, MockERC20 `mint` → `approve` → `PoolSwapTest.swap` on either pool. `src/lib/liquidity.ts` `useAddLiquidity` (Pool): `mint` → `approve` both tokens → `PoolModifyLiquidityTest.modifyLiquidity`.
 - **Exit:** the rendered UI (`/` needs only the RPC; `/trade`, `/swap`, `/pool` need the Arena or the recording for pool data, and Hyperliquid for market data); admin POSTs to the Arena; user swaps and liquidity on chain (Trade, Swap, Pool; LIVE only); CSV download and share link (replay). Every number carries a source label and a LIVE / RECORDED / REPLAY badge.
