@@ -1,6 +1,9 @@
 <div align="center">
 
-# Aven
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/logo-dark.svg">
+  <img src="docs/diagrams/logo-light.svg" width="340" alt="Aven">
+</picture>
 
 ### Every dynamic-fee hook trusts someone for its price. Aven reads the perp market itself.
 
@@ -62,7 +65,7 @@ Built at **ETHGlobal Mumbai 2026** for the Uniswap Foundation track.
 | Uniswap [`VolatilePairHook`](https://github.com/Uniswap/v4-hooks-public) | the pool's own top-of-block move (ask/bid skew + backrun fee) | pool path only | UUPS proxy with admin, pool-initializer and config-manager roles | after the pool itself moves |
 | **Aven** | **HyperCore oracle + mark, read in-block** | **the chain only** | **none** | **same block, before the pool moves** |
 
-Aven borrows four ideas from `VolatilePairHook`: top-of-block anchoring, direction-specific fees, implementing `IDynamicFeeHook.getFee`, and computing state in memory for views while only `beforeSwap` writes it. The two designs complement each other. Combining them is on the [roadmap](#roadmap).
+Aven borrows four ideas from `VolatilePairHook`: top-of-block anchoring, direction-specific fees, implementing `IDynamicFeeHook.getFee`, and computing state in memory for views while only `beforeSwap` writes it. The two designs complement each other.
 
 ---
 
@@ -495,7 +498,6 @@ flowchart TD
 | aETH / aUSD | [`0xD4a2…5756`](https://hyperevmscan.io/address/0xD4a26168e47acc1b514aF23Fb5a360d171745756) / [`0xFC91…efd6`](https://hyperevmscan.io/address/0xFC91A98c4bDbF5b20a2Da89e514C66295051efd6) |
 | PoolSwapTest / PoolModifyLiquidityTest | [`0xFe6b…02B1`](https://hyperevmscan.io/address/0xFe6baCe2E548fD06735A4242BBD46A3c842E02B1) / [`0x4da4…1A5b`](https://hyperevmscan.io/address/0x4da494CB3f82c3d01c2D720BB23B38E505141A5b) |
 | Smoke swaps on Aven (verify MATCH A + B) | [`0x7b28…`](https://hyperevmscan.io/tx/0x7b28ee95600b0f2967542ec98b43f52435edab12a9ee6acf43e6c1306f337eed): 700 pips · [`0x2dd3…`](https://hyperevmscan.io/tx/0x2dd33f423c553cf4abd89af9ea725690039fb1105e883071a6c931bcea57f3a9): 500 pips; gas 190,521 / 174,097 |
-| Web app | **TODO: public URL** |
 
 The machine-readable record is [`contracts/deployments/999.json`](contracts/deployments/999.json). Testnet (998) was abandoned: nobody could get testnet HYPE (§T in DEPLOYMENTS.md).
 
@@ -524,27 +526,15 @@ Threat model, each threat mapped to its test: [docs/SECURITY.md](docs/SECURITY.m
 - **Precompile failure modes.** Reads can revert, return 0 bytes (local chains have no code there), return words wider than `uint64`, or burn all forwarded gas. Each mode has a test.
 - **A 1-second-block chain exposes defaults.** The load tests found viem's ~4 s block-number cache, viem's 4 s receipt polling, a stampeding per-block cache, and gas estimates that miss the first-swap-of-block path. All four are fixed with regression tests.
 
-## Roadmap
-
-- [x] HyperEVM mainnet deployment, with live verified transactions
-- [x] Web app: landing, Trade, Swap, Pool, Replay, Docs and the `/verify/[tx]` proof page
-- [ ] A public web app URL
-- [ ] Decide on the demo tokens: keep the open mint, or deploy owner-mint tokens (SECURITY.md C-5)
-- [ ] A third replay scenario (`volatile-2`; the window is still to be picked)
-- [ ] `slither` pass, with the findings recorded in SECURITY.md
-- [ ] A multi-block decaying gap anchor, to close the cross-block split-arb gap
-- [ ] Combine Aven's external fair value with `VolatilePairHook`-style skew
-- [ ] HIP-3 markets (equities, commodities) and a spread signal from the `bbo` precompile (`0x80e`)
-- [ ] A governance-free parameter search over replay data
-
 ---
 
 ## Team
 
-| Name | Role |
+| Name | GitHub |
 |---|---|
-| Sayan Roy ([@mesayanroy](https://github.com/mesayanroy)) | contracts, backend, proofs |
-| Satish Jalan ([@SATISH-JALAN](https://github.com/SATISH-JALAN)) | frontend |
+| Sayan Roy | [@mesayanroy](https://github.com/mesayanroy) |
+| Satish Jalan | [@SATISH-JALAN](https://github.com/SATISH-JALAN) |
+| Om Kumar | [@iamomm-hack](https://github.com/iamomm-hack) |
 
 ## Disclosure
 

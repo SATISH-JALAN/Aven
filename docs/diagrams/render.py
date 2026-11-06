@@ -488,6 +488,37 @@ def replay(t: dict) -> Svg:
     return s
 
 
+# The Aven logo: emblem lobes from frontend/src/app/icon.svg, wordmark strokes from
+# frontend/src/components/brand.tsx (Wordmark), on a transparent background.
+LOGO_INK = {"light": "#09090a", "dark": "#f0efec"}
+
+
+def logo(theme: str) -> str:
+    ink = LOGO_INK[theme]
+    lobes = [
+        "M0,0 H415 C530,0 650,95 650,220 C650,270 635,305 605,350 C545,280 470,250 385,250 "
+        "C290,250 210,290 145,350 C55,255 0,135 0,0 Z",
+        "M0,700 H415 C530,700 650,605 650,480 C650,430 635,395 605,350 C545,420 470,450 385,450 "
+        "C290,450 210,410 145,350 C55,445 0,565 0,700 Z",
+    ]
+    letters = [
+        ('M3,104 L45,4 L87,104', 'stroke-linejoin="miter"'),
+        ('M108,4 L150,104 L192,4', 'stroke-linejoin="miter"'),
+        ('M284,8 H228 Q218,8 218,18 V86 Q218,96 228,96 H284', ''),
+        ('M236,52 H274', ''),
+        ('M312,104 V12 Q312,3 319,9 L388,93 Q396,101 396,91 V4', 'stroke-linejoin="round"'),
+    ]
+    emblem = "".join(f'<path d="{d}"/>' for d in lobes)
+    word = "".join(f'<path d="{d}" {extra}/>' for d, extra in letters)
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 488 132" width="488" height="132" '
+        'role="img" aria-label="Aven">'
+        f'<g fill="{ink}" transform="scale(0.1714)">{emblem}</g>'
+        f'<g fill="none" stroke="{ink}" stroke-width="12.5" transform="translate(156 18) scale(0.78)">{word}</g>'
+        '</svg>\n'
+    )
+
+
 def main() -> None:
     for name, fn in [("architecture", architecture), ("fee-pipeline", fee_pipeline), ("proofs", proofs),
                      ("replay", replay)]:
@@ -495,6 +526,10 @@ def main() -> None:
             path = OUT / f"{name}-{theme}.svg"
             path.write_text(fn(t).render(), encoding="utf-8")
             print(f"wrote {path.relative_to(OUT.parent.parent)}")
+    for theme in LOGO_INK:
+        path = OUT / f"logo-{theme}.svg"
+        path.write_text(logo(theme), encoding="utf-8")
+        print(f"wrote {path.relative_to(OUT.parent.parent)}")
 
 
 if __name__ == "__main__":
