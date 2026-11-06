@@ -43,6 +43,7 @@ Built at **ETHGlobal Mumbai 2026** for the Uniswap Foundation track.
 | On real Hyperliquid history (Oct 29 2026, Binance halt), Aven LPs beat fixed-fee LPs. | [Replay results](#replay-real-mainnet-history-four-pools) · [backend/data/replay/README.md](backend/data/replay/README.md) |
 | No owner, setters, proxy, `receive` or custody. | [`AvenHook.sol`](contracts/src/AvenHook.sol): every config value is `immutable` |
 | Anything that quotes Uniswap's dynamic-fee hooks can quote Aven. | `AvenHook` implements Uniswap's [`IDynamicFeeHook.getFee`](contracts/src/interfaces/IDynamicFeeHook.sol) |
+| Uniswap's own **V4Quoter** and **Universal Router** (2.0 and 2.1.2) on mainnet route through the Aven pool, and the router delivers exactly the quote. | `pnpm health`: read-only, simulated with `eth_call` ([backend/scripts/health.ts](backend/scripts/health.ts)) |
 
 ---
 
@@ -446,6 +447,7 @@ pnpm --filter @aven/scripts replay-to-web       # -> frontend/public/replay/*.js
 
 pnpm verify <txHash>                            # recompute the fee of every FeeComputed in a tx (exit 1 on mismatch)
 CHAIN_ID=999 HYPEREVM_RPC=<rpc> pnpm verify --all   # every FeeComputed since deployment, in <= 50-block chunks
+CHAIN_ID=999 pnpm health                         # read-only mainnet check: contracts, pools, Uniswap routers, recorded txs
 ```
 
 The public RPC `https://rpc.hyperliquid.xyz/evm` allows 100 requests per minute per IP. That's fine for verifying a few transactions; use a dedicated endpoint for `--all` and for the Arena.
@@ -465,7 +467,7 @@ Each tool reads its own folder's `.env`. Only the `.env.example` files are commi
 | | `HYPEREVM_RPC`, `HL_INFO_API_TESTNET`, `HL_INFO_API_MAINNET` | chain RPC and Hyperliquid info API |
 | | optional: `CHAIN_ID` (998), `ARENA_PORT` (8787), `MAX_TRADE_BASE` (5), `MAX_TRADE_QUOTE` (10,000), `SHOCK_QUOTE` (40,000), `SHOCK_BASE` (15), `MIN_NATIVE_BALANCE` (0.01), `NATIVE_USD` (0), `POLL_MS` (500), `POST_RATE_LIMIT_PER_MIN` (30) | Arena tuning |
 | | mainnet: `CHAIN_ID=999`, `NATIVE_USD` (HYPE price, must be > 0), `MAX_GAS_PRICE_GWEI` (required, e.g. 2), `POLL_MS=2000` on a free-tier RPC | see [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md) §M.4 |
-| `frontend/.env.local` | `NEXT_PUBLIC_ARENA_API`, `NEXT_PUBLIC_RPC`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_MODE` (`live` / `recorded`), `NEXT_PUBLIC_PRIVY_APP_ID` | public values only, never keys |
+| `frontend/.env.local` | `NEXT_PUBLIC_ARENA_API`, `NEXT_PUBLIC_RPC` (default: public mainnet RPC), `NEXT_PUBLIC_CHAIN_ID` (default 999), `NEXT_PUBLIC_MODE` (`live` / `recorded`), `NEXT_PUBLIC_PRIVY_APP_ID` | public values only, never keys |
 
 ---
 
