@@ -1,21 +1,21 @@
 {
  "badge": "Recorded run",
- "recordedAt": "2026-11-06T10:18:16.418Z",
+ "recordedAt": "2026-11-06T00:25:19.510Z",
  "chainId": 31337,
  "arenaVersion": "0.1.0",
  "config": {
   "chainId": 31337,
-  "hook": "0xEc8B3fC3aD9C2c5285207205d16cddEDC1C96080",
+  "hook": "0xaAEde74576b4219DeAa155b5d5f22710A690a080",
   "poolManager": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
   "pools": {
    "aven": {
-    "id": "0x98353b0e9bc63c8f6382b1fb94e1703a009fbf7269299f87d70fdf7e97f889fa",
+    "id": "0x12bbffe2c667ae6a473981cb6457c76d7e025d286668b48266299be80c5471a3",
     "key": {
      "currency0": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
      "currency1": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
      "fee": 8388608,
      "tickSpacing": 60,
-     "hooks": "0xEc8B3fC3aD9C2c5285207205d16cddEDC1C96080"
+     "hooks": "0xaAEde74576b4219DeAa155b5d5f22710A690a080"
     }
    },
    "control": {
@@ -30,7 +30,7 @@
    }
   },
   "config": {
-   "perpIndex": 1,
+   "perpIndex": 4,
    "szDecimals": 4,
    "baseIsToken0": true,
    "decimals0": 18,
@@ -52,177 +52,177 @@
   "explorer": ""
  },
  "shock": {
-  "id": "shock:0x262d54caa423bdfef29151cac3e4c224b4323bed2a793f865f3c9788be400b96",
-  "ts": 1793960293252,
-  "sizeBase": "17.854193726929037",
+  "id": "shock:0xae2454c21934af9e31b38e04b2b7245b2750b68853d1436e2b0be0d90b5e60b8",
+  "ts": 1793924707131,
+  "sizeBase": "17.856983419790893",
   "direction": "buyBase",
   "txHashes": [
-   "0x262d54caa423bdfef29151cac3e4c224b4323bed2a793f865f3c9788be400b96",
-   "0xbf32359fc10bbd12af96250409f632648de7f14fc65456330d72b14796b0679f"
+   "0xae2454c21934af9e31b38e04b2b7245b2750b68853d1436e2b0be0d90b5e60b8",
+   "0x03c16fa2de0846ea61eaf382aea7688572c693f65ebee33d01dfe61962e7df0f"
   ]
  },
  "state": {
   "before": {
-   "block": 134,
-   "ts": 1793960292364,
+   "block": 138,
+   "ts": 1793924703045,
    "oracle": {
-    "raw": "224037",
-    "price": 2240.37
+    "raw": "224002",
+    "price": 2240.02
    },
    "mark": {
-    "raw": "223980",
-    "price": 2239.8
+    "raw": "224002",
+    "price": 2240.02
    },
    "pools": {
     "control": {
      "poolId": "0x753f04065c73140220c212f44f641f6fa67a1affb08fb976fb2635415aafed51",
-     "price": 2238.697812273,
-     "gapBps": -7,
-     "liquidity": "102935139406237931",
+     "price": 2240.017803052,
+     "gapBps": 0,
+     "liquidity": "103100382008070579",
      "feePreview": {
       "fixedPips": 3000
      }
     },
     "aven": {
-     "poolId": "0x98353b0e9bc63c8f6382b1fb94e1703a009fbf7269299f87d70fdf7e97f889fa",
-     "price": 2238.697808845,
-     "gapBps": -7,
-     "liquidity": "102935139406237931",
+     "poolId": "0x12bbffe2c667ae6a473981cb6457c76d7e025d286668b48266299be80c5471a3",
+     "price": 2240.017797544,
+     "gapBps": 0,
+     "liquidity": "103100382008070579",
      "feePreview": {
       "buyBase": {
-       "fee": 850,
+       "fee": 500,
        "reason": "OK",
-       "gapBps": 7,
-       "premiumBps": -2,
-       "moveBps": 7,
+       "gapBps": 0,
+       "premiumBps": 0,
+       "moveBps": 0,
        "arb": true,
        "withPressure": false
       },
       "sellBase": {
-       "fee": 600,
+       "fee": 500,
        "reason": "OK",
-       "gapBps": 7,
-       "premiumBps": -2,
-       "moveBps": 7,
+       "gapBps": 0,
+       "premiumBps": 0,
+       "moveBps": 0,
        "arb": false,
-       "withPressure": true
+       "withPressure": false
       }
      },
      "hookState": {
-      "topBlock": 129,
-      "sqrtPriceTopX96": "3748655565166118594625383",
-      "anchorMark": "223810",
-      "anchorTime": 1793960287
+      "topBlock": 121,
+      "sqrtPriceTopX96": "3749760579095067731516272",
+      "anchorMark": "224002",
+      "anchorTime": 1793924685
      }
     }
    }
   },
   "afterShock": {
-   "block": 135,
-   "ts": 1793960293282,
+   "block": 142,
+   "ts": 1793924707165,
    "oracle": {
-    "raw": "224037",
-    "price": 2240.37
+    "raw": "224002",
+    "price": 2240.02
    },
    "mark": {
-    "raw": "223980",
-    "price": 2239.8
+    "raw": "224002",
+    "price": 2240.02
    },
    "pools": {
     "control": {
      "poolId": "0x753f04065c73140220c212f44f641f6fa67a1affb08fb976fb2635415aafed51",
-     "price": 2275.510172449,
-     "gapBps": 156,
-     "liquidity": "102935139406237931",
+     "price": 2276.781712148,
+     "gapBps": 164,
+     "liquidity": "103100382008070579",
      "feePreview": {
       "fixedPips": 3000
      }
     },
     "aven": {
-     "poolId": "0x98353b0e9bc63c8f6382b1fb94e1703a009fbf7269299f87d70fdf7e97f889fa",
-     "price": 2275.589878108,
-     "gapBps": 157,
-     "liquidity": "102935139406237931",
+     "poolId": "0x12bbffe2c667ae6a473981cb6457c76d7e025d286668b48266299be80c5471a3",
+     "price": 2276.874269042,
+     "gapBps": 164,
+     "liquidity": "103100382008070579",
      "feePreview": {
       "buyBase": {
        "fee": 500,
        "reason": "OK",
-       "gapBps": 157,
-       "premiumBps": -2,
-       "moveBps": 6,
+       "gapBps": 164,
+       "premiumBps": 0,
+       "moveBps": 0,
        "arb": false,
        "withPressure": false
       },
       "sellBase": {
-       "fee": 8450,
+       "fee": 8700,
        "reason": "OK",
-       "gapBps": 157,
-       "premiumBps": -2,
-       "moveBps": 6,
+       "gapBps": 164,
+       "premiumBps": 0,
+       "moveBps": 0,
        "arb": true,
-       "withPressure": true
+       "withPressure": false
       }
      },
      "hookState": {
-      "topBlock": 135,
-      "sqrtPriceTopX96": "3748670951272144154315262",
-      "anchorMark": "223827",
-      "anchorTime": 1793960293
+      "topBlock": 139,
+      "sqrtPriceTopX96": "3749775940541240997570161",
+      "anchorMark": "224002",
+      "anchorTime": 1793924703
      }
     }
    }
   },
   "after": {
-   "block": 138,
-   "ts": 1793960296398,
+   "block": 150,
+   "ts": 1793924719499,
    "oracle": {
-    "raw": "224030",
-    "price": 2240.3
+    "raw": "224002",
+    "price": 2240.02
    },
    "mark": {
-    "raw": "223970",
-    "price": 2239.7
+    "raw": "224002",
+    "price": 2240.02
    },
    "pools": {
     "control": {
      "poolId": "0x753f04065c73140220c212f44f641f6fa67a1affb08fb976fb2635415aafed51",
-     "price": 2247.111334002,
+     "price": 2246.760280842,
      "gapBps": 30,
-     "liquidity": "102935139406237931",
+     "liquidity": "103100382008070579",
      "feePreview": {
       "fixedPips": 3000
      }
     },
     "aven": {
-     "poolId": "0x98353b0e9bc63c8f6382b1fb94e1703a009fbf7269299f87d70fdf7e97f889fa",
-     "price": 2259.462457768,
-     "gapBps": 85,
-     "liquidity": "102935139406237931",
+     "poolId": "0x12bbffe2c667ae6a473981cb6457c76d7e025d286668b48266299be80c5471a3",
+     "price": 2259.679209119,
+     "gapBps": 87,
+     "liquidity": "103100382008070579",
      "feePreview": {
       "buyBase": {
        "fee": 500,
        "reason": "OK",
-       "gapBps": 157,
-       "premiumBps": -2,
-       "moveBps": 6,
+       "gapBps": 87,
+       "premiumBps": 0,
+       "moveBps": 0,
        "arb": false,
        "withPressure": false
       },
       "sellBase": {
-       "fee": 8450,
+       "fee": 4850,
        "reason": "OK",
-       "gapBps": 157,
-       "premiumBps": -2,
-       "moveBps": 6,
+       "gapBps": 87,
+       "premiumBps": 0,
+       "moveBps": 0,
        "arb": true,
-       "withPressure": true
+       "withPressure": false
       }
      },
      "hookState": {
-      "topBlock": 138,
-      "sqrtPriceTopX96": "3779432387661214617832870",
-      "anchorMark": "223834",
-      "anchorTime": 1793960296
+      "topBlock": 151,
+      "sqrtPriceTopX96": "3780498832887773105348371",
+      "anchorMark": "224002",
+      "anchorTime": 1793924715
      }
     }
    }
@@ -230,40 +230,40 @@
  },
  "trades": [
   {
-   "id": "0x262d54caa423bdfef29151cac3e4c224b4323bed2a793f865f3c9788be400b96:control",
-   "ts": 1793960293234,
-   "block": 135,
+   "id": "0xae2454c21934af9e31b38e04b2b7245b2750b68853d1436e2b0be0d90b5e60b8:control",
+   "ts": 1793924707121,
+   "block": 139,
    "pool": "control",
    "kind": "retail",
    "direction": "buyBase",
    "amountIn": "40000000000",
-   "amountOut": "17669246175140798852",
+   "amountOut": "17659106163032013722",
    "feePips": 3000,
    "feeUsd": 120,
    "botProfitUsd": 0,
    "lpFeeIncomeUsd": 120,
-   "txHash": "0x262d54caa423bdfef29151cac3e4c224b4323bed2a793f865f3c9788be400b96"
+   "txHash": "0xae2454c21934af9e31b38e04b2b7245b2750b68853d1436e2b0be0d90b5e60b8"
   },
   {
-   "id": "0xbf32359fc10bbd12af96250409f632648de7f14fc65456330d72b14796b0679f:aven",
-   "ts": 1793960293250,
-   "block": 135,
+   "id": "0x03c16fa2de0846ea61eaf382aea7688572c693f65ebee33d01dfe61962e7df0f:aven",
+   "ts": 1793924707130,
+   "block": 139,
    "pool": "aven",
    "kind": "retail",
    "direction": "buyBase",
    "amountIn": "40000000000",
-   "amountOut": "17707039262715740828",
-   "feePips": 850,
-   "feeUsd": 34,
+   "amountOut": "17703026959434476144",
+   "feePips": 500,
+   "feeUsd": 20,
    "botProfitUsd": 0,
-   "lpFeeIncomeUsd": 34,
-   "txHash": "0xbf32359fc10bbd12af96250409f632648de7f14fc65456330d72b14796b0679f",
+   "lpFeeIncomeUsd": 20,
+   "txHash": "0x03c16fa2de0846ea61eaf382aea7688572c693f65ebee33d01dfe61962e7df0f",
    "breakdown": {
-    "fee": 850,
+    "fee": 500,
     "reason": "OK",
-    "gapBps": 7,
-    "premiumBps": -2,
-    "moveBps": 7,
+    "gapBps": 0,
+    "premiumBps": 0,
+    "moveBps": 0,
     "arb": true,
     "withPressure": false
    },
@@ -273,42 +273,42 @@
    }
   },
   {
-   "id": "0x05db8ac2a8dfd0a232a3107bc6431f1c4eb1ae2653d09b1a2330767ef18120ba:control",
-   "ts": 1793960295403,
-   "block": 137,
+   "id": "0x8e59e36ff8affdfcba4f68f0e2110deda4971765b5c49d49f3242a0d4ddcdd21:control",
+   "ts": 1793924715341,
+   "block": 147,
    "pool": "control",
    "kind": "arb",
    "direction": "sellBase",
-   "amountIn": "13633564307542007032",
-   "amountOut": "30736630414",
+   "amountIn": "14431302299898006041",
+   "amountOut": "32541663393",
    "feePips": 3000,
-   "feeUsd": 91.63268540306366,
-   "botProfitUsd": 192.4019463121149,
-   "lpFeeIncomeUsd": 91.63268540306366,
-   "txHash": "0x05db8ac2a8dfd0a232a3107bc6431f1c4eb1ae2653d09b1a2330767ef18120ba"
+   "feeUsd": 96.9792173334526,
+   "botProfitUsd": 215.25761518246873,
+   "lpFeeIncomeUsd": 96.9792173334526,
+   "txHash": "0x8e59e36ff8affdfcba4f68f0e2110deda4971765b5c49d49f3242a0d4ddcdd21"
   },
   {
-   "id": "0x05d4e5e3e4f6ed29767dadbe445ec6d9f72e7afa8a7ee41734dc43f0aad0940a:aven",
-   "ts": 1793960296238,
-   "block": 138,
+   "id": "0x1ec3e8479d33772ba0fcfdfc6ab0151eb967c9d25fb9f681b70dfc3ae0836a9e:aven",
+   "ts": 1793924719397,
+   "block": 151,
    "pool": "aven",
    "kind": "arb",
    "direction": "sellBase",
-   "amountIn": "7752806043502510380",
-   "amountOut": "17431031972",
-   "feePips": 8450,
-   "feeUsd": 146.7693519395105,
-   "botProfitUsd": 61.87789631828491,
-   "lpFeeIncomeUsd": 146.7693519395105,
-   "txHash": "0x05d4e5e3e4f6ed29767dadbe445ec6d9f72e7afa8a7ee41734dc43f0aad0940a",
+   "amountIn": "8277300213270762201",
+   "amountOut": "18611729535",
+   "feePips": 8700,
+   "feeUsd": 161.30946680645775,
+   "botProfitUsd": 70.41151126922341,
+   "lpFeeIncomeUsd": 161.30946680645775,
+   "txHash": "0x1ec3e8479d33772ba0fcfdfc6ab0151eb967c9d25fb9f681b70dfc3ae0836a9e",
    "breakdown": {
-    "fee": 8450,
+    "fee": 8700,
     "reason": "OK",
-    "gapBps": 157,
-    "premiumBps": -2,
-    "moveBps": 6,
+    "gapBps": 164,
+    "premiumBps": 0,
+    "moveBps": 0,
     "arb": true,
-    "withPressure": true
+    "withPressure": false
    },
    "verify": {
     "checkA": true,
@@ -317,45 +317,45 @@
   }
  ],
  "stats": {
-  "since": 1793960292325,
+  "since": 1793924703011,
   "control": {
    "trades": 1,
-   "botProfitUsd": 192.4019463121149,
-   "lpFeeIncomeUsd": 91.63268540306366,
-   "volumeUsd": 30544.228467687884
+   "botProfitUsd": 215.25761518246873,
+   "lpFeeIncomeUsd": 96.9792173334526,
+   "volumeUsd": 32326.405777817534
   },
   "aven": {
    "trades": 1,
-   "botProfitUsd": 61.87789631828491,
-   "lpFeeIncomeUsd": 146.7693519395105,
-   "volumeUsd": 17369.154075681716
+   "botProfitUsd": 70.41151126922341,
+   "lpFeeIncomeUsd": 161.30946680645775,
+   "volumeUsd": 18541.318023730775
   },
-  "lpKeptMoreUsd": 55.13666653644684,
-  "botProfitDiffUsd": -130.52404999382998
+  "lpKeptMoreUsd": 64.33024947300515,
+  "botProfitDiffUsd": -144.84610391324532
  },
  "highlight": {
   "avenArb": {
-   "id": "0x05d4e5e3e4f6ed29767dadbe445ec6d9f72e7afa8a7ee41734dc43f0aad0940a:aven",
-   "ts": 1793960296238,
-   "block": 138,
+   "id": "0x1ec3e8479d33772ba0fcfdfc6ab0151eb967c9d25fb9f681b70dfc3ae0836a9e:aven",
+   "ts": 1793924719397,
+   "block": 151,
    "pool": "aven",
    "kind": "arb",
    "direction": "sellBase",
-   "amountIn": "7752806043502510380",
-   "amountOut": "17431031972",
-   "feePips": 8450,
-   "feeUsd": 146.7693519395105,
-   "botProfitUsd": 61.87789631828491,
-   "lpFeeIncomeUsd": 146.7693519395105,
-   "txHash": "0x05d4e5e3e4f6ed29767dadbe445ec6d9f72e7afa8a7ee41734dc43f0aad0940a",
+   "amountIn": "8277300213270762201",
+   "amountOut": "18611729535",
+   "feePips": 8700,
+   "feeUsd": 161.30946680645775,
+   "botProfitUsd": 70.41151126922341,
+   "lpFeeIncomeUsd": 161.30946680645775,
+   "txHash": "0x1ec3e8479d33772ba0fcfdfc6ab0151eb967c9d25fb9f681b70dfc3ae0836a9e",
    "breakdown": {
-    "fee": 8450,
+    "fee": 8700,
     "reason": "OK",
-    "gapBps": 157,
-    "premiumBps": -2,
-    "moveBps": 6,
+    "gapBps": 164,
+    "premiumBps": 0,
+    "moveBps": 0,
     "arb": true,
-    "withPressure": true
+    "withPressure": false
    },
    "verify": {
     "checkA": true,
@@ -363,49 +363,49 @@
    }
   },
   "controlArb": {
-   "id": "0x05db8ac2a8dfd0a232a3107bc6431f1c4eb1ae2653d09b1a2330767ef18120ba:control",
-   "ts": 1793960295403,
-   "block": 137,
+   "id": "0x8e59e36ff8affdfcba4f68f0e2110deda4971765b5c49d49f3242a0d4ddcdd21:control",
+   "ts": 1793924715341,
+   "block": 147,
    "pool": "control",
    "kind": "arb",
    "direction": "sellBase",
-   "amountIn": "13633564307542007032",
-   "amountOut": "30736630414",
+   "amountIn": "14431302299898006041",
+   "amountOut": "32541663393",
    "feePips": 3000,
-   "feeUsd": 91.63268540306366,
-   "botProfitUsd": 192.4019463121149,
-   "lpFeeIncomeUsd": 91.63268540306366,
-   "txHash": "0x05db8ac2a8dfd0a232a3107bc6431f1c4eb1ae2653d09b1a2330767ef18120ba"
+   "feeUsd": 96.9792173334526,
+   "botProfitUsd": 215.25761518246873,
+   "lpFeeIncomeUsd": 96.9792173334526,
+   "txHash": "0x8e59e36ff8affdfcba4f68f0e2110deda4971765b5c49d49f3242a0d4ddcdd21"
   },
   "verify": {
    "match": true,
    "checkA": true,
    "checkB": true,
-   "onchainFee": 8450,
-   "recomputedFee": 8450,
-   "swapEventFee": 8450,
+   "onchainFee": 8700,
+   "recomputedFee": 8700,
+   "swapEventFee": 8700,
    "inputs": {
-    "poolId": "0x98353b0e9bc63c8f6382b1fb94e1703a009fbf7269299f87d70fdf7e97f889fa",
+    "poolId": "0x12bbffe2c667ae6a473981cb6457c76d7e025d286668b48266299be80c5471a3",
     "sender": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
     "zeroForOne": "true",
     "reason": "OK",
-    "oracleRaw": "224030",
-    "markRaw": "223970",
-    "anchorMarkRaw": "223827",
-    "sqrtPriceX96": "3779432387661214617832870",
-    "sqrtPriceTopX96": "3779432387661214617832870",
+    "oracleRaw": "224002",
+    "markRaw": "224002",
+    "anchorMarkRaw": "224002",
+    "sqrtPriceX96": "3780498832887773105348371",
+    "sqrtPriceTopX96": "3780498832887773105348371",
     "readOk": "true"
    },
    "breakdown": {
-    "fee": 8450,
+    "fee": 8700,
     "reason": "OK",
-    "gapBps": 157,
-    "premiumBps": -2,
-    "moveBps": 6,
+    "gapBps": 164,
+    "premiumBps": 0,
+    "moveBps": 0,
     "arb": true,
-    "withPressure": true
+    "withPressure": false
    }
   }
  },
- "source": "Recorded run: LOCAL anvil chain 31337 with live Hyperliquid MAINNET ETH oracle/mark (perp 1) relayed into the HyperCore precompile addresses 0x807/0x806 every second; unchanged AvenHook, deploy scripts and Arena service"
+ "source": "LOCAL anvil chain 31337 (mock HyperCore precompiles at testnet-ETH prices, real deploy scripts and Arena service) — replace with a testnet recording via `pnpm demo`"
 }

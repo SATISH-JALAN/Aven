@@ -13,9 +13,6 @@ if (!adminToken) throw new Error("set ARENA_ADMIN_TOKEN");
 const rec = await runDemo({ baseUrl, adminToken, log: (s) => console.log(`[demo] ${s}`) });
 const out = fileURLToPath(new URL("../../frontend/public/arena-fallback.json", import.meta.url));
 mkdirSync(fileURLToPath(new URL("../../frontend/public/", import.meta.url)), { recursive: true });
-// Name the chain so a recording can never pass for a testnet run (31337 = local anvil). For live mode prefer
-// `pnpm live:record`, which also states the price source.
-const chainLabel = rec.chainId === 998 ? "HyperEVM testnet 998" : rec.chainId === 31337 ? "LOCAL anvil chain 31337" : `chain ${String(rec.chainId)}`;
-writeFileSync(out, `${JSON.stringify({ ...rec, source: `Recorded run: Arena service ${baseUrl}, ${chainLabel}` }, null, 1)}\n`);
+writeFileSync(out, `${JSON.stringify({ ...rec, source: `Arena service ${baseUrl}` }, null, 1)}\n`);
 console.log(summarize(rec));
 console.log(`[demo] saved frontend/public/arena-fallback.json`);

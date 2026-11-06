@@ -164,24 +164,6 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - Check: the loop never crashes; nonces stay consistent; retries back off; auto-pause triggers on low balance.
 - [x] **7.4 Report:** `docs/LOADTEST.md` with the commands, numbers and findings. Fix anything it finds (and add a regression test).
 
-## Phase 8: Live mode (Sayan, 2026-11-06: no testnet HYPE; "don't change any bit of the architecture")
-
-- [x] **8.1 Exact price conversion:** `pxToRaw` in `@aven/core` (API string → precompile raw, integer-only, refuses inexact input).
-  - Check: recon C.3 values; mutation (wrong exponent) caught.
-- [x] **8.2 Atomic mock writes:** `LocalChain.writePrices` / `setReadFailure` (`anvil_setStorageAt`; slot 0 prices, slot 2 bit 8 fail) and the `host` option.
-  - Check: the E2E relay test; mutation (wrong slot) caught; fail bit checked on a live chain.
-- [x] **8.3 Price relay** (`priceRelay.ts`): change-only writes; stale → reads fail → fallback fee; recovery writes prices first.
-  - Check: unit tests; mutation (no rewrite after an outage) caught.
-- [x] **8.4 Read-only public RPC** (`readOnlyRpc.ts`): `eth_*` reads only.
-  - Check: unit tests over HTTP; live run refused `anvil_setStorageAt` and `eth_sendRawTransaction`.
-- [x] **8.5 `pnpm live` / `live:record`** (`backend/arena/scripts/live-local.ts`) and a port guard.
-  - Check: live run (shock → arb 8,450 vs 3,000, verify MATCH); the guard refuses a busy port.
-- [x] **8.6 Source check** `pnpm live:check` (`liveCheck.ts`).
-  - Check: unit tests; live run A 4/4, B 4/4, source 4/4; a tampered relay log → FAIL.
-- [x] **8.7 Found while recording:** `/state` could be one block stale right after a shock.
-  - Fix: `ownTxBlock`, with a mutation-checked regression test.
-- [x] **8.8 Docs:** DEPLOYMENTS §A, MEMORY, FLOW, AGENTS (mapping + badge), SECURITY, README, DEMO, frontend README/.env.example, backend/.env.example.
-
 ## Testing rule for every step (Sayan, 2026-11-06)
 
 A step is ticked only when:

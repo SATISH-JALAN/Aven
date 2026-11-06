@@ -16,39 +16,31 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P4b ABIs, precompiles, addresses, verify | ✅ done 2026-11-06 (PLAN 2.4–2.5): 29 core tests; poolId/slot checked against `cast`, perpAssetInfo against real testnet bytes | live check on the local chain in PLAN 3.2 |
 | P5a deploy scripts | ✅ written 2026-11-06 (PLAN 3.1); initial price within 1 bp (fuzz) | end-to-end proof on the local chain in 3.2 |
 | P5b local chain | ✅ done 2026-11-06 (PLAN 3.2): `pnpm local:once` deploys all 5 scripts on anvil with mock precompiles. Smoke swaps verify **MATCH on A and B**; ~2 min | `backend/scripts/src/localChain.ts` |
-| P5c testnet runbook | ✅ written 2026-11-06 (`docs/DEPLOYMENTS.md` §B). **Testnet run BLOCKED**: no testnet HYPE could be obtained (faucets dry or gated). Live mode replaces it for the demo | — |
-| **Live mode** | ✅ done 2026-11-06 (`pnpm live`, DEPLOYMENTS.md §A): local anvil 31337 + live Hyperliquid MAINNET ETH oracle/mark (perp 1) relayed into 0x807/0x806 every second; contracts, deploy scripts and Arena unchanged.
-  - Live run: shock 157 bp → Aven arb fee **8,450 vs 3,000** pips, LPs kept **$55.16** more, verify MATCH.
-  - `pnpm live:check`: A 4/4, B 4/4, source 4/4; a tampered relay log → FAIL.
-  - `pnpm live:record` → `frontend/public/arena-fallback.json` (8,450 vs 3,000, $55.14 more).
-  - New tests: `pxToRaw` (recon C.3 values), relay (stale → fallback, recovery order), read-only RPC, source check, E2E relay → hook (READ_FAILED on stale), Arena post-shock state. Each one mutation-checked. | `backend/scripts/src/{priceRelay,readOnlyRpc,liveCheck}.ts`, `backend/arena/scripts/live-local.ts` |
+| P5c testnet runbook | ✅ written 2026-11-06 (`docs/DEPLOYMENTS.md`). **Testnet run BLOCKED on Sayan**: funded deployer + HyperCore user | — |
 | P6 Arena service | ✅ done 2026-11-06 (PLAN 4.1–4.4): 22 unit/API tests (auth and rate-limit mutations caught). **E2E gate passes on the local chain**: shock → bot arbs both pools → Aven fee > control fee → `lpKeptMoreUsd > 0` → `/verify` MATCH; trades reload after restart (156 s) | `backend/arena` |
 | P7 market data | ✅ done 2026-11-06 (PLAN 5.1): binance-halt and calm each have 72 × 5m HYPE candles + 8 funding samples, 0 gaps. Oct 29 18:00–24:00 HYPE range 88.96–95.24. volatile-2 is a placeholder (Sayan to pick) | `backend/data/raw/` |
 | P8 replay engine | ✅ done 2026-11-06 (PLAN 5.2–5.3). **Oct 29: avenLive +$141 vs HODL, avenDelayed +$114, fixed30 +$7, fixed05 −$318. Calm: Aven ≈ fixed30 (+$323 vs +$317), live ≈ delayed.** Spec defaults, no tuning. Hand-checked steps 1–2; sanity tests (flat → LVR 0; collected fees = expected within 0.01%) | `backend/data/replay/README.md` |
 | P9 verify CLI + proofs | ✅ done 2026-11-06 (PLAN 6.1): `pnpm verify <tx>` / `--all`; `pnpm proofs --e2e` writes docs/PROOFS.md. Forge 88/0/4; diff 10k/10k + 2k/2k; local verify 2/2. Hook overhead 46,877 gas. **Arena e2e: Aven arb fee 8,700 vs 3,000; LPs kept $64.33 more** | docs/PROOFS.md |
 | P11 invariants + security | ✅ done 2026-11-06 (PLAN 6.2–6.3): I1/I2/I3/I4/I9 hold over 64 runs × 64 calls (0 reverts); 3 mutations each caught by the matching invariant; `.gas-snapshot` baseline; docs/SECURITY.md maps every §10 threat to a test or limit. Forge **90 passed / 0 failed / 4 skipped** | `contracts/test/invariant/AvenInvariant.t.sol` |
-| P13 demo | ✅ done 2026-11-06 (PLAN 6.4): `pnpm demo` (any Arena) and `pnpm --filter @aven/arena demo:local` (local chain, in-process Arena over HTTP). The local run gave Aven arb fee 8,700 vs 3,000 and LPs kept $64.33 more; verify MATCH. `frontend/public/arena-fallback.json` now holds the **live-mode** recording (`pnpm live:record`). docs/DEMO.md has the script and video list | — |
+| P13 demo | ✅ done 2026-11-06 (PLAN 6.4): `pnpm demo` (any Arena) and `pnpm --filter @aven/arena demo:local` (local chain, in-process Arena over HTTP). The local run gave Aven arb fee 8,700 vs 3,000 and LPs kept $64.33 more; verify MATCH. `frontend/public/arena-fallback.json` holds the LOCAL recording; re-record on testnet. docs/DEMO.md has the script and video list | — |
 | Phase 7 load testing | ✅ done 2026-11-06 (PLAN 7.1–7.4).
   - Foundry: 2,318 swaps / 250 blocks with broken reads, 0 reverts or violations; ~16 Aven swaps fit a 3M small block.
   - Burst: 280/280 swaps verified.
   - API: ≤ 71 ms p99 at ~1.6–2.7k req/s, 0 errors; 200 SSE clients, no leak; rate limit exact.
   - Stress: 348/348 verified, 0 nonce errors; bot 64 iterations over 75 blocks under API load.
   - **4 bugs found and fixed** (viem block-number cache, 4 s receipt polling, /state thundering herd, out of gas on the first swap of a block), each with a regression test. | docs/LOADTEST.md |
-| **Backend plan** | ✅ every step done; the testnet deploy is BLOCKED (no testnet HYPE), and live mode (PLAN Phase 8) is the demo path | docs/PLAN.md |
+| **Backend plan** | ✅ every step done or BLOCKED on Sayan (testnet deploy) | docs/PLAN.md |
 | P3–P13 | not started | — |
 
-GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`4978cd0`), on Sayan's "push". **Local commits after that (live mode) are not pushed** until Sayan says so.
+GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`4978cd0`), on Sayan's "push". **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
 
-- **2026-11-06: Live demo = live mode (local chain + live Hyperliquid prices), decided by Sayan.**
-  - **Why:** nobody could get testnet HYPE (faucets dry or gated), and mainnet was out of budget.
-  - **What runs:** the unchanged contracts on local anvil 31337 (1 s blocks). `MockHyperCorePx` sits at 0x806/0x807/0x80a, and a relay copies Hyperliquid **mainnet** ETH oracle/mark into it every second. That's valid because recon C.3 showed precompile = info API after scaling.
-  - **Asset:** mainnet ETH, perp index **1**, `szDecimals` **4** (checked against `meta`). Same scaling as testnet ETH, so `aETH`/`aUSD` and `EXPECT_COIN=ETH` stay; only `PERP_INDEX` changes, 4 → 1.
-  - **Badge:** "Live prices · local chain", never "Live testnet". AGENTS.md is updated to match.
-  - **Not changed:** the spec (ARCHITECTURE) still describes testnet. §B of DEPLOYMENTS.md stays the path once HYPE is available.
-  - **Rejected:** a Chainlink/UMA/Pyth oracle. It would be stale exactly when arbs happen, and has no same-block perp mark (two of the three signals need it). It would also mean rewriting the maths, proofs and replay, and AGENTS.md §6 forbids extra sponsor integrations.
-- **2026-11-06: Live-mode safety.** Anvil listens on 127.0.0.1 only. Its `anvil_*` methods and the public anvil test keys (which include our wallets) would let anyone rewrite prices or trade as us. The public side gets only a read-only RPC proxy (port 8546) plus the Arena API.
+- **2026-11-06: Go to HyperEVM mainnet (999); live mode reverted. Decided by Sayan.**
+  - Live mode (local chain + relayed prices, `4ae5305`) is reverted in full, with two exceptions.
+    - The **Arena `/state` fix** is kept, because the bug affects any chain. `state()` serves max(poller block, newest block in our own receipts), so right after a shock it no longer serves the pre-shock block. Mutation-checked test in `backend/arena/test/state.test.ts`.
+    - The **prompt log** is kept (ETHGlobal disclosure).
+  - Before anything is deployed: a mainnet budget, a full re-test and a security audit. Results go in DEPLOYMENTS.md (mainnet section) and SECURITY.md.
 
 - **2026-11-06: Solidity imports are root-style** (`src/…`, `test/…`, `script/…`), never `./` or `../`. Reason: the Nomic Foundation Solidity extension on Windows names sources with backslashes, so relative imports showed false "Source not found" errors in the editor. Forge resolves both forms; the runtime bytecode is identical (only the metadata hash changed); forge 90/0/5.
 
@@ -87,8 +79,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 - **Replay scenario C (`volatile-2`):** pick a window (`backend/scripts/scenarios.json`; placeholder Oct 29 00:00–06:00 is skipped by default).
 
-0. **Testnet deploy (BLOCKED, optional now):** no testnet HYPE could be obtained on 2026-11-06. If someone provides ~0.02 HYPE (the 2026-11-06 gas check put the whole run at ~0.007 HYPE, plus the bot's 0.01 auto-pause floor), run DEPLOYMENTS.md §B. Until then, live mode (§A) is the demo.
-1a. **Frontend (teammate):** use the badge "Live prices · local chain" for live mode, and point `NEXT_PUBLIC_RPC` at the **read-only** RPC (port 8546), `NEXT_PUBLIC_CHAIN_ID=31337` (frontend/README.md).
+0. **Testnet deploy (BLOCKED on Sayan):** fund the deployer (testnet HYPE for gas on HyperEVM; how is UNVERIFIED, see DEPLOYMENTS.md §0), make it a HyperCore user, then run docs/DEPLOYMENTS.md.
 1. **Big blocks on testnet: UNVERIFIED** until we send `evmUserModify`. The deployer must be a HyperCore user. The faucet only serves addresses that have deposited on mainnet; otherwise someone must `usdSend` testnet USDC to the deployer.
 2. Repo must be made **public** before submission (Sat Nov 7, 09:00 IST).
 
@@ -100,11 +91,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 ## Gotchas learned
 
-- **On Windows, a hard stop orphans anvil.** Killing the parent, or closing the terminal instead of pressing Ctrl+C, leaves `anvil.exe` and the Arena running. A new run then talked to the OLD chain on 8545. `pnpm live` now refuses to start while 8545/8546/8787 are busy.
-- **`/state` right after our own tx could be one block stale.** It's cached by the poller's last block, refreshed every 500 ms, so the live-mode recording once showed "0 bp off fair" after a shock. `state()` now uses max(poller block, newest block in our own receipts), with a mutation-checked regression test. SSE emits are unchanged.
-- **Precompile values change once per block on HyperEVM.** Set mock prices with `anvil_setStorageAt` (MockHyperCorePx slot 0 = price mapping, slot 2 = flags, fail = bit 8), not with transactions. Two transactions can land in different blocks, or after a swap in the same block.
-- **The info API's perp prices have at most `6 − szDecimals` decimals**, so `pxToRaw` is exact. It refuses anything else instead of rounding.
-- **`pnpm demo` overwrites `frontend/public/arena-fallback.json`.** Use `pnpm live:record` for the live-mode recording, since it states the price source.
+- **`/state` right after our own tx could be one block stale.** It's cached by the poller's last block, refreshed every 500 ms, so a recording once showed "0 bp off fair" after a shock. Fixed with `ownTxBlock` (kept through the live-mode revert).
 - **Mutation checks: restore from a copy, never `git checkout`.** `git checkout` reset a file with uncommitted work in it (caught and restored, 2026-11-06).
 
 - **Editor "Source not found" (error 6275) on relative Solidity imports, Windows only.** The Nomic Foundation extension (`hardhat-solidity` 0.9.3, also in Antigravity IDE) renames Foundry sources with `path.relative`, which gives `src\interfaces\X.sol`. solc resolves `./Y.sol` to `src/interfaces/Y.sol`, so nothing matches. Remapped or root-style imports go through the extension's own resolver and work. Use root-style imports; reload the window after changing them.

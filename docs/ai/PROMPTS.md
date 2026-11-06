@@ -224,3 +224,11 @@ So what I'm focusing upon now is very practical, because I've tried up to every 
 Okay, so go for this particular changes and update all of this. In the docs as well. And don't make any mistakes, be practical.
 ```
 
+---
+
+## #18 — 2026-11-06T12:51:58Z — Go to mainnet: revert live mode, budget, full re-test and audit
+
+```text
+I am telling you to revert back my last prompt as we have decided to go fully on mainnet. And tell me like how much and tell me like how much hype is needed to deploy the whole contract part and like the testing part too, like how much hype is needed to test the whole app, and check also the routes like the APIs, REST APIs, then do a proper security audit of the contracts, of the contract, so that before we deploy anything we are fully confident like the contracts are perfect. Also check the load balancer, like the speed of the blocks and the partitions, everything should be perfect. The price rates, oracle part, the perp routes, check the perps that all of it is working or not, the backend part, and check if the hooks are properly, Uniswap hooks are properly made or not, and check the apps what are made and like it is working or not, do a proper testing of all of the things, like before we switch to mainnet everything should be in perfect sync, and the speed, check the speed of the blocks and check the LP profits, hooks, everything, like a proper security audit of the backend part, because we will switch to mainnet. So, and also give a proper mainnet chart. mainnet chart like how much hype token is needed. As you told earlier, like 5 to 10 hype dollars hype will be enough. So check it so that we will buy that amount of hype. As it is real money, so real money needs proper audits. So check all of that properly.
+```
+

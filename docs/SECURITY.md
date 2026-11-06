@@ -60,13 +60,6 @@ The load test hit this: 12 of 70 bot txs reverted. Fix: estimate × 1.3 + 30k, `
 - The live demo shows the mechanics. The economic claim rests on the replay over **mainnet** data (backend/data/replay/README.md).
 - Demo tokens (`aETH`/`aUSD`) are solmate `MockERC20` with an **open mint**. They're for testnet only and must never hold value.
 
-### Live mode (local chain + live Hyperliquid prices, DEPLOYMENTS.md §A)
-
-- **Extra trust:** the demo adds one trusted off-chain part that HyperEVM doesn't have, the **price relay**. It copies Hyperliquid's API prices into the precompile addresses. `pnpm live:check` makes this checkable: every price the hook used must equal a relayed API value in effect at that block. On HyperEVM the relay doesn't exist; the precompiles are the chain's own state.
-- **Stale or failed API:** after 15 s without a good answer, both reads revert, so the hook charges the fallback fee (I1; E2E test `liveRelay.e2e.test.ts`). It never prices on a stale value.
-- **Exposure:** anvil (8545) stays on 127.0.0.1. Its `anvil_*` methods and the public anvil test keys would let anyone rewrite prices or trade as our wallets. The public side is the read-only RPC (8546: `eth_*` reads only, every send and cheat method refused, 256 KB body cap) and the Arena API (admin token, CORS allowlist, rate limit, as above).
-- **Port guard:** `pnpm live` refuses to start while its ports are busy, so it never deploys onto a stale chain left over from an earlier run.
-
 ## 4. Known limitations (§13)
 
 - **Coverage:** only assets with a HyperCore perp. For Hyperliquid-native assets the oracle may exclude external venues.

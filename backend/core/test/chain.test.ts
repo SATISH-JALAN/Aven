@@ -4,7 +4,7 @@ import { avenHookAbi, poolManagerAbi } from "../src/abi.ts";
 import { parseDeployments } from "../src/addresses.ts";
 import { Q96, defaultParams, type Config } from "../src/fee.ts";
 import { decodeSlot0, poolId, poolStateSlot } from "../src/pool.ts";
-import { decodePerpAssetInfo, pxToRaw, readOracleMark } from "../src/precompiles.ts";
+import { decodePerpAssetInfo, readOracleMark } from "../src/precompiles.ts";
 import { verifyAll, verifyLogs } from "../src/verify.ts";
 
 describe("pool", () => {
@@ -39,21 +39,6 @@ describe("precompiles", () => {
       "0000000000000000000000000000000000000000000000000000000000000004" +
       "4859504500000000000000000000000000000000000000000000000000000000") as Hex;
     expect(decodePerpAssetInfo(real)).toEqual({ coin: "HYPE", marginTableId: 10, szDecimals: 2, maxLeverage: 10, onlyIsolated: true });
-  });
-  it("pxToRaw matches the real precompile scaling (recon C.3 rows) and refuses inexact or bad input", () => {
-    // recon C.3: testnet HYPE (szDecimals 2) mark 78.926 -> 789,260 and oracle 7163.7 -> 71,637,000;
-    // mainnet HYPE oracle 77.822 -> 778,220; testnet ETH (szDecimals 4) 2240.02 -> 224,002 (recon C.6).
-    expect(pxToRaw("78.926", 2)).toBe(789_260n);
-    expect(pxToRaw("7163.7", 2)).toBe(71_637_000n);
-    expect(pxToRaw("77.822", 2)).toBe(778_220n);
-    expect(pxToRaw("2240.02", 4)).toBe(224_002n);
-    expect(pxToRaw("2239.9", 4)).toBe(223_990n);
-    expect(pxToRaw("2240", 4)).toBe(224_000n);
-    expect(pxToRaw("2240.10", 4)).toBe(224_010n); // trailing zeros are fine
-    expect(pxToRaw("0.000123", 0)).toBe(123n);
-    for (const bad of ["", "abc", "-1", "1e3", "2240.001", "0", "0.00", "1.2.3"]) expect(() => pxToRaw(bad, 4), bad).toThrow();
-    expect(() => pxToRaw("18446744073709551616", 6)).toThrow(); // > uint64 after scaling (x1)
-    expect(() => pxToRaw("1", 7)).toThrow();
   });
   const word = (v: bigint): Hex => encodeAbiParameters([{ type: "uint256" }], [v]);
   const fake = (o: Hex | undefined | Error, m: Hex | undefined | Error) => ({

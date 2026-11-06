@@ -13,8 +13,7 @@
     "replay": "tsx replay.ts",
     "replay-to-web": "tsx replay-to-web.ts",
     "proofs": "tsx proofs.ts",
-    "demo": "tsx demo.ts",
-    "live:check": "tsx live-check.ts"
+    "demo": "tsx demo.ts"
   },
   "dependencies": {
     "@aven/core": "workspace:*",
@@ -28,8 +27,6 @@
   },
   "exports": {
     "./src/localChain.ts": "./src/localChain.ts",
-    "./src/demo.ts": "./src/demo.ts",
-    "./src/priceRelay.ts": "./src/priceRelay.ts",
-    "./src/readOnlyRpc.ts": "./src/readOnlyRpc.ts"
+    "./src/demo.ts": "./src/demo.ts"
   }
 }
