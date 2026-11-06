@@ -523,3 +523,102 @@ pull the commit it is just a md file commit and puch everything in 15 commits wi
 save this in YOUR Memmory after all the phases is done we will do it
 ```
 
+
+---
+
+## O1 — 2026-11-06T20:30:00Z (approx.) — Root README (Om)
+
+The user (Om Kumar, @iamomm-hack) asked for a comprehensive, ETHGlobal-winner-quality root `README.md` and pasted the README of psyto/reckn as a style reference only. The pasted reference is not reproduced. The user's own constraints, verbatim:
+
+```text
+Do not modify any existing source code or project files.
+Create or update only the project's root-level `README.md`.
+Never fabricate features, integrations, APIs, metrics, or implementation details.
+If something is missing or unclear, explicitly mark it as a TODO or omit it rather than making assumptions.
+Before finalizing, verify that the README accurately reflects the actual implementation.
+```
+
+---
+
+## O2 — 2026-11-06T21:00:00Z (approx.) — Architecture diagrams in the README
+
+The user pasted another project's README (sweem) as a reference, then wrote:
+
+```text
+take this as a reference to and for add some architecture diagrams in the readme. For the architecture diagram, you can choose the best libraries for the architecture diagram so that it looks very beautiful. And awesome. Like you can choose any libraries that that is possible. For the diagrams, like anything.d
+```
+
+---
+
+## O3 — 2026-11-06T21:25:00Z (approx.) — Source Control badge
+
+The user attached a screenshot of VS Code Source Control (1K+ changes in the contract submodules).
+
+```text
+fix the 1K+ shows in source control
+```
+
+---
+
+## O4 — 2026-11-06T21:30:00Z (approx.) — Merge conflict
+
+```text
+resolve the merge editor
+```
+
+---
+
+## O5 — 2026-11-06T21:36:00Z (approx.) — Commit author
+
+```text
+in these commits dont add the claude instead of showing the who commits the in this time me aka iamomm-hack(Om Kumar) commits this not claude code
+```
+
+---
+
+## O6 — 2026-11-06T21:40:00Z (approx.) — Team section
+
+```text
+In the README's Team section, please include only the team members' names and GitHub IDs, not their roles.
+```
+
+---
+
+## O7 — 2026-11-06T21:42:00Z (approx.) — Roadmap
+
+```text
+remove the roadmap section from the readme
+```
+
+---
+
+## O8 — 2026-11-06T21:50:00Z (approx.) — Logo, deployment TODO
+
+```text
+add aven logo in readme and remive the web app TODO:public URL from the Deployment (HyperEVM mainnet) section
+```
+
+---
+
+## O9 — 2026-11-06T22:00:00Z (approx.) — Production readiness
+
+```text
+First, check how the backend is running and properly complete the backend build and frontend build checks. Make sure everything is working correctly and the project is fully ready for deployment.
+
+After that, make a swap and verify how it works through real DEXs. Check which DEXs we have already routed through and whether the swaps are actually going through those DEXs. If any suitable DEX has not been integrated or routed yet, we need to add it.
+
+I hope our swaps are going through Uniswap and that all the hooks are working properly as configured in our smart contracts. Also, verify that the smart contracts deployed on mainnet are functioning correctly.
+
+Once this is done, focus on bringing stability to the system. We also need to display both the plain pool and the Aven pool using Uniswap hooks. Make sure we can properly show which pools are receiving pumps and which pools are not receiving pumps.
+
+These are the main things that need to be completed.
+ Basically it is Production Ready
+```
+
+---
+
+## O10 — 2026-11-06T22:30:00Z (approx.) — Connect wallet
+
+```text
+change the login button into connect wallet buttonbcoz it is web3 blockchain based not in web2
+```

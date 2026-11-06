@@ -6,7 +6,8 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 |---|---|---|
 | `AGENTS.md` | AI | Rules for agents and teammates; invariants I1–I10 verbatim from ARCHITECTURE §6.6 |
 | `CLAUDE.md` | AI | Pointer to AGENTS.md and docs/MEMORY.md |
-| `README.md` | AI | Stub |
+| `README.md` | AI | Full README (O1–O8): sections, tables, Mermaid diagrams, mainnet facts after the merge; Team, Roadmap and logo edits on request |
+| `docs/diagrams/render.py`, `docs/diagrams/*.svg` | AI | Stdlib-Python SVG generator for the README diagrams and the logo (light + dark); logo shapes taken from `frontend/src/app/icon.svg` and `brand.tsx` |
 | `.gitignore`, `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.vscode/settings.json` | AI | Boilerplate / config |
 | `contracts/.env.example`, `backend/.env.example`, `frontend/.env.example` | AI | Placeholders only |
 | `backend/README.md`, `frontend/README.md` | AI | Folder guides |
@@ -48,3 +49,5 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `docs/spec/API.md`, `DATA.md`, `FRONTEND.md` | Provided by the team (copied by AI) | Appendices B4–B6 copied verbatim from the prompts file |
 | `docs/planning/aven-claude-code-prompts.md` | Provided by the team | Moved by AI, not edited |
 | `docs/planning/perp-aware-pools-handoff.md` | Human + AI (planning chat, before kickoff) | Pre-kickoff planning; AI added only the first line |
+| `backend/scripts/health.ts`, `backend/scripts/src/health.ts`, `backend/scripts/test/health.test.ts`, `health` scripts in `package.json` and `backend/scripts/package.json` | AI | O9 read-only mainnet health check, incl. Uniswap V4Quoter + Universal Router simulation |
+| `frontend/src/lib/pressure.ts`, `frontend/test/pressure.test.ts`; push status in `frontend/src/app/pool/page.tsx` and `frontend/src/components/trade/MarketBar.tsx`; mainnet default in `frontend/src/config.ts` and `frontend/.env.example`; `frontend/src/config/deployments.json` (synced) | AI | O9 pool push status and mainnet default; O10 "Connect wallet" wording and wallet-only Privy (`components/wallet.tsx`, `app/swap/page.tsx`, `app/pool/page.tsx`, `trade/OrderPanel.tsx`, `lib/swap.ts`, `docs/pages.tsx`) |
