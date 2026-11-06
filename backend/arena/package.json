@@ -13,7 +13,9 @@
     "demo:local": "tsx scripts/demo-local.ts",
     "loadtest": "node --expose-gc --import tsx scripts/loadtest.ts",
     "loadtest:report": "tsx scripts/loadtest-report.ts",
-    "repro:reverts": "tsx scripts/repro-reverts.ts"
+    "repro:reverts": "tsx scripts/repro-reverts.ts",
+    "live": "tsx scripts/live-local.ts",
+    "live:record": "tsx scripts/live-local.ts --record"
   },
   "dependencies": {
     "@aven/core": "workspace:*",

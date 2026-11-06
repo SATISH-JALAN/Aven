@@ -11,6 +11,9 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  encodeAbiParameters,
+  keccak256,
+  pad,
   toHex,
   type Address,
   type Hex,
@@ -29,6 +32,7 @@ export const PERP_ASSET_INFO = "0x000000000000000000000000000000000000080a" as c
 
 export interface LocalChainOptions {
   port?: number;
+  host?: string; // anvil --host (default 127.0.0.1; 0.0.0.0 to serve other machines, e.g. on a VM)
   blockTimeSec?: number; // HyperEVM small blocks are 1 s
   perpIndex?: number;
   coin?: string;
@@ -48,6 +52,13 @@ export interface LocalChain {
   deployments: Deployments;
   keyOf(account: HDAccount): Hex;
   setPrices(oracleRaw: bigint, markRaw: bigint): Promise<void>;
+  /**
+   * Live mode: write oracle + mark straight into the mocks' storage (anvil_setStorageAt). No transaction, so both
+   * change together between blocks and never mid-block, like the real precompiles (one HyperCore state per block).
+   */
+  writePrices(oracleRaw: bigint, markRaw: bigint): Promise<void>;
+  /** Live mode: make both price precompiles revert (on) or answer again (off), via storage, between blocks. */
+  setReadFailure(on: boolean): Promise<void>;
   setMockMode(target: "oracle" | "mark", mode: "fail" | "burn" | "empty" | "overflow", on: boolean): Promise<void>;
   wallet(account: HDAccount): WalletClient;
   stop(): Promise<void>;
@@ -78,13 +89,14 @@ function runtimeCode(file: string, contract: string): Hex {
 export async function startLocalChain(opts: LocalChainOptions = {}): Promise<LocalChain> {
   const port = opts.port ?? 8545;
   const rpcUrl = `http://127.0.0.1:${port}`;
+  const hostArgs = opts.host ? ["--host", opts.host] : [];
   const env = envWithFoundry();
   const log = (...a: unknown[]) => (opts.quiet ? undefined : console.log("[local-chain]", ...a));
 
   log(`starting anvil on ${rpcUrl} (block time ${opts.blockTimeSec ?? 1}s)`);
   const anvil: ChildProcess = spawn(
     "anvil",
-    ["--port", String(port), "--chain-id", "31337", "--block-time", String(opts.blockTimeSec ?? 1), "--silent"],
+    ["--port", String(port), ...hostArgs, "--chain-id", "31337", "--block-time", String(opts.blockTimeSec ?? 1), "--silent"],
     // No shell: on Windows a cmd.exe wrapper would leave anvil orphaned when we kill the wrapper's pid.
     { env, stdio: "ignore", shell: false, windowsHide: true },
   );
@@ -121,6 +133,24 @@ export async function startLocalChain(opts: LocalChainOptions = {}): Promise<Loc
     };
     await setPrices(opts.oracleRaw ?? 224_002n, opts.markRaw ?? opts.oracleRaw ?? 224_002n);
 
+    // MockHyperCorePx storage (forge inspect ... storageLayout): slot 0 = mapping(uint32 => uint64) price,
+    // slot 2 = packed bools [infoMode | fail<<8 | burn<<16 | empty<<24 | overflow<<32].
+    const priceSlot = keccak256(encodeAbiParameters([{ type: "uint256" }, { type: "uint256" }], [BigInt(perpIndex), 0n]));
+    const FLAGS_SLOT = pad("0x02", { size: 32 });
+    const FAIL_BIT = 1n << 8n;
+    const setStorage = (address: Address, slot: Hex, value: bigint) =>
+      publicClient.request({ method: "anvil_setStorageAt" as never, params: [address, slot, pad(toHex(value), { size: 32 })] as never });
+    const writePrices = async (o: bigint, m: bigint) => {
+      if (o <= 0n || m <= 0n || o >= 2n ** 64n || m >= 2n ** 64n) throw new Error(`price out of uint64 range: ${o} / ${m}`);
+      await Promise.all([setStorage(ORACLE_PX, priceSlot, o), setStorage(MARK_PX, priceSlot, m)]);
+    };
+    const setReadFailure = async (on: boolean) => {
+      for (const a of [ORACLE_PX, MARK_PX]) {
+        const cur = BigInt((await publicClient.getStorageAt({ address: a, slot: FLAGS_SLOT })) ?? "0x0");
+        await setStorage(a, FLAGS_SLOT, on ? cur | FAIL_BIT : cur & ~FAIL_BIT);
+      }
+    };
+
     // 2. The real deploy scripts, in §11.3 order.
     const scriptEnv = {
       ...env,
@@ -150,6 +180,8 @@ export async function startLocalChain(opts: LocalChainOptions = {}): Promise<Loc
       deployments,
       keyOf: privateKeyOf,
       setPrices,
+      writePrices,
+      setReadFailure,
       setMockMode,
       wallet,
       stop,

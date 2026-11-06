@@ -31,6 +31,8 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `contracts/test/invariant/AvenInvariant.t.sol`, `contracts/.gas-snapshot` (generated), `docs/SECURITY.md` | AI | P11 invariant suite, gas baseline, security notes |
 | `backend/scripts/demo.ts`, `backend/scripts/src/demo.ts`, `backend/arena/scripts/demo-local.ts`, `docs/DEMO.md`, `frontend/public/arena-fallback.json` (generated) | AI | P13 demo run, fallback recording, demo script |
 | `contracts/test/load/OnchainLoad.t.sol`, `backend/arena/scripts/loadtest.ts`, `backend/arena/scripts/loadtest-report.ts`, `backend/arena/test/{chain,state}.test.ts`, `backend/arena/scripts/repro-reverts.ts`, `docs/LOADTEST.md` (generated), `backend/data/load/*.json` (generated) | AI | Phase 7 load testing, regression tests, report |
+| `backend/scripts/src/priceRelay.ts`, `backend/scripts/src/readOnlyRpc.ts`, `backend/scripts/src/liveCheck.ts`, `backend/scripts/live-check.ts`, `backend/arena/scripts/live-local.ts`, `backend/scripts/test/{priceRelay,readOnlyRpc,liveCheck,liveRelay.e2e}.test.ts` | AI | Live mode (2026-11-06): relay, read-only RPC, source check, entry point, tests |
+| `pxToRaw` in `backend/core/src/precompiles.ts`; `writePrices`/`setReadFailure`/`host` in `backend/scripts/src/localChain.ts`; `ownTxBlock` in `backend/arena/src/arena.ts` | AI | Live-mode additions to existing files, with tests |
 | `docs/PLAN.md` | AI | Backend build plan, ticked off per step |
 | `docs/FLOW.md`, `docs/MEMORY.md` | AI | Code flow and project memory, kept in sync with changes |
 | `docs/recon.md` | AI | P1. Facts from installed deps, official docs and live RPC/API output; sources inline |

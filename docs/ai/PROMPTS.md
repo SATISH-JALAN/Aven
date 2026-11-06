@@ -183,3 +183,44 @@ fix it
 ```text
 do it later .....first push everything in the main repo
 ```
+
+---
+
+## #13 — 2026-11-06T05:50:00Z — Testnet gas budget (read-only)
+
+```text
+Read-only check, send nothing: on HyperEVM testnet (998) print, for DEPLOYER, BOT and SHOCK, the native HYPE balance; print eth_gasPrice and eth_bigBlockGasPrice; estimate gas for every deploy step in docs/DEPLOYMENTS.md (PoolManager via big blocks, routers, tokens, hook, Lens, two pool inits, liquidity, smoke swaps), the 0x2222 HyperCore-user transfer, and 200 bot swaps plus 10 shocks; convert each to HYPE at current prices with a 30% margin; then print, per wallet, how much HYPE it needs versus has, and the total shortfall.
+```
+
+---
+
+## #14 — 2026-11-06T06:05:00Z (approx.) — Testnet HYPE
+
+```text
+how to get the hype testnet token like i have 0.0001 tokens in 3 wallets
+```
+
+---
+
+## #15 — 2026-11-06T06:20:00Z (approx.) — Alternatives
+
+```text
+any alternative method for this completion
+```
+
+---
+
+## #16 — 2026-11-06T08:30:00Z (approx.) — No testnet tokens: plan without changing the architecture
+
+```text
+So what I'm focusing upon now is very practical, because I've tried up to every way. I couldn't find any of the testnet tokens for Hyperliquid. It's only have to be deployed on mainnet, but I won't go mainnet right now, and I don't have as much funds. So I really want to ask you, according to all of our architecture, I don't want to change any bit of it. I really want to use the contracts which we actually use to build the blocks, where simultaneously we basically put Hyperliquid Oracle as well as the POPs rate accordingly to that. And I guess we can take the libraries to put it to the testnet, but Hyperliquid doesn't provide testnet faucet tokens, right? But everything else can be tokenized, and I mean, basically it can be obtained because it has the docs and the libraries as well. So basically you have to demo the particular objective and just tell me, can we, after also this, like, we need to deploy it maybe on Foundry itself, or maybe in testnet itself. So we need to change that particular thing, because we can't just go on and think to deploy on hype, because we don't have the tokens and nobody has the tokens. There is a rarity of it and only some person can hold it. So I have tried all day long and couldn't get so, but I am having very less remaining time for now, so I can't just pivot the idea. So we were just building exactly what we are thinking. So just tell me, with this bit of a change, what things can be affected and what things are changed practically? It's because it is very important, and the rest of the things can be mocked. Just tell me what is your opinion about it. And after that, I'll ask you to make necessary changes according to the code base. So just make a plan and tell me what are the changes it could be happening in the backend. Because I need to make a fixed route. And if you think that better than Hypertron, if another POPs route can be made, because if I tell you to make a recent contract where you are putting suppose if, for example, Chainlink or Uma's Oracle as well as the POPs rate together on singular block, which reduces the latency. It is very hard to make, so within just few hours remaining for the hackathon submission. So it's very tough. So what do you think about that particular thing? And will it be a considered change or motive for building? So because basically what we are doing, that we have to focus on the LPs and the speed after the, we are providing the window. Basically the POPs aware pool, where you know, people can recognize and see what are going on in the options right now. And you know, after the arbitrage pod or traders are placing their bets or their excess that's the basically the thing, how it's going on. So what do you think about a particular thing? Tell me. But we very practical. What it? And be very practical about it. And we need to move fast. So yeah.
+```
+
+---
+
+## #17 — 2026-11-06T09:00:00Z (approx.) — Build live mode
+
+```text
+Okay, so go for this particular changes and update all of this. In the docs as well. And don't make any mistakes, be practical.
+```
+

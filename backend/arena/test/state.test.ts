@@ -45,3 +45,18 @@ describe("Arena.state() under concurrency (load-test regression)", () => {
     expect(calls.oracle).toBe(2);
   });
 });
+
+describe("Arena.state() right after our own tx (live-mode recording regression)", () => {
+  it("serves the block of our own receipt even before the poller has seen it (no stale pre-shock state)", async () => {
+    calls.oracle = 0;
+    const arena = new Arena({ DATA_DIR: "." } as never, { d, publicClient: { getBlockNumber: async () => 100n } } as never);
+    (arena as unknown as { lastBlock: bigint }).lastBlock = 100n;
+    expect((await arena.state()).block).toBe(100);
+    (arena as unknown as { noteOwnTxBlock: (b: bigint) => void }).noteOwnTxBlock(101n); // shock receipt in block 101
+    expect((await arena.state()).block).toBe(101); // poller still at 100
+    expect(calls.oracle).toBe(2);
+    (arena as unknown as { noteOwnTxBlock: (b: bigint) => void }).noteOwnTxBlock(99n); // never goes backwards
+    expect((await arena.state()).block).toBe(101);
+    expect(calls.oracle).toBe(2);
+  });
+});

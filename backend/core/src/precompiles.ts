@@ -27,6 +27,24 @@ export interface PerpAssetInfo {
 
 const encIndex = (perpIndex: number): Hex => encodeAbiParameters([{ type: "uint32" }], [perpIndex]);
 
+/**
+ * Hyperliquid info-API perp price string (e.g. `oraclePx: "2239.9"`) -> the raw uint64 the 0x806/0x807 precompiles
+ * return: px * 10^(6 - szDecimals) (recon C.3: precompile == info API after this scaling). Integer-only (no floats).
+ * Throws on anything that is not a plain positive decimal, has more fractional digits than 6 - szDecimals (the raw
+ * value could not represent it exactly), or does not fit in a uint64 > 0, so a caller never writes a wrong price.
+ */
+export function pxToRaw(px: string, szDecimals: number): bigint {
+  if (!Number.isInteger(szDecimals) || szDecimals < 0 || szDecimals > 6) throw new Error(`bad szDecimals ${szDecimals}`);
+  const m = /^(\d+)(?:\.(\d+))?$/.exec(px.trim());
+  if (!m) throw new Error(`not a decimal price: "${px}"`);
+  const places = 6 - szDecimals;
+  const frac = (m[2] ?? "").replace(/0+$/, "");
+  if (frac.length > places) throw new Error(`"${px}" has more than ${places} decimals (szDecimals ${szDecimals})`);
+  const raw = BigInt(m[1]!) * 10n ** BigInt(places) + BigInt((frac || "0").padEnd(places, "0") || "0");
+  if (raw === 0n || raw > UINT64_MAX) throw new Error(`price "${px}" out of uint64 range after scaling`);
+  return raw;
+}
+
 async function readOne(client: Caller, to: Hex, perpIndex: number): Promise<{ ok: boolean; px: bigint }> {
   try {
     const { data } = await client.call({ to, data: encIndex(perpIndex) });

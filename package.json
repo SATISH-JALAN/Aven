@@ -14,6 +14,9 @@
     "replay:binance-halt": "pnpm --filter @aven/scripts replay binance-halt",
     "replay:calm": "pnpm --filter @aven/scripts replay calm",
     "proofs": "pnpm --filter @aven/scripts proofs",
-    "demo": "pnpm --filter @aven/scripts demo"
+    "demo": "pnpm --filter @aven/scripts demo",
+    "live": "pnpm --filter @aven/arena live",
+    "live:record": "pnpm --filter @aven/arena live:record",
+    "live:check": "pnpm --filter @aven/scripts live:check"
   }
 }

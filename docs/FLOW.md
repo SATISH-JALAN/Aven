@@ -4,7 +4,7 @@ How every part runs: where it **starts** (entry point), what it calls, and where
 
 **Status:** ✅ exists in the repo · 🔜 planned (the build prompt that creates it). Section numbers (§) refer to [spec/ARCHITECTURE.md](spec/ARCHITECTURE.md).
 
-_Last updated: 2026-11-06. Live Arena asset is testnet ETH (perp 4); tx links go to our own `/tx/<hash>` page (no testnet explorer). Only recon code exists so far._
+_Last updated: 2026-11-06. **The live demo runs in live mode** (§4b): a local chain with live Hyperliquid mainnet ETH prices (perp 1), because no testnet HYPE could be obtained. The testnet path (§4, testnet ETH perp 4) is kept. Tx links go to our own `/tx/<hash>` page (no testnet explorer)._
 
 ---
 
@@ -87,7 +87,7 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 - **Path:** `_load(poolId)` only; no storage writes. Unknown pool → `PoolNotInitialized`.
 - **Exit:** `(feeZeroForOne, feeOneForZero)` or the full `Breakdown`. It equals what `beforeSwap` would charge in the same state (I6).
 
-## 4. Deployment: scripts ✅, local chain ✅ (`pnpm local:once`), testnet run 🔜 (Sayan, docs/DEPLOYMENTS.md)
+## 4. Deployment: scripts ✅, local chain ✅ (`pnpm local:once`), live mode ✅ (§4b), testnet run ⛔ blocked: no testnet HYPE (docs/DEPLOYMENTS.md §B)
 
 - **Entry:** `forge script` in `contracts/script/`. Keys come from `contracts/.env` (`DEPLOYER_PK`); `BOT_ADDRESS`/`SHOCK_ADDRESS` too. Shared plumbing is in `contracts/script/base/AvenScript.sol`; state between scripts goes in `deployments/<chainId>.wip.json`.
 - **Path:**
@@ -100,6 +100,35 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
   7. `CreatePools.s.sol`: initial price from `oraclePx`, Aven pool + control pool, identical liquidity;
   8. `Smoke.s.sol`: one swap each direction on both pools.
 - **Exit:** **`contracts/deployments/998.json`** (§8.3). It's the single source of addresses for `backend/` and `frontend/`; tx links go into the docs.
+
+## 4b. Live mode ✅ `pnpm live` (docs/DEPLOYMENTS.md §A)
+
+- **Entry:** `pnpm live` → `backend/arena/scripts/live-local.ts` (`live:record` adds `--record`).
+- **Path:**
+  1. **Port guard:** refuse to start if 8545/8546/8787 are busy (an orphaned anvil from an earlier run).
+  2. `fetchPerpPrices` (`backend/scripts/src/priceRelay.ts`): Hyperliquid mainnet `metaAndAssetCtxs`. Index 1 must be ETH with `szDecimals` 4; `pxToRaw` (`@aven/core`) gives the precompile raw value.
+  3. `startLocalChain({ perpIndex: 1, coin: "ETH", szDecimals: 4, oracleRaw, markRaw })` (`backend/scripts/src/localChain.ts`):
+     - anvil 31337 with 1 s blocks on 127.0.0.1:8545;
+     - `MockHyperCorePx` placed at 0x806/0x807/0x80a;
+     - the five **unchanged** deploy scripts (§4, with `PERP_INDEX=1`), so the pools open at the live oracle;
+     - a snapshot of `contracts/deployments/31337.json` → `backend/data/arena/live/<run>/31337.json`.
+  4. `PriceRelay.start()`, every 1 s:
+     - read the API; if a value changed, `LocalChain.writePrices` (`anvil_setStorageAt` on both mocks, between blocks, no transaction);
+     - append to `<run>/relay.jsonl`;
+     - no good answer for 15 s → `setReadFailure(true)` (both reads revert → the hook charges the fallback fee); recovery → write the prices, then `setReadFailure(false)`.
+  5. `new Arena(...)` (bot = anvil account 1, shock = account 2; `backend/.env` not read; `DATA_DIR` = the run folder) + `makeApp` on `ARENA_PORT`.
+  6. `startReadOnlyRpc` (`backend/scripts/src/readOnlyRpc.ts`) on 8546: `eth_*` reads forwarded to anvil, everything else refused.
+  7. `--record`: `runDemo` over HTTP → `frontend/public/arena-fallback.json` (with the price source) → shut down.
+- **Exit:**
+  - the Arena API + SSE (§5) and the read-only RPC for the frontend;
+  - swaps on the local chain;
+  - the run folder: `31337.json`, `relay.jsonl`, `trades.jsonl`;
+  - on Ctrl+C: relay, Arena, servers and anvil all stopped.
+- **Proof:** `pnpm live:check [runDir]` → `backend/scripts/live-check.ts`:
+  - `verifyAll` (checks A + B);
+  - `checkSources` (`src/liveCheck.ts`): every `FeeComputed` oracle/mark is the relay pair in effect at its block (one-block write window allowed), and every `READ_FAILED` happened while reads were switched off.
+
+  It exits with code 1 on any mismatch.
 
 ## 5. Arena service (live demo bot) ✅ `backend/arena`
 
@@ -168,7 +197,10 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 
 ## 9b. Demo run ✅
 
-- **Entry:** `pnpm demo` (`backend/scripts/demo.ts` → `src/demo.ts` `runDemo`, HTTP only against `ARENA_URL`) or `pnpm --filter @aven/arena demo:local` (`backend/arena/scripts/demo-local.ts`: local chain + in-process Arena on a port).
+- **Entry:**
+  - `pnpm demo` (`backend/scripts/demo.ts` → `src/demo.ts` `runDemo`, HTTP only, against `ARENA_URL`);
+  - `pnpm --filter @aven/arena demo:local` (`backend/arena/scripts/demo-local.ts`: local chain with fixed mock prices + in-process Arena on a port);
+  - **`pnpm live:record`** (§4b: the same `runDemo` on live prices; this produces the committed fallback).
 - **Path:** `/bot/stop` → `/reset-stats` → `/shock` → `/bot/start` → poll `/trades` until both pools have an arb → `/bot/stop` → `/stats`, `/state`, `/verify/:tx`.
 - **Exit:** a one-screen summary, plus `frontend/public/arena-fallback.json` (`badge: "Recorded run"`, with its source stated).
 
@@ -189,12 +221,14 @@ Contract code imports project files root-style (`src/…`, `test/…`, `script/�
 | `LOAD=1 forge test --match-path test/load/OnchainLoad.t.sol -vv` (`contracts/`) | `contracts/test/load/OnchainLoad.t.sol` | PLAN 7.1(a): 2,318 swaps / 250 blocks with broken reads; I1/I2/I3, top-of-block and anchor per block; gas distribution → `backend/data/load/onchain.json` | ✅ |
 | `pnpm --filter @aven/arena loadtest` then `loadtest:report` | `backend/arena/scripts/loadtest.ts`, `loadtest-report.ts` | PLAN 7.1(b)–7.3: on-chain burst + verify, autocannon API load + 200 SSE + rate limit, bot under shocks with RPC fault proxy, auto-pause → `backend/data/load/loadtest.json` → `docs/LOADTEST.md` | ✅ |
 | `forge snapshot` (`contracts/`) | `contracts/.gas-snapshot` | gas regression baseline (all but invariants) | ✅ |
-| `pnpm test` (root) | `backend/core/test/{fee,differential,chain}.test.ts` | TS port mirrors the Solidity unit tests; vectors (skipped if absent); poolId/slot0/precompile decoding/§8.3 schema/verifier checks A and B | ✅ 29 pass |
+| `pnpm test` (root) | `backend/core/test/{fee,differential,chain}.test.ts` | TS port mirrors the Solidity unit tests; vectors (skipped if absent); poolId/slot0/precompile decoding/`pxToRaw` (recon C.3 values)/§8.3 schema/verifier checks A and B | ✅ 31 pass |
 | `pnpm prove:diff` (root) | `backend/core/scripts/prove-diff.ts` | I7: 10,000 fee + 2,000 anchor vectors, exact | ✅ |
 | `pnpm verify <tx>` / `pnpm verify --all` (root; `CHAIN_ID`, `HYPEREVM_RPC`) | `backend/core/bin/verify.ts` | I8 per tx or for every FeeComputed since `deployedAtBlock` (≤ 50-block chunks) | ✅ local 2/2 |
 | `pnpm proofs [--e2e]` (root) | `backend/scripts/proofs.ts` | runs every proof and writes `docs/PROOFS.md` | ✅ |
-| `pnpm --filter @aven/scripts test` | `backend/scripts/test/{marketData,replayPrep}.test.ts` | premium forward-fill, oracleProxy, gaps, paging, 1m→5m fallback; raw conversion and lag interpolation | ✅ 9 pass |
-| `pnpm --filter @aven/arena test` | `backend/arena/test/{math,server}.test.ts` | direction, p*, sqrtPriceLimit (both orders), valuation, stats; B4 routes, admin token, CORS, rate limit, SSE | ✅ 22 pass |
+| `pnpm --filter @aven/scripts test` | `backend/scripts/test/{marketData,replayPrep,priceRelay,readOnlyRpc,liveCheck}.test.ts` | market data: premium forward-fill, oracleProxy, gaps, paging, 1m→5m fallback. Replay prep: raw conversion, lag interpolation. Live mode: API guard and scaling; relay change-only writes, stale → fail, recovery order; read-only RPC allow/deny over HTTP; source-check timing rules | ✅ 20 pass |
+| `E2E=1 npx vitest run test/liveRelay.e2e.test.ts` (`backend/scripts`) | `backend/scripts/test/liveRelay.e2e.test.ts` (local anvil chain) | relayed prices reach the unchanged hook through 0x807/0x806; stale API → `previewFee` reason READ_FAILED with the fallback fee; recovery restores fresh prices | ✅ 2 pass (~1.5 min) |
+| `pnpm live` then `pnpm live:check` (root) | `backend/arena/scripts/live-local.ts`, `backend/scripts/live-check.ts` | live mode end to end on Hyperliquid mainnet prices: checks A + B + price source for every FeeComputed | ✅ A 4/4, B 4/4, source 4/4 |
+| `pnpm --filter @aven/arena test` | `backend/arena/test/{math,server,chain,state}.test.ts` | direction, p*, sqrtPriceLimit (both orders), valuation, stats; B4 routes, admin token, CORS, rate limit, SSE; viem caching, gas margin; `/state` single-flight and no stale block after our own tx | ✅ 26 pass |
 | `pnpm --filter @aven/arena test:e2e` | `backend/arena/test/e2e.test.ts` (E2E=1, local anvil chain) | PLAN 4.4 gate: shock → arbs → Aven fee > control → lpKeptMoreUsd > 0 → verify MATCH; persistence reload | ✅ 2 pass (~2.5 min) |
 | `pnpm test` (frontend) | `frontend/` | UI | 🔜 P10 (teammate) |
 
@@ -217,7 +251,7 @@ Contract code imports project files root-style (`src/…`, `test/…`, `script/�
   - `src/price.ts`: `sqrtPriceFromWad`, `sqrtBig`, display helpers;
   - `src/abi.ts`: generated by `pnpm abi` (`scripts/gen-abi.ts`) from `contracts/out`: AvenHook, PoolManager, PoolSwapTest, PoolModifyLiquidityTest, MockERC20, MockHyperCorePx;
   - `src/pool.ts`: `poolId`, `poolStateSlot`, `decodeSlot0`, `readSlot0` (extsload);
-  - `src/precompiles.ts`: `readOracleMark` (same readOk rule as Solidity), `readPerpAssetInfo` (one struct);
+  - `src/precompiles.ts`: `readOracleMark` (same readOk rule as Solidity), `readPerpAssetInfo` (one struct), `pxToRaw` (info-API price string → precompile raw, exact);
   - `src/addresses.ts`: zod §8.3 schema, `loadDeployments(chainId)`;
   - `src/verify.ts`: `verifyLogs` (pure), `verifyTx`, `verifyAll` (≤ 50-block chunks);
   - `scripts/prove-diff.ts`, `scripts/run.ts`: forge runner that adds `~/.foundry/bin` to PATH.
@@ -226,7 +260,8 @@ Contract code imports project files root-style (`src/…`, `test/…`, `script/�
   1. anvil chain 31337 with 1 s blocks;
   2. etches `MockHyperCorePx` at 0x806/0x807/0x80a;
   3. runs the 5 forge scripts;
-  4. returns `{publicClient, deployer/bot/shock accounts, deployments, setPrices(), setMockMode(), stop()}`;
+  4. returns `{publicClient, deployer/bot/shock accounts, deployments, setPrices(), writePrices(), setReadFailure(), setMockMode(), stop()}` (`writePrices`/`setReadFailure` use `anvil_setStorageAt`: no transaction, between blocks);
   5. `verifySmoke()` verifies the smoke swaps.
+  - Live mode (§4b): `src/priceRelay.ts` (`fetchPerpPrices`, `PriceRelay`), `src/readOnlyRpc.ts` (`startReadOnlyRpc`, `filterRpc`), `src/liveCheck.ts` (`checkSources`), `live-check.ts` (CLI); the entry point is `backend/arena/scripts/live-local.ts`.
 - `contracts/deployments/README.md`: what lives there (`998.json` committed after the testnet run; `31337.json` and `*.wip.json` are gitignored).
 - `frontend/`: README + `.env.example` only.

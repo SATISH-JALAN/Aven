@@ -76,6 +76,15 @@ export class Arena implements ArenaApi {
   private poller: NodeJS.Timeout | null = null;
   /** One in-flight /state computation per block, shared by every caller (avoids a thundering herd on each new block). */
   private stateCache: { block: bigint; value: Promise<StateResponse> } | null = null;
+  /**
+   * Newest block seen in our OWN receipts (shock, bot). The poller only refreshes lastBlock every POLL_MS, so right
+   * after a shock /state could serve the cached pre-shock block (found while recording the live-mode demo: "0 bp off
+   * fair" right after a shock). state() uses max(lastBlock, ownTxBlock); the poller and its SSE emits are unchanged.
+   */
+  private ownTxBlock = 0n;
+  private noteOwnTxBlock(b: bigint): void {
+    if (b > this.ownTxBlock) this.ownTxBlock = b;
+  }
   private readonly file: string;
   readonly stats_ = { iterations: 0, iterationErrors: 0, pollErrors: 0 };
 
@@ -196,6 +205,7 @@ export class Arena implements ArenaApi {
 
     const hash = await writeWithMargin(this.c, this.c.bot, sim.request as never); // margin: see chain.ts withGasMargin
     const receipt = await this.c.publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
+    this.noteOwnTxBlock(receipt.blockNumber);
     if (receipt.status !== "success") throw new Error(`swap reverted: ${hash}`);
     const t = this.tradeFromReceipt(receipt, pool, "arb", plan.direction, oraclePrice, b);
     this.record(t);
@@ -289,6 +299,7 @@ export class Arena implements ArenaApi {
     const b = await this.c.publicClient.getBlockNumber();
     for (const [i, pool] of (["control", "aven"] as const).entries()) {
       const r = await this.c.publicClient.waitForTransactionReceipt({ hash: hashes[i]!, timeout: 60_000 });
+      this.noteOwnTxBlock(r.blockNumber);
       if (r.status !== "success") throw new Error(`shock swap reverted on ${pool}: ${hashes[i]}`);
       this.record(this.tradeFromReceipt(r, pool, "retail", dir, oraclePrice, b));
     }
@@ -309,7 +320,8 @@ export class Arena implements ArenaApi {
   }
 
   async state(): Promise<StateResponse> {
-    const block = this.lastBlock || (await this.c.publicClient.getBlockNumber());
+    const seen = this.lastBlock > this.ownTxBlock ? this.lastBlock : this.ownTxBlock;
+    const block = seen || (await this.c.publicClient.getBlockNumber());
     if (this.stateCache && this.stateCache.block === block) return this.stateCache.value;
     const value = this.computeState(block);
     this.stateCache = { block, value };
