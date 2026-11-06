@@ -503,6 +503,22 @@ flowchart TD
 
 The machine-readable record is [`contracts/deployments/999.json`](contracts/deployments/999.json). Testnet (998) was abandoned: nobody could get testnet HYPE (§T in DEPLOYMENTS.md).
 
+### Production check (2026-11-07)
+
+| Feature | What it does |
+|---|---|
+| **One-command mainnet health check** | `CHAIN_ID=999 pnpm health` is read-only: no key, nothing sent. It checks that the hook's code, permissions and settings match the deployment, that it runs on Uniswap's PoolManager with no protocol fee, and that live HyperCore prices are read. It also swaps both pools in both directions (simulated on live mainnet state) and re-verifies the 4 recorded Aven transactions. |
+| **Routes through Uniswap v4** | The web app, the bot and the shock wallet all swap through `PoolSwapTest` into Uniswap's canonical PoolManager, which calls `AvenHook`. Uniswap's own **V4Quoter** and **Universal Router** (2.0 and 2.1.2) also route the Aven pool, and the router delivers exactly Uniswap's quote. |
+| **Pump status on both pools** | The Pool page shows, per pool, "Pushed +N bp above the oracle" or "At the oracle", what last pushed it (a shock or a wallet swap), and the bot's arb back with the fee it paid. The Trade bar shows both pools' gaps. |
+| **Mainnet by default** | The web app defaults to chain 999 and the public mainnet RPC, and bundles the mainnet addresses. |
+| **Web3 sign-in** | "Connect wallet" through Privy, wallets only (MetaMask, Coinbase Wallet, Rainbow and others), no email. |
+| **Everything green** | Typecheck in all 4 packages; Foundry 90 passed, 0 failed; all TypeScript tests; web production build (8 routes); the Arena end-to-end run; the web app's own swap and liquidity calls 30/30. |
+
+Before the live demo, three things are still needed:
+- Keep the Arena running and publicly reachable (with a dedicated RPC). Without it the site shows the recorded run and wallet swaps stay off.
+- Set `NEXT_PUBLIC_PRIVY_APP_ID` on the host.
+- Send one real swap and check it with `pnpm verify <tx>`.
+
 ---
 
 ## What Aven does not claim
