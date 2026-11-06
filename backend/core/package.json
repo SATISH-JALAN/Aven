@@ -4,7 +4,15 @@
   "private": true,
   "type": "module",
   "description": "Aven fee math (exact BigInt port of AvenFairValue), ABIs, precompile reads, deployments loader and verifier.",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./fee": "./src/fee.ts",
+    "./abi": "./src/abi.ts",
+    "./pool": "./src/pool.ts",
+    "./price": "./src/price.ts",
+    "./verify": "./src/verify.ts",
+    "./precompiles": "./src/precompiles.ts"
+  },
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",

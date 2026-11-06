@@ -185,8 +185,8 @@ def architecture(t: dict) -> Svg:
     s.card(48, 336, 200, 68, "Hook builders", ["import AvenFairValue"], accent=t["user"])
 
     # --- HyperEVM ---
-    s.group(300, 128, 500, 420, "HYPEREVM", t["evmFill"], t["evmLine"], t["evmText"], chip="chain 998 · Cancun")
-    s.card(324, 168, 452, 128, "Uniswap v4 PoolManager", ["canonical build · owner = address(0)"], accent=t["uni"])
+    s.group(300, 128, 500, 420, "HYPEREVM", t["evmFill"], t["evmLine"], t["evmText"], chip="mainnet 999 · Cancun")
+    s.card(324, 168, 452, 128, "Uniswap v4 PoolManager", ["Uniswap canonical · 0x12D4…6B1F"], accent=t["uni"])
     # pools
     s.rect(340, 232, 204, 50, rx=10, fill=t["evmFill"], stroke=t["evmLine"])
     s.text(354, 252, "Aven pool", size=13, weight=700, color=t["evmText"])
@@ -227,10 +227,10 @@ def architecture(t: dict) -> Svg:
     # --- off-chain ---
     s.group(48, 590, 1184, 210, "OFF-CHAIN", t["offFill"], t["offLine"], t["off"],
             chip="no privileged entry point")
-    s.card(72, 634, 164, 142, "Web app", ["Home · Arena · Replay", "Next.js", "in progress"], dashed=True,
+    s.card(72, 634, 164, 142, "Web app", ["Trade · Swap · Pool", "Replay · Docs · Verify", "Next.js 16"],
            fill=t["offFill"])
     s.card(280, 634, 320, 142, "Arena service", ["Node · viem · Hono"], accent=t["off"])
-    for (cx, cy, label) in [(304, 690, "block poller · 500 ms"), (452, 690, "arb bot"),
+    for (cx, cy, label) in [(304, 690, "block poller · POLL_MS"), (452, 690, "arb bot"),
                             (304, 728, "shock wallet"), (452, 728, "HTTP + SSE API")]:
         s.chip(cx, cy, label, w=136, h=28, size=11.5, color=t["text"], weight=500)
     s.card(624, 634, 234, 142, "@aven/core", ["fee.ts · exact BigInt port", "verify CLI · checks A + B",

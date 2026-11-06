@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Count chain reads made by Arena.state(); the chain module is mocked so no RPC is needed.
-const calls = { oracle: 0 };
-vi.mock("../src/chain.ts", () => ({
+const calls = { oracle: 0, balances: 0, verify: 0, sent: 0 };
+vi.mock("../src/chain.ts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../src/chain.ts")>()),
+  writeWithMargin: async () => {
+    calls.sent++;
+    return "0xhash";
+  },
   withRetry: async <T>(fn: () => Promise<T>) => fn(),
   readOracle: async () => {
     calls.oracle++;
@@ -13,12 +18,24 @@ vi.mock("../src/chain.ts", () => ({
   readLiquidity: async () => 1n,
   previewFee: async () => ({ fee: 500, reason: "OK", gapBps: 0, premiumBps: 0, moveBps: 0, arb: false, withPressure: false }),
   hookPoolState: async () => ({ topBlock: 1n, sqrtPriceTopX96: 1n, anchorMark: 1n, anchorTime: 1n, initialized: true }),
-  balances: async () => ({ native: 0n, base: 0n, quote: 0n }),
+  balances: async () => {
+    calls.balances++;
+    return { native: 0n, base: 0n, quote: 0n };
+  },
   ensureApprovals: async () => undefined,
   simulateSwap: async () => {
     throw new Error("unused");
   },
   swapArgs: () => [],
+}));
+
+// verifyTx is the only @aven/core export these tests replace.
+vi.mock("@aven/core", async (orig) => ({
+  ...(await orig<typeof import("@aven/core")>()),
+  verifyTx: async () => {
+    calls.verify++;
+    return { match: true, results: [] };
+  },
 }));
 
 const { Arena } = await import("../src/arena.ts");
@@ -43,5 +60,74 @@ describe("Arena.state() under concurrency (load-test regression)", () => {
     (arena as unknown as { lastBlock: bigint }).lastBlock = 101n;
     await Promise.all(Array.from({ length: 50 }, () => arena.state()));
     expect(calls.oracle).toBe(2);
+  });
+});
+
+describe("Arena.state() right after our own tx (live-mode recording regression)", () => {
+  it("serves the block of our own receipt even before the poller has seen it (no stale pre-shock state)", async () => {
+    calls.oracle = 0;
+    const arena = new Arena({ DATA_DIR: "." } as never, { d, publicClient: { getBlockNumber: async () => 100n } } as never);
+    (arena as unknown as { lastBlock: bigint }).lastBlock = 100n;
+    expect((await arena.state()).block).toBe(100);
+    (arena as unknown as { noteOwnTxBlock: (b: bigint) => void }).noteOwnTxBlock(101n); // shock receipt in block 101
+    expect((await arena.state()).block).toBe(101); // poller still at 100
+    expect(calls.oracle).toBe(2);
+    (arena as unknown as { noteOwnTxBlock: (b: bigint) => void }).noteOwnTxBlock(99n); // never goes backwards
+    expect((await arena.state()).block).toBe(101);
+    expect(calls.oracle).toBe(2);
+  });
+});
+
+describe("RPC-backed GETs are cached (pre-mainnet audit: the public RPC allows 100 requests/min)", () => {
+  const dd = { ...d, hook: "0x0000000000000000000000000000000000002080", poolManager: "0x0000000000000000000000000000000000000001", params: {} };
+  const mk = () => new Arena({ DATA_DIR: "." } as never, { d: dd, bot: { account: { address: "0xb0" } }, shock: { account: { address: "0x5c" } }, publicClient: { getBlockNumber: async () => 100n } } as never);
+  it("/bot/status reads balances once per block, however many callers", async () => {
+    calls.balances = 0;
+    const arena = mk();
+    (arena as unknown as { lastBlock: bigint }).lastBlock = 100n;
+    await Promise.all(Array.from({ length: 20 }, () => arena.botStatus()));
+    expect(calls.balances).toBe(2); // bot + shock, once
+    (arena as unknown as { lastBlock: bigint }).lastBlock = 101n;
+    await arena.botStatus();
+    expect(calls.balances).toBe(4);
+  });
+  it("/verify/:tx is computed once per tx (case-insensitive), then served from cache", async () => {
+    calls.verify = 0;
+    const arena = mk();
+    const tx = `0x${"ab".repeat(32)}` as `0x${string}`;
+    expect(await arena.verify(tx)).toBeNull();
+    expect(await arena.verify(tx.toUpperCase().replace("0X", "0x") as `0x${string}`)).toBeNull();
+    expect(calls.verify).toBe(1);
+  });
+});
+
+describe("gas cap on mainnet (pre-mainnet audit)", () => {
+  const dd = { ...d, swapRouter: "0x0000000000000000000000000000000000000004", params: {} };
+  const keys = { aven: {}, control: {} };
+  const mk = (gasPrice: bigint, capGwei: number) =>
+    new Arena({ DATA_DIR: ".", MAX_GAS_PRICE_GWEI: capGwei, SHOCK_QUOTE: 40_000, SHOCK_BASE: 15 } as never, {
+      d: dd,
+      keys,
+      shock: { account: { address: "0x5c" } },
+      publicClient: { getBlockNumber: async () => 100n, getGasPrice: async () => gasPrice },
+    } as never);
+  it("the bot skips a whole iteration during a gas spike: no reads, no sends, a clear reason", async () => {
+    calls.sent = 0;
+    calls.balances = 0;
+    const a = new Arena({ DATA_DIR: ".", MAX_GAS_PRICE_GWEI: 2, MIN_NATIVE_BALANCE: 0 } as never, {
+      d: dd,
+      keys,
+      bot: { account: { address: "0xb0" } },
+      publicClient: { getBlockNumber: async () => 100n, getGasPrice: async () => 3_000_000_000n },
+    } as never);
+    expect(await a.botIteration(100n)).toEqual([]);
+    expect(calls.balances).toBe(0);
+    expect(calls.sent).toBe(0);
+    expect((a as unknown as { lastError: string }).lastError).toMatch(/above the cap.*bot waits/);
+  });
+  it("a shock during a gas spike sends NOTHING (checked before the first of its two swaps)", async () => {
+    calls.sent = 0;
+    await expect(mk(5_000_000_000n, 2).shock({})).rejects.toThrow(/above the cap/);
+    expect(calls.sent).toBe(0);
   });
 });

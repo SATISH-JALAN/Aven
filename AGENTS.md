@@ -43,6 +43,7 @@ The spec and the build prompts still use the original paths. **Translate them wi
 | `contracts/…` | unchanged |
 | Live Arena asset: HYPE, `aHYPE`, `coin == "HYPE"` (P5, §8.3, §11.3) | **testnet ETH: perp index 4, szDecimals 4, `aETH`, `coin == "ETH"`**. The replay still uses HYPE mainnet (index 159). |
 | Explorer links (`explorer` in §8.3, B4 `/config`, B6 tx links) | our frontend route `/tx/<hash>`; no HyperEVM testnet explorer exists |
+| Live chain: HyperEVM testnet 998 (§11.3, §12) | **HyperEVM mainnet 999** (decided 2026-11-06; nobody could get testnet HYPE). Uniswap's canonical PoolManager `0x12D4…6B1F` is reused, the asset is **mainnet ETH, perp 1, szDecimals 4**, and a dedicated RPC is required. See docs/DEPLOYMENTS.md §M |
 
 **Ownership for parallel work:** contracts → `contracts/`, backend → `backend/`, frontend → `frontend/`. These cross-team contracts are frozen, and changes to them need both sides to agree:
 - `contracts/deployments/<chainId>.json` (ARCHITECTURE §8.3);
@@ -90,7 +91,7 @@ It returns a clamped, direction-specific override fee that goes to LPs, and emit
 - No CoreWriter calls.
 - No custody, and no admin keys.
 - No extra sponsor integrations.
-- Never hard-code demo numbers in live views. Every number carries a source label and a "Live testnet" / "Replay" / "Recorded run" badge.
+- Never hard-code demo numbers in live views. Every number carries a source label and a "Live mainnet" (or "Live testnet", for chain 998) / "Replay" / "Recorded run" badge.
 - Never guess external APIs, addresses, signatures or scaling. Verify them and record the evidence in `docs/recon.md`; if you can't, mark it UNVERIFIED with a fallback.
 - Never commit secrets. Only `.env.example` files with placeholders are tracked.
 - Never copy pre-event code or designs into the repo.

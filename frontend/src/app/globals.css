@@ -1,0 +1,218 @@
+@import "tailwindcss";
+
+/*
+ * Aven design tokens. Product-grade and quiet: one geometric sans (Geist), soft rounded surfaces, generous spacing and a
+ * single brand accent. Colour is used for meaning, never decoration.
+ *
+ * Chart series and status colours were run through the dataviz validator against --surface:
+ *   series  aqua #199e70 (Aven / live hook) · orange #d95926 (plain 0.30% pool) · blue #3987e5 (delayed hook)
+ *           → all-pairs PASS on #111113 and #0b0f0e (CVD ΔE ≥ 9.4, normal-vision ΔE ≥ 20.9, contrast ≥ 3:1).
+ *           Fixed 0.05% is a dashed neutral. Mint/pink were tested as series and FAIL (deutan ΔE < 5): UI only.
+ *   status  good #0ca30c · warning (stress) #fab219 · critical #d03b3b, always with an icon + label.
+ */
+@theme {
+  --color-bg: #070908;
+  --color-surface: #0e1110;
+  --color-raised: #151917;
+  --color-line: #1d2220;
+  --color-line-strong: #2b3230;
+  --color-ink: #f3f6f4;
+  --color-ink-2: #b3bcb8;
+  --color-muted: #7c8682;
+  --color-faint: #525a57;
+
+  /* Brand accents (UI only, never data): Hyperliquid mint and a Uniswap pink. */
+  --color-mint: #97fce4;
+  --color-mint-deep: #0c2a24;
+  --color-pink: #ff4fb8;
+
+  /* Data series (validated, see header). */
+  --color-aven: #199e70;
+  --color-aven-glow: #97fce4;
+  --color-plain: #d95926;
+  --color-delayed: #3987e5;
+  --color-neutral: #8b8b94;
+
+  --color-good: #0ca30c;
+  --color-warn: #fab219;
+  --color-crit: #d03b3b;
+
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-label: var(--font-geist-mono), ui-monospace, monospace;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: var(--color-mint);
+  color: var(--color-bg);
+}
+
+/* Display type: tight, medium weight, never italic. */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+/* Small technical labels. */
+.font-label {
+  font-family: var(--font-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Numbers never jiggle while they count. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* No one-word widows: balance headings, keep body copy from leaving a lone last word. */
+h1, h2, h3, .h-hero, .h-section, .h-card { text-wrap: balance; }
+p, .lede { text-wrap: pretty; }
+
+/* Section heading scale. */
+.h-hero {
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 0.94;
+  font-size: clamp(3.1rem, 7.6vw, 7.4rem);
+}
+.h-section {
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  font-size: clamp(2.3rem, 4.8vw, 4.4rem);
+}
+.h-card {
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-size: 1.375rem;
+}
+.lede {
+  color: var(--color-ink-2);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+}
+
+/* Surfaces. */
+.panel {
+  position: relative;
+  border-radius: 28px;
+  border: 1px solid var(--color-line);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-raised) 70%, transparent), var(--color-surface));
+}
+.panel-hover {
+  transition: border-color 0.4s var(--ease-out-expo), transform 0.5s var(--ease-out-expo), background 0.4s;
+}
+.panel-hover:hover {
+  border-color: var(--color-line-strong);
+  transform: translateY(-4px);
+}
+
+/* Buttons. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 3rem;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: background 0.25s, color 0.25s, border-color 0.25s, transform 0.25s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--color-mint); color: var(--color-bg); }
+.btn-primary:hover { background: #c4fff0; }
+.btn-ghost { border: 1px solid var(--color-line-strong); color: var(--color-ink); background: color-mix(in srgb, var(--color-surface) 60%, transparent); }
+.btn-ghost:hover { border-color: var(--color-ink-2); }
+.btn-sm { height: 2.5rem; padding: 0 1.1rem; font-size: 0.875rem; }
+
+/* Soft brand glow. */
+.glow-mint {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-mint) 22%, transparent), transparent);
+  filter: blur(40px);
+}
+
+/* Faint dot grid behind graphics. */
+.dot-grid {
+  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 9%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Hairline grid texture. */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+/* Elements that GSAP reveals start hidden only when JS + motion are available (no flash, no invisible content). */
+.js-motion [data-reveal],
+.js-motion [data-split] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Hidden scrollbars inside horizontal scrollers. */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* Pulsing live dot. */
+.live-dot {
+  box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 60%, transparent);
+  animation: pulse 1.8s var(--ease-out-expo) infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 60%, transparent); }
+  80%, 100% { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* Scroll hint line. */
+@keyframes scrollhint {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(200%); }
+}
+
+/* Summary/details used for "more detail" drawers. */
+details > summary { list-style: none; cursor: pointer; }
+details > summary::-webkit-details-marker { display: none; }
+details[open] [data-chev] { transform: rotate(45deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; }
+  .js-motion [data-reveal], .js-motion [data-split] { opacity: 1; visibility: visible; }
+  .panel-hover:hover { transform: none; }
+}
+
+/* ScrollSmoother wrapper. */
+/* clip, not hidden: hidden makes a scroll container and breaks position: sticky on the native-scroll pages. */
+#smooth-wrapper { overflow: clip; }

@@ -23,20 +23,31 @@ import {AvenScript} from "script/base/AvenScript.sol";
 ///
 /// initialOwner = address(0): nobody can ever set a protocol fee on this PoolManager (no admin keys; keeps verify
 /// check B exact). Override with PM_OWNER only if you know why.
+///
+/// ON HYPEREVM MAINNET (chain 999) Uniswap's canonical PoolManager already exists and is byte-identical to our build
+/// apart from its NoDelegateCall immutable (recon D). The script REUSES it (no big blocks, no HyperCore-user step):
+/// POOL_MANAGER defaults to it on 999 and can be set on any chain to reuse another existing PoolManager.
 contract DeployCore is AvenScript {
+    address internal constant UNISWAP_POOL_MANAGER_999 = 0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F;
+
     function run() external {
         address owner = vm.envOr("PM_OWNER", address(0));
-        bytes memory pmCode = vm.getCode("out-v4core/PoolManager.sol/PoolManager.json");
+        address existing = vm.envOr("POOL_MANAGER", block.chainid == 999 ? UNISWAP_POOL_MANAGER_999 : address(0));
 
         uint256 key = _deployerKey();
         vm.startBroadcast(key);
         uint256 atBlock = block.number;
-        bytes memory initCode = abi.encodePacked(pmCode, abi.encode(owner));
         address pm;
-        assembly {
-            pm := create(0, add(initCode, 0x20), mload(initCode))
+        if (existing != address(0)) {
+            require(existing.code.length > 0, "POOL_MANAGER has no code on this chain");
+            pm = existing;
+        } else {
+            bytes memory initCode = abi.encodePacked(vm.getCode("out-v4core/PoolManager.sol/PoolManager.json"), abi.encode(owner));
+            assembly {
+                pm := create(0, add(initCode, 0x20), mload(initCode))
+            }
+            require(pm != address(0), "PoolManager deploy failed (big blocks on? see header)");
         }
-        require(pm != address(0), "PoolManager deploy failed (big blocks on? see header)");
         PoolSwapTest swapRouter = new PoolSwapTest(IPoolManager(pm));
         PoolModifyLiquidityTest liqRouter = new PoolModifyLiquidityTest(IPoolManager(pm));
         vm.stopBroadcast();
@@ -51,7 +62,8 @@ contract DeployCore is AvenScript {
         console2.log("PoolManager           ", pm);
         console2.log("PoolSwapTest          ", address(swapRouter));
         console2.log("PoolModifyLiquidityTest", address(liqRouter));
-        console2.log("PoolManager owner     ", owner);
+        if (existing != address(0)) console2.log("PoolManager reused (existing, not deployed)");
+        else console2.log("PoolManager owner     ", owner);
         console2.log("wrote", _wipPath());
         if (block.chainid == 998) {
             console2.log("NEXT: switch big blocks OFF: Exchange(...).use_big_blocks(False)  (docs/DEPLOYMENTS.md)");

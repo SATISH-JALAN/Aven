@@ -13,6 +13,9 @@ if (!adminToken) throw new Error("set ARENA_ADMIN_TOKEN");
 const rec = await runDemo({ baseUrl, adminToken, log: (s) => console.log(`[demo] ${s}`) });
 const out = fileURLToPath(new URL("../../frontend/public/arena-fallback.json", import.meta.url));
 mkdirSync(fileURLToPath(new URL("../../frontend/public/", import.meta.url)), { recursive: true });
-writeFileSync(out, `${JSON.stringify({ ...rec, source: `Arena service ${baseUrl}` }, null, 1)}\n`);
+// Name the chain, so a recording can never be mistaken for another network's.
+const chainId = Number(rec.chainId);
+const chainLabel = chainId === 999 ? "HyperEVM MAINNET (chain 999), live HyperCore oracle/mark" : chainId === 998 ? "HyperEVM testnet (chain 998)" : chainId === 31337 ? "LOCAL anvil chain 31337 (mock precompiles)" : `chain ${chainId}`;
+writeFileSync(out, `${JSON.stringify({ ...rec, source: `Recorded run on ${chainLabel}; Arena service ${baseUrl}` }, null, 1)}\n`);
 console.log(summarize(rec));
 console.log(`[demo] saved frontend/public/arena-fallback.json`);

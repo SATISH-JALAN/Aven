@@ -119,10 +119,39 @@ export function withGasMargin(estimate: bigint): bigint {
   return (estimate * 13n) / 10n + 30_000n;
 }
 
-/** Send a contract write with an explicit gas limit = withGasMargin(estimate). */
-export async function writeWithMargin(c: Chain, who: Chain["bot"], request: Parameters<Chain["publicClient"]["estimateContractGas"]>[0]): Promise<Hex> {
+/**
+ * Mainnet gas guard (pre-mainnet audit, 2026-11-06). The HyperEVM base fee was measured at 0.10-10.8 gwei within 3
+ * hours. The Arena trades worthless demo tokens, so its paper profit always beats real gas, and without a cap the bot
+ * would keep paying through a spike. With a cap (MAX_GAS_PRICE_GWEI, required on 999), nothing is sent while the next
+ * block's base fee (eth_gasPrice) is above it, and every tx carries maxFeePerGas = cap, so a tx can never cost more
+ * than gasUsed * cap.
+ */
+export class GasPriceTooHigh extends Error {
+  constructor(
+    readonly gasPrice: bigint,
+    readonly cap: bigint,
+  ) {
+    super(`gas price ${Number(gasPrice) / 1e9} gwei is above the cap ${Number(cap) / 1e9} gwei: not sending`);
+  }
+}
+
+export const gweiToWei = (gwei: number): bigint => BigInt(Math.round(gwei * 1e9));
+
+/** Throws GasPriceTooHigh when a cap is set (capWei > 0) and gasPrice is above it. */
+export function checkGasCap(gasPrice: bigint, capWei: bigint): void {
+  if (capWei > 0n && gasPrice > capWei) throw new GasPriceTooHigh(gasPrice, capWei);
+}
+
+/** Send a contract write with an explicit gas limit = withGasMargin(estimate), and maxFeePerGas = capWei if set. */
+export async function writeWithMargin(c: Chain, who: Chain["bot"], request: Parameters<Chain["publicClient"]["estimateContractGas"]>[0], capWei = 0n): Promise<Hex> {
   const estimate = await c.publicClient.estimateContractGas({ ...request, account: who.account } as never);
-  return who.wallet.writeContract({ ...(request as object), account: who.account, chain: who.wallet.chain, gas: withGasMargin(estimate) } as never);
+  return who.wallet.writeContract({
+    ...(request as object),
+    account: who.account,
+    chain: who.wallet.chain,
+    gas: withGasMargin(estimate),
+    ...(capWei > 0n ? { maxFeePerGas: capWei } : {}),
+  } as never);
 }
 
 const SWAP_SETTINGS = { takeClaims: false, settleUsingBurn: false } as const;

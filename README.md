@@ -7,7 +7,7 @@
 **A Uniswap v4 fee library and hook on HyperEVM that prices every swap from Hyperliquid's in-block perp market, so LPs keep more of the value arbitrageurs would take.**
 
 [![Uniswap v4](https://img.shields.io/badge/Uniswap-v4%20hook-ff007a)](https://github.com/Uniswap/v4-core)
-[![HyperEVM](https://img.shields.io/badge/HyperEVM-testnet%20998-97fce4)](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/hyperevm)
+[![HyperEVM](https://img.shields.io/badge/HyperEVM-live%20on%20mainnet%20999-97fce4)](https://hyperevmscan.io/address/0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.26-363636)](contracts/foundry.toml)
 [![Foundry](https://img.shields.io/badge/tests-Foundry%20%2B%20vitest-orange)](docs/PROOFS.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -20,12 +20,18 @@ Built at **ETHGlobal Mumbai 2026** for the Uniswap Foundation track.
 
 ---
 
-> **Status (2026-11-06):** the contracts, TypeScript port, verifier, Arena bot service, replay engine and every proof are done. All of it has been run end to end on a local chain, using mock precompiles placed at the real addresses. **The HyperEVM testnet deployment is pending** (it needs a funded deployer; runbook in [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md)). **The web app is in progress.** Every number below says where it came from.
+> **Live on HyperEVM mainnet (chain 999)** since 2026-11-06, block 50,557,638.
+> - `AvenHook` [`0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080`](https://hyperevmscan.io/address/0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080), on **Uniswap's own v4 PoolManager** [`0x12D4…6B1F`](https://hyperevmscan.io/address/0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F).
+> - Its first swaps read HyperCore's **real** oracle and mark in-block, and every fee can be recomputed: `CHAIN_ID=999 HYPEREVM_RPC=https://rpc.hyperliquid.xyz/evm pnpm verify <tx>`.
+> - In the first live Arena test, the bot's arbitrage paid **9,950 pips on Aven vs 3,000 on the 0.30% control pool**, so **LPs kept $97.25 more** (demo tokens valued at the oracle). Details below; every address and transaction is in [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md) §M.5.
+>
+> The contracts, TypeScript port, verifier, Arena bot service, replay engine, web app and every proof are done. Every number below says where it came from.
 
 ## What a judge should check
 
 | Claim | Where to check it |
 |---|---|
+| It runs on **HyperEVM mainnet**, on Uniswap's canonical PoolManager, and the live bytecode is the audited build. | [hook on hyperevmscan](https://hyperevmscan.io/address/0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080) · [`contracts/deployments/999.json`](contracts/deployments/999.json) · [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md) §M.5 |
 | The fee comes from HyperCore's oracle and mark price, read **inside `beforeSwap`**, in the same block. No relay, keeper or signer. | [`AvenFairValue.readPrices`](contracts/src/AvenFairValue.sol#L122) · [`AvenHook._beforeSwap`](contracts/src/AvenHook.sol#L119-L146) |
 | A broken price read **never reverts a swap**; it charges a fallback fee instead. | `test_precompileRevert_chargesFallback`, `test_precompileBurnsGas_capped`, `invariant_I1_noSwapRevertsFromReads` |
 | A swap that closes a stale-price gap pays the gap fee; the same swap in the reverse direction doesn't. | `test_arbDirectionPaysMoreThanReverse`, `test_sandwichBackLeg_paysGapFee` |
@@ -229,7 +235,7 @@ sequenceDiagram
   participant PM as PoolManager + AvenHook
   W->>A: POST /shock (x-admin-token)
   A->>RPC: identical swap on both pools (shock wallet)
-  loop every new block (polled every ~500 ms, no websockets on HyperEVM)
+  loop every new block (polled every POLL_MS, no websockets on HyperEVM)
     A->>RPC: eth_call oraclePx, slot0 ×2, previewFee
     A->>RPC: simulate the arb swaps (eth_call)
     A->>RPC: send the profitable ones (bot wallet)
@@ -247,7 +253,22 @@ How the bot trades, per pool and per block:
 3. Trade toward the break-even price `p* = oracle / (1 − f)` when selling base, or `oracle · (1 − f)` when buying.
 4. Simulate first; send only if the trade is profitable at the oracle price.
 
-It has a nonce manager per wallet, retries with backoff, trade-size caps, auto-pause on low gas balance, an admin token and rate limit on POST routes, and a CORS allowlist.
+It has a nonce manager per wallet, retries with backoff, trade-size caps, auto-pause on low gas balance, an admin token and rate limit on POST routes, and a CORS allowlist. On mainnet it also caps every transaction's gas price (`MAX_GAS_PRICE_GWEI`; above the cap the bot waits) and refuses to start without a real `NATIVE_USD` price and an admin token of at least 24 characters.
+
+### First live run on HyperEVM mainnet (2026-11-07)
+
+Real HyperCore oracle and mark, Uniswap's PoolManager, demo tokens `aETH` / `aUSD`. Source: [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md) §M.5.
+
+| Step | Result |
+|---|---|
+| Before | Oracle $2,228.00; both pools at $2,231.50 (15 bp) |
+| **Shock**: 40,000 aUSD → aETH on both pools | both pools ~188 bp above the oracle ([Aven tx](https://hyperevmscan.io/tx/0x4f70aa22483255d5140d786afd0945c0d825303d84a2bea1844a6c049e80d4c1) · [control tx](https://hyperevmscan.io/tx/0xb14e2e882c4cf701ab022e22f68068e3a54cda4f38bbea8d9a45d3a63776f17f)) |
+| **Bot arb, Aven pool** | **9,950 pips** = 500 + 186 bp gap × 50 + 3 bp premium × 50; verify **MATCH A + B** ([tx](https://hyperevmscan.io/tx/0xfce164020d09a93c06fc212d41e7a24abde051339aa4d9013ed26c86e5ba868f)) |
+| **Bot arb, control pool** | 3,000 pips ([tx](https://hyperevmscan.io/tx/0xc0f7dfe4c58a0d0e2866d770798de177a79c3a6706b9e7c6d1c0f6745a81cd96)) |
+| **Outcome** | LP fee income **$210.48 (Aven) vs $113.23 (control): LPs kept $97.25 more**. Bot profit $92.88 vs $297.77 |
+| Gas | 4 txs, all succeeded, paid 0.10–0.12 gwei; the whole test cost **0.000083 HYPE** |
+
+The Aven pool stays 97 bp off the oracle after the arb, because a further arb wouldn't cover its fee; the control pool ends 27 bp off.
 
 ### Arena HTTP + SSE API
 
@@ -314,10 +335,10 @@ This sketch leaves out the two anti-gaming anchors (`anchorMarkRaw: 0` turns off
 | Layer | Tools |
 |---|---|
 | Contracts | Solidity 0.8.26 (Cancun), Foundry, Uniswap **v4-core** (`d153b04`), **v4-periphery** (`c6e4754`, HookMiner), OpenZeppelin **uniswap-hooks** `BaseHook` (`v1.3.0-rc.0`), forge-std `v1.17.0`, hyper-evm-lib `v1.1` (tests only) |
-| Chain | HyperEVM testnet (998) for the live Arena, Hyperliquid mainnet data for the replay; HyperCore read precompiles `0x806` (mark), `0x807` (oracle), `0x80a` (perpAssetInfo) |
+| Chain | HyperEVM mainnet (999) on Uniswap's canonical v4 PoolManager; Hyperliquid mainnet data for the replay; HyperCore read precompiles `0x806` (mark), `0x807` (oracle), `0x80a` (perpAssetInfo) |
 | Off-chain | Node ≥ 20, TypeScript (strict, ESM), pnpm workspaces, viem, zod, Hono + `@hono/node-server` (HTTP + SSE), vitest, tsx, autocannon (load tests) |
 | Data | Hyperliquid info API (`candleSnapshot`, `fundingHistory`, `meta`) |
-| Frontend | Next.js (App Router), **in progress** |
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4, viem, Privy (login), GSAP + three.js (motion), TradingView `lightweight-charts`; fees are re-verified in the browser with `@aven/core` |
 
 ## Project structure
 
@@ -340,7 +361,8 @@ Aven/
 │   ├── arena/      @aven/arena: poller, arb bot, shock, stats, HTTP + SSE API, e2e + load tests
 │   ├── scripts/    @aven/scripts: local chain, market data, replay, proofs report, demo
 │   └── data/       raw/ (market data), replay/ (results), load/ (load-test output)
-├── frontend/       Next.js app (in progress); public/replay/*.json and arena-fallback.json are generated
+├── frontend/       @aven/web (Next.js): /, /trade, /swap, /pool, /replay, /docs, /verify/[tx];
+│                   public/replay/*.json and public/arena-fallback.json are generated
 └── docs/
     ├── spec/       ARCHITECTURE.md (normative), API.md, DATA.md, FRONTEND.md
     ├── PROOFS.md   SECURITY.md  LOADTEST.md  DEPLOYMENTS.md  DEMO.md  recon.md
@@ -383,13 +405,15 @@ pnpm proofs --e2e                          # forge + diff + local verify + repla
 
 > **Check out the submodules before the first `forge test`.** If `contracts/lib/` is empty, forge tries to install the dependencies itself, can stop halfway, and then fails with `Source "lib/v4-core/..." not found`.
 
-### Run the whole system locally (no keys, no testnet)
+### Run the whole system locally (no keys, no funds)
 
 ```bash
 pnpm --filter @aven/scripts local:once     # anvil + mock precompiles + all 5 deploy scripts + smoke swaps verified
-pnpm --filter @aven/arena demo:local       # local chain + in-process Arena: shock -> bot -> stats -> verify;
-                                           # also rewrites frontend/public/arena-fallback.json ("Recorded run")
+pnpm --filter @aven/arena demo:local       # local chain + in-process Arena: shock -> bot -> stats -> verify
+pnpm --filter @aven/arena check:frontend   # the web app's own swap + liquidity args on a local chain
 ```
+
+> `demo:local` rewrites `frontend/public/arena-fallback.json`, which now holds the **mainnet** recording. Don't commit that file after a local run.
 
 To keep a local chain running and point the Arena at it:
 
@@ -398,6 +422,16 @@ pnpm --filter @aven/scripts local:up       # stays up; writes contracts/deployme
 # then, with CHAIN_ID=31337, HYPEREVM_RPC=http://127.0.0.1:8545 and anvil accounts #1/#2 as BOT_PK/SHOCK_PK:
 pnpm --filter @aven/arena start            # serves http://localhost:8787
 ```
+
+### Run the web app
+
+```bash
+cp frontend/.env.example frontend/.env.local   # optional; defaults work
+pnpm --filter @aven/web dev                    # http://localhost:3000
+pnpm --filter @aven/web test                   # vitest
+```
+
+Without a reachable Arena, the app shows the recorded run (`public/arena-fallback.json`) and labels it as such. `/replay` plays the replay data. The verify page recomputes fees in the browser from the RPC receipt, without the Arena. See [frontend/README.md](frontend/README.md).
 
 ### Replay and verify
 
@@ -408,8 +442,10 @@ pnpm replay:calm
 pnpm --filter @aven/scripts replay-to-web       # -> frontend/public/replay/*.json
 
 pnpm verify <txHash>                            # recompute the fee of every FeeComputed in a tx (exit 1 on mismatch)
-CHAIN_ID=998 pnpm verify --all                  # every FeeComputed since deployment, in <= 50-block chunks
+CHAIN_ID=999 HYPEREVM_RPC=<rpc> pnpm verify --all   # every FeeComputed since deployment, in <= 50-block chunks
 ```
+
+The public RPC `https://rpc.hyperliquid.xyz/evm` allows 100 requests per minute per IP. That's fine for verifying a few transactions; use a dedicated endpoint for `--all` and for the Arena.
 
 ### Environment variables
 
@@ -419,58 +455,70 @@ Each tool reads its own folder's `.env`. Only the `.env.example` files are commi
 |---|---|---|
 | `contracts/.env` | `DEPLOYER_PK` | deployer key for `forge script` |
 | | `BOT_ADDRESS`, `SHOCK_ADDRESS` | wallets that receive test tokens |
-| | `HYPEREVM_RPC` | default `https://rpc.hyperliquid-testnet.xyz/evm` |
+| | `HYPEREVM_RPC` | chain RPC (a dedicated endpoint on mainnet); on 999 also `export PERP_INDEX=1 EXPECT_COIN=ETH` |
 | `backend/.env` | `BOT_PK`, `SHOCK_PK` | Arena bot and shock wallet keys |
-| | `ARENA_ADMIN_TOKEN` | required on POST routes (≥ 8 chars) |
+| | `ARENA_ADMIN_TOKEN` | required on POST routes (≥ 8 chars; ≥ 24 on mainnet) |
 | | `ARENA_CORS_ORIGINS` | allowlist, default `http://localhost:3000` |
 | | `HYPEREVM_RPC`, `HL_INFO_API_TESTNET`, `HL_INFO_API_MAINNET` | chain RPC and Hyperliquid info API |
 | | optional: `CHAIN_ID` (998), `ARENA_PORT` (8787), `MAX_TRADE_BASE` (5), `MAX_TRADE_QUOTE` (10,000), `SHOCK_QUOTE` (40,000), `SHOCK_BASE` (15), `MIN_NATIVE_BALANCE` (0.01), `NATIVE_USD` (0), `POLL_MS` (500), `POST_RATE_LIMIT_PER_MIN` (30) | Arena tuning |
-| `frontend/.env.local` | `NEXT_PUBLIC_ARENA_API`, `NEXT_PUBLIC_RPC`, `NEXT_PUBLIC_CHAIN_ID` | public values only, never keys |
+| | mainnet: `CHAIN_ID=999`, `NATIVE_USD` (HYPE price, must be > 0), `MAX_GAS_PRICE_GWEI` (required, e.g. 2), `POLL_MS=2000` on a free-tier RPC | see [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md) §M.4 |
+| `frontend/.env.local` | `NEXT_PUBLIC_ARENA_API`, `NEXT_PUBLIC_RPC`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_MODE` (`live` / `recorded`), `NEXT_PUBLIC_PRIVY_APP_ID` | public values only, never keys |
 
 ---
 
-## Deployment (HyperEVM testnet)
+## Deployment (HyperEVM mainnet)
 
-Uniswap lists no v4 deployment on HyperEVM testnet, so Aven deploys its own PoolManager. It is built with v4-core's own compiler profile, **byte-identical to Uniswap's HyperEVM mainnet PoolManager**, and deployed with `owner = address(0)`, so nobody can ever switch on a protocol fee. The full runbook is [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md).
+Aven runs on **HyperEVM mainnet (chain 999)** and reuses **Uniswap's canonical v4 PoolManager** there; it doesn't deploy its own. The hook is 9.3 KB, so it fits HyperEVM's 3M-gas small blocks: no big blocks and no HyperCore-user step. The deploy was rehearsed on a mainnet fork first, and an internal review was done before it ([docs/SECURITY.md](docs/SECURITY.md) §6). Full runbook: [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md) §M.
 
 ```mermaid
 flowchart TD
-  A["Deployer funded and made a HyperCore user"] --> B["Big blocks ON (evmUserModify)"]
-  B --> C["DeployCore: PoolManager (v4core profile) + test routers"]
-  C --> D["Big blocks OFF"]
-  D --> E["DeployTokens: aETH (18 dec) / aUSD (6 dec)"]
-  E --> F["DeployAven: check perpAssetInfo(4).coin == ETH, mine 0x2080 salt, CREATE2"]
+  A["One funded account (HYPE for gas on HyperEVM)"] --> C["DeployCore: reuse Uniswap's PoolManager, deploy the test routers"]
+  C --> E["DeployTokens: aETH (18 dec) / aUSD (6 dec)"]
+  E --> F["DeployAven: check perpAssetInfo(1).coin == ETH, mine 0x2080 salt, CREATE2"]
   F --> G["CreatePools: Aven pool (dynamic fee) + control pool (0.30%) at the live oracle price"]
   G --> H["Smoke: one swap each way on both pools"]
-  H --> I["pnpm verify: MATCH, commit deployments/998.json"]
+  H --> I["pnpm verify: MATCH A + B, commit deployments/999.json"]
 ```
 
-- **Live asset: testnet ETH** (perp index 4, `szDecimals` 4). Testnet HYPE's oracle was ~91× its mark, so it isn't usable. The replay still uses **mainnet HYPE**.
-- **Mock tokens, real price.** The pools trade mock `aETH` / `aUSD` (open mint, testnet only, never worth anything), while the hook reads the **real** HyperCore ETH perp price. That works because the hook only needs the base asset's price, and the pool is initialized at that price.
-- There's no HyperEVM testnet block explorer, so transaction links go to the web app's `/tx/<hash>` page and to `pnpm verify <tx>`.
+- **Every transaction is capped at 2 gwei** (forge `--with-gas-price 2gwei`; Arena `MAX_GAS_PRICE_GWEI`). The base fee ranged from 0.10 to 10.8 gwei over 3 hours, so a capped tx waits rather than overpays.
+- **Live asset: ETH** (mainnet perp index 1, `szDecimals` 4). The replay uses **mainnet HYPE** (index 159).
+- **Demo tokens, real price.** The pools trade `aETH` / `aUSD` demo tokens (open mint, worth nothing), while the hook reads the **real** HyperCore ETH perp price. That works because the hook only needs the base asset's price, and both pools were initialized at it ($2,231.50 vs the oracle's $2,231.53).
 
-| Deployed (chain 998) | Address / tx |
+**Deployed 2026-11-06, block 50,557,638.** 23 transactions, all succeeded, total cost 0.001044 HYPE (~$0.08).
+
+| What | Address / tx |
 |---|---|
-| PoolManager · AvenHook · aETH / aUSD · pool ids · smoke swaps | **TODO: pending the testnet deploy** |
-| Web app | **TODO: URL once deployed** |
+| PoolManager (Uniswap's, reused) | [`0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F`](https://hyperevmscan.io/address/0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F) |
+| **AvenHook** | [`0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080`](https://hyperevmscan.io/address/0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080): live code byte-identical to the audited build, address bits `0x2080` |
+| Aven pool (dynamic fee) | `0x659c1cbd66a079592fd333ec44f76b4878aabfe5d9c17b7a14faaabbe7e0d1df` |
+| Control pool (static 0.30%) | `0x4bf2e188c58f409792aae72afe12c7d025ce093d4ca92d8a100a810d8b1681b6` |
+| aETH / aUSD | [`0xD4a2…5756`](https://hyperevmscan.io/address/0xD4a26168e47acc1b514aF23Fb5a360d171745756) / [`0xFC91…efd6`](https://hyperevmscan.io/address/0xFC91A98c4bDbF5b20a2Da89e514C66295051efd6) |
+| PoolSwapTest / PoolModifyLiquidityTest | [`0xFe6b…02B1`](https://hyperevmscan.io/address/0xFe6baCe2E548fD06735A4242BBD46A3c842E02B1) / [`0x4da4…1A5b`](https://hyperevmscan.io/address/0x4da494CB3f82c3d01c2D720BB23B38E505141A5b) |
+| Smoke swaps on Aven (verify MATCH A + B) | [`0x7b28…`](https://hyperevmscan.io/tx/0x7b28ee95600b0f2967542ec98b43f52435edab12a9ee6acf43e6c1306f337eed): 700 pips · [`0x2dd3…`](https://hyperevmscan.io/tx/0x2dd33f423c553cf4abd89af9ea725690039fb1105e883071a6c931bcea57f3a9): 500 pips; gas 190,521 / 174,097 |
+| Web app | **TODO: public URL** |
+
+The machine-readable record is [`contracts/deployments/999.json`](contracts/deployments/999.json). Testnet (998) was abandoned: nobody could get testnet HYPE (§T in DEPLOYMENTS.md).
 
 ---
 
 ## What Aven does not claim
 
-- **Nothing is on testnet yet.** Every on-chain number in this README comes from a local anvil chain running the real deploy scripts, with `MockHyperCorePx` at the precompile addresses. The real precompiles were checked separately: live testnet reads match the info API after scaling ([docs/recon.md](docs/recon.md) §C).
+- **The pools trade demo tokens.** `aETH` / `aUSD` have an open mint, so anyone can mint them and trade against the pools, including pushing a pool to the edge of its liquidity ([docs/SECURITY.md](docs/SECURITY.md) §6.2, C-5). The price the hook reads is real.
+- **Numbers say where they came from.** The mainnet numbers are from the deploy and the first live Arena test. The proofs, load tests and the 8,700-pip Arena e2e ran on a local anvil chain with `MockHyperCorePx` at the precompile addresses.
+- **The PoolManager has an owner.** On mainnet it's Uniswap's, owned by Uniswap governance. `protocolFeeController` is `0x0` today; if governance sets one, a protocol share could come out of LP fees, and verify check B would need to account for it ([docs/SECURITY.md](docs/SECURITY.md) §6.2, C-4).
 - **The verifier proves the arithmetic, not the history.** It shows that the fee equals the formula applied to the logged inputs, and that the PoolManager charged exactly that fee. It does not prove that the logged oracle and mark equal HyperCore's history.
 - **The replay is a simulation.** It uses a proxy for the oracle, 5-minute steps and one LP position per pool. It compares pools fairly against each other; it doesn't predict absolute returns.
 - **Only assets with a HyperCore perp.** For Hyperliquid-native assets, the oracle may exclude external venues.
 - **Splitting an arb across blocks lowers the fee somewhat.** The top-of-block anchor only covers one block. This is an accepted limitation; competing arbitrageurs take the first block.
 - **No hedging and no LP management.** LPs still bear directional risk.
-- **Parameters are calibrated, not optimized.** It is not audited, and `slither` hasn't been run yet (`forge lint`: 0 warnings in `src/`).
+- **Parameters are calibrated, not optimized.** There is no third-party audit, only the internal pre-mainnet review in [docs/SECURITY.md](docs/SECURITY.md) §6. `slither` hasn't been run yet (it won't install on the build machine); `forge lint` gives 0 warnings in `src/`.
 
 Threat model, each threat mapped to its test: [docs/SECURITY.md](docs/SECURITY.md).
 
 ## What was hard
 
-- **No v4 on HyperEVM testnet.** We had to build and deploy a PoolManager ourselves. It is ~24 KB, too big for a 3M-gas small block, so it needs HyperEVM's big blocks, and only a HyperCore user can switch to those.
+- **Testnet was a dead end.** HyperEVM testnet has no v4 PoolManager, and ours (~24 KB) needs big blocks, which only a HyperCore user can switch on. Testnet HYPE for gas was unobtainable, since the faucet only serves addresses that have deposited on mainnet. So we went to mainnet, on Uniswap's own PoolManager, with every transaction capped at 2 gwei.
+- **Forge can't simulate precompiles on a live chain.** A direct precompile read returns 0 bytes in forge's simulation, so `DeployAven` would have failed on mainnet. The internal review caught it, and the scripts now read through `vm.rpc`.
 - **v4 tooling has moved.** `BaseHook` left v4-periphery (we use OpenZeppelin's), HookMiner moved to `test/shared/`, and v4-core's only tag (`v4.0.0`) predates `PoolOperation.sol`, so we pinned the commit OpenZeppelin pins.
 - **The dynamic-fee zero trap.** A dynamic pool's stored LP fee is 0, so one missing override flag means free swaps. That's why I3 has a dedicated test, an invariant and a mutation check.
 - **Precompile failure modes.** Reads can revert, return 0 bytes (local chains have no code there), return words wider than `uint64`, or burn all forwarded gas. Each mode has a test.
@@ -478,8 +526,10 @@ Threat model, each threat mapped to its test: [docs/SECURITY.md](docs/SECURITY.m
 
 ## Roadmap
 
-- [ ] Testnet deployment and live verified transactions (runbook ready)
-- [ ] Web app: Home, Arena (pool cards, trade tape, Verify drawer), Replay ([docs/spec/FRONTEND.md](docs/spec/FRONTEND.md))
+- [x] HyperEVM mainnet deployment, with live verified transactions
+- [x] Web app: landing, Trade, Swap, Pool, Replay, Docs and the `/verify/[tx]` proof page
+- [ ] A public web app URL
+- [ ] Decide on the demo tokens: keep the open mint, or deploy owner-mint tokens (SECURITY.md C-5)
 - [ ] A third replay scenario (`volatile-2`; the window is still to be picked)
 - [ ] `slither` pass, with the findings recorded in SECURITY.md
 - [ ] A multi-block decaying gap anchor, to close the cross-block split-arb gap
@@ -494,7 +544,7 @@ Threat model, each threat mapped to its test: [docs/SECURITY.md](docs/SECURITY.m
 | Name | Role |
 |---|---|
 | Sayan Roy ([@mesayanroy](https://github.com/mesayanroy)) | contracts, backend, proofs |
-| _TODO_ | frontend |
+| Satish Jalan ([@SATISH-JALAN](https://github.com/SATISH-JALAN)) | frontend |
 
 ## Disclosure
 
