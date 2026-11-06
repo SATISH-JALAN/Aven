@@ -147,7 +147,7 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
 
 ## Phase 6: Proofs and hardening (P9, P11, P13 backend part)
 
-- [ ] **6.1 Verify CLI:**
+- [x] **6.1 Verify CLI:**
   - `pnpm verify <tx>` / `--all`;
   - `pnpm proofs` writes `docs/PROOFS.md` (named tests, gas report, diff, verify --all).
 - [ ] **6.2 Invariant suite:** `contracts/test/invariant/AvenInvariant.t.sol` covering I1, I2, I3, I4, I9. Plus `forge snapshot` and the gas report vs §6.7.

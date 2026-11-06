@@ -3,7 +3,7 @@
  * shock -> bot trades both pools -> the Aven trade pays a higher fee than the control trade for the same gap ->
  * /stats lpKeptMoreUsd > 0 -> /verify/:tx MATCH (A and B). Also: persistence reload. Runs only with E2E=1.
  */
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -104,6 +104,25 @@ describe.skipIf(!enabled)("arena e2e on a local chain", () => {
     const after = (await (await app.request("/state")).json()) as StateResponse;
     expect(Math.abs(after.pools.control.gapBps)).toBeLessThanOrEqual(31); // p* = +30 bp for 0.30%
     expect(Math.abs(after.pools.aven.gapBps)).toBeLessThanOrEqual(Math.ceil(avenArb.feePips / 100) + 1);
+    const out = new URL("../../data/arena/", import.meta.url);
+    mkdirSync(out, { recursive: true });
+    writeFileSync(
+      new URL("e2e-last.json", out),
+      JSON.stringify(
+        {
+          at: new Date().toISOString(),
+          avenArbFee: avenArb.feePips,
+          controlArbFee: controlArb.feePips,
+          avenGapBpsAtShock: st.pools.aven.gapBps,
+          lpKeptMoreUsd: stats.lpKeptMoreUsd,
+          botProfitAvenUsd: avenArb.botProfitUsd,
+          botProfitControlUsd: controlArb.botProfitUsd,
+          verify: { checkA: v.checkA, checkB: v.checkB },
+        },
+        null,
+        2,
+      ),
+    );
     console.log(`[e2e] aven arb fee ${avenArb.feePips} vs control ${controlArb.feePips}; lpKeptMoreUsd ${stats.lpKeptMoreUsd.toFixed(2)}; bot profit aven ${avenArb.botProfitUsd.toFixed(2)} vs control ${controlArb.botProfitUsd.toFixed(2)}`);
   }, 300_000);
 

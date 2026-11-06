@@ -10,6 +10,7 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
+import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {HookMiner} from "@uniswap/v4-periphery/test/shared/HookMiner.sol";
 import {IDynamicFeeHook} from "../../src/interfaces/IDynamicFeeHook.sol";
 import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
@@ -363,6 +364,34 @@ contract AvenHookTest is AvenTestBase {
         assertEq(got, want);
         assertEq(uint160(got) & Hooks.ALL_HOOK_MASK, flags);
         assertGt(got.code.length, 0);
+    }
+
+    /// beforeSwap alone, called exactly as the PoolManager calls it (§6.7): first swap of a pool (cold storage) and a
+    /// later swap in a new block (warm, non-zero slots). Uses snapshots so pool state is untouched.
+    function test_gas_beforeSwapDirect() public {
+        SwapParams memory sp = SwapParams({
+            zeroForOne: sellBaseDir(),
+            amountSpecified: -0.01e18,
+            sqrtPriceLimitX96: sellBaseDir() ? MIN_PRICE_LIMIT : MAX_PRICE_LIMIT
+        });
+        uint256 snap = vm.snapshotState();
+        vm.prank(address(manager));
+        uint256 g = gasleft();
+        hook.beforeSwap(address(swapRouter), avenKey, sp, ZERO_BYTES);
+        uint256 cold = g - gasleft();
+        vm.revertToState(snap);
+        _sell(avenKey, 1e9); // a first swap initialises the hook's state
+        nextBlock(5);
+        vm.prank(address(manager));
+        g = gasleft();
+        hook.beforeSwap(address(swapRouter), avenKey, sp, ZERO_BYTES);
+        uint256 warm = g - gasleft();
+        emit log_named_uint("beforeSwap gas (first swap, cold)", cold);
+        emit log_named_uint("beforeSwap gas (later block, warm)", warm);
+        // Ceiling only: this direct call also pays the test harness's external call + ABI decoding. The section 6.7 number is
+        // the in-swap overhead from test_gas_beforeSwapOverhead (~47k with the mock precompile).
+        assertLt(cold, 100_000);
+        assertLt(warm, 100_000);
     }
 
     /// Logs the hook's beforeSwap overhead (Aven swap minus identical control swap), for §6.7 / P11.

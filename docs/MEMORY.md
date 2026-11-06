@@ -20,7 +20,8 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P6 Arena service | ✅ done 2026-11-06 (PLAN 4.1–4.4): 22 unit/API tests (auth and rate-limit mutations caught). **E2E gate passes on the local chain**: shock → bot arbs both pools → Aven fee > control fee → `lpKeptMoreUsd > 0` → `/verify` MATCH; trades reload after restart (156 s) | `backend/arena` |
 | P7 market data | ✅ done 2026-11-06 (PLAN 5.1): binance-halt and calm each have 72 × 5m HYPE candles + 8 funding samples, 0 gaps. Oct 29 18:00–24:00 HYPE range 88.96–95.24. volatile-2 is a placeholder (Sayan to pick) | `backend/data/raw/` |
 | P8 replay engine | ✅ done 2026-11-06 (PLAN 5.2–5.3). **Oct 29: avenLive +$141 vs HODL, avenDelayed +$114, fixed30 +$7, fixed05 −$318. Calm: Aven ≈ fixed30 (+$323 vs +$317), live ≈ delayed.** Spec defaults, no tuning. Hand-checked steps 1–2; sanity tests (flat → LVR 0; collected fees = expected within 0.01%) | `backend/data/replay/README.md` |
-| **P9/P11/P13 proofs + hardening** | ⏭ next (PLAN 6.1–6.4) | — |
+| P9 verify CLI + proofs | ✅ done 2026-11-06 (PLAN 6.1): `pnpm verify <tx>` / `--all`; `pnpm proofs --e2e` writes docs/PROOFS.md. Forge 88/0/4; diff 10k/10k + 2k/2k; local verify 2/2. Hook overhead 46,877 gas. **Arena e2e: Aven arb fee 8,700 vs 3,000; LPs kept $64.33 more** | docs/PROOFS.md |
+| **P11/P13 invariants, security, demo** | ⏭ next (PLAN 6.2–6.4) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
@@ -73,6 +74,10 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- Windows + Node 23: `process.exit()` while fetch sockets are closing trips a libuv assertion (`UV_HANDLE_CLOSING`), and a passing CLI exits non-zero. Use `process.exitCode` and return.
+- Foundry's gas report doesn't track contracts placed with `deployCodeTo` (etch). Measure hook gas inside tests (`test_gas_*`, read with `-vv`).
+- `forge test --json` omits `decoded_logs` unless run with `-vv`; the test logs are parsed from text instead.
 
 - A mutation check showed the first replay fee sanity test was too weak: ratio-only asserts survive dropping one token's fees. It now asserts both tokens collect fees and that collected fees equal independently expected fees (0.01%).
 - Bash: avoid double-quoted `python -c "...$141..."` (bash expands `$1`) and writing `−` through Windows cp1252. Generate text with a script file, then use the Write tool.
