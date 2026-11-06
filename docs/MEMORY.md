@@ -26,9 +26,9 @@ The running record of status, decisions and open items. It saves you from re-rea
 | Phase 7 load testing | ✅ done 2026-11-06 (PLAN 7.1–7.4).
   - Foundry: 2,318 swaps / 250 blocks with broken reads, 0 reverts or violations; ~16 Aven swaps fit a 3M small block.
   - Burst: 280/280 swaps verified.
-  - API: ≤ 59 ms p99 at ~1.6–2.7k req/s, 0 errors; 200 SSE clients, no leak; rate limit exact.
-  - Stress: 344/344 verified, 0 nonce errors.
-  - **3 bugs found and fixed** (viem block-number cache, 4 s receipt polling, /state thundering herd), each with a mutation-checked regression test. | docs/LOADTEST.md |
+  - API: ≤ 71 ms p99 at ~1.6–2.7k req/s, 0 errors; 200 SSE clients, no leak; rate limit exact.
+  - Stress: 348/348 verified, 0 nonce errors; bot 64 iterations over 75 blocks under API load.
+  - **4 bugs found and fixed** (viem block-number cache, 4 s receipt polling, /state thundering herd, out of gas on the first swap of a block), each with a regression test. | docs/LOADTEST.md |
 | **Backend plan** | ✅ every step done or BLOCKED on Sayan (testnet deploy) | docs/PLAN.md |
 | P3–P13 | not started | — |
 
@@ -83,6 +83,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 ## Gotchas learned
 
+- **Gas estimates for Aven swaps need a margin.** `eth_estimateGas` sees the cheap "later swap in this block" hook path; the real tx is usually the first swap of the next block (top-of-block + anchor writes) and runs out of gas. Found by the load test (12/70 bot txs reverted); fixed with `withGasMargin` (×1.3 + 30k) → 0/76. Routers need the same.
 - **viem defaults that hurt a 1 s-block chain:**
   - `getBlockNumber()` is cached ~4 s: pass `cacheTime: 0` on clients that poll or scan to head;
   - `waitForTransactionReceipt` polls at `pollingInterval` (4 s default): set 250 ms.

@@ -96,8 +96,15 @@ md("   - **Regression:** `backend/arena/test/chain.test.ts` asserts the 250 ms i
 md("3. **Fixed: /state thundering herd (found by 7.2).** The per-block cache was filled only after the computation finished, so on every new block all concurrent callers recomputed /state (~10 RPC reads each). Measured: **p99 1,188 ms**.");
 md("   - **Fix:** one in-flight computation per block, shared by all callers; failures aren't cached.");
 md("   - **Regression:** `backend/arena/test/state.test.ts` (50 concurrent calls → 1 computation; mutation-checked: without the fix it's 50).");
-md("4. **Accepted: block capacity.** ~16 Aven swaps fit one 3M-gas small block (full swap ~175–188k gas, the hook ~47k of it). Extra swaps spill into the next block; correctness is unaffected.");
-md("5. **Accepted: shocks fail while the RPC is down.** The Arena reports the error to the admin and doesn't retry a shock forever. The bot loop itself retries with backoff and resumes when the RPC returns.");
-md("6. **Accepted: a simulated swap can revert when the price moves between planning and simulation** (seen as `swap reverted` in the error sample during the shocks). The iteration records it and the next block re-plans; no transaction is sent for a failed simulation.");
+md("4. **Fixed: first swap of a block ran out of gas (found by 7.3).** Bot txs were mined and reverted.");
+md("   - **Diagnosis:** `pnpm --filter @aven/arena repro:reverts` reproduced it with the bot alone (no shocks, no RPC faults): **12 of 70** bot txs reverted. Every one was the first tx of its block and succeeded when replayed at the parent block.");
+md("   - **Cause:** `eth_estimateGas` runs against the latest block. If a swap already happened there, the hook's top-of-block and anchor are already written, so the estimate takes the cheap path. The real tx executes as the first swap of the next block, where the hook writes both, so it runs out of gas.");
+md("   - **Fix:** `withGasMargin` (estimate × 1.3 + 30k) on every Arena swap.");
+md("   - **After the fix:** **0 of 76** reverted, and 74 arb trades recorded vs 56.");
+md("   - **Regression:** the `withGasMargin` unit test; `repro:reverts` exits non-zero on any revert.");
+md("   - **This applies to every router or wallet integrating Aven:** estimate with a margin (docs/SECURITY.md).");
+md("5. **Accepted: block capacity.** ~16 Aven swaps fit one 3M-gas small block (full swap ~175–188k gas, the hook ~47k of it). Extra swaps spill into the next block; correctness is unaffected.");
+md("6. **Accepted: shocks fail while the RPC is down.** The Arena reports the error to the admin and doesn't retry a shock forever. The bot loop itself retries with backoff and resumes when the RPC returns.");
+md("7. **Accepted: a simulation can fail when another swap moves the pool between planning and simulation** (e.g. a shock). The iteration records the error and the next block re-plans; nothing is sent for a failed simulation.");
 writeFileSync(docs, `${L.join("\n")}\n`);
 console.log("wrote docs/LOADTEST.md");

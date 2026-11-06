@@ -28,6 +28,7 @@ import {
   simulateSwap,
   swapArgs,
   withRetry,
+  writeWithMargin,
   type Chain,
 } from "./chain.ts";
 import {
@@ -193,7 +194,7 @@ export class Arena implements ArenaApi {
     const gasEstUsd = (Number(formatUnits(250_000n * gasPrice, 18)) * this.cfg.NATIVE_USD) || 0;
     if (botProfitUsd(v, gasEstUsd) <= 0) return null;
 
-    const hash = await this.c.bot.wallet.writeContract(sim.request as never);
+    const hash = await writeWithMargin(this.c, this.c.bot, sim.request as never); // margin: see chain.ts withGasMargin
     const receipt = await this.c.publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
     if (receipt.status !== "success") throw new Error(`swap reverted: ${hash}`);
     const t = this.tradeFromReceipt(receipt, pool, "arb", plan.direction, oraclePrice, b);
@@ -277,14 +278,12 @@ export class Arena implements ArenaApi {
     const hashes: Hex[] = [];
     for (const pool of ["control", "aven"] as const) {
       hashes.push(
-        await this.c.shock.wallet.writeContract({
+        await writeWithMargin(this.c, this.c.shock, {
           address: this.c.d.swapRouter as Address,
           abi: poolSwapTestAbi,
           functionName: "swap",
           args: swapArgs(this.c.keys[pool], zeroForOne, amountIn, limit),
-          account: this.c.shock.account,
-          chain: this.c.shock.wallet.chain,
-        }),
+        } as never),
       );
     }
     const b = await this.c.publicClient.getBlockNumber();

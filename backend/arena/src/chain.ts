@@ -108,6 +108,23 @@ export async function hookPoolState(c: Chain) {
   return c.publicClient.readContract({ address: c.d.hook as Address, abi: avenHookAbi, functionName: "poolState", args: [c.d.pools.aven.id] });
 }
 
+/**
+ * Gas limit for a swap through the Aven pool: estimate + 30% + 30k. eth_estimateGas runs against the latest block. If a
+ * swap already happened there, the hook's top-of-block and anchor are already written (cheap path). The real tx is
+ * usually the FIRST swap of the next block, where the hook writes both, so a bare estimate runs out of gas and the tx
+ * reverts. The PLAN 7.3 load test found this: 12 of 70 bot txs reverted. Every router or wallet integrating Aven needs
+ * a margin.
+ */
+export function withGasMargin(estimate: bigint): bigint {
+  return (estimate * 13n) / 10n + 30_000n;
+}
+
+/** Send a contract write with an explicit gas limit = withGasMargin(estimate). */
+export async function writeWithMargin(c: Chain, who: Chain["bot"], request: Parameters<Chain["publicClient"]["estimateContractGas"]>[0]): Promise<Hex> {
+  const estimate = await c.publicClient.estimateContractGas({ ...request, account: who.account } as never);
+  return who.wallet.writeContract({ ...(request as object), account: who.account, chain: who.wallet.chain, gas: withGasMargin(estimate) } as never);
+}
+
 const SWAP_SETTINGS = { takeClaims: false, settleUsingBurn: false } as const;
 
 export function swapArgs(key: PoolKey, zeroForOne: boolean, amountIn: bigint, sqrtPriceLimitX96: bigint) {

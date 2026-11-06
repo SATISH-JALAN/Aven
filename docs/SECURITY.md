@@ -48,6 +48,12 @@ Results with numbers: [PROOFS.md](PROOFS.md).
 | Slow SSE client stalls the service | Per-client queue capped at 200 events (oldest dropped); a broken subscriber can't break the loop | `SSE /stream` test |
 | Bot drains its wallet | `MAX_TRADE_*` caps, simulate before send, send only if profitable at oracle, auto-pause below `MIN_NATIVE_BALANCE` | `backend/arena/test/math.test.ts`; load test (PLAN 7.3) |
 
+### Integration requirement: gas estimates need a margin
+
+`beforeSwap` costs more on the **first swap of a block**, because it writes top-of-block and advances the anchor, than on a later swap in the same block. `eth_estimateGas` runs against the latest block. If a swap already happened in that block, the estimate takes the cheap path, and the real tx (usually the first swap of the next block) runs out of gas.
+
+The load test hit this: 12 of 70 bot txs reverted. Fix: estimate × 1.3 + 30k, `withGasMargin` in `backend/arena/src/chain.ts`. **Routers and wallets integrating Aven should add a similar margin.** This only affects the gas limit; it never changes the fee or the swap result.
+
 ## 3. Testnet caveat (§10.3)
 
 - Testnet HyperCore prices can be thin or odd. Testnet HYPE's oracle was ~91× its mark (recon C.4), so the live Arena uses **testnet ETH** (perp 4).
