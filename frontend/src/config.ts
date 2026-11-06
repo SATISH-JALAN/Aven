@@ -76,8 +76,10 @@ const CHAINS: Record<number, { name: string; explorer: string | null; testnet: b
 };
 
 const env = {
-  chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 998),
-  rpcUrl: process.env.NEXT_PUBLIC_RPC || "https://rpc.hyperliquid-testnet.xyz/evm",
+  // Aven is deployed on HyperEVM mainnet (999), so that's the default. The public RPC allows 100 requests/min per IP,
+  // which one browser stays under; set NEXT_PUBLIC_RPC to a dedicated endpoint for heavier use.
+  chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 999),
+  rpcUrl: process.env.NEXT_PUBLIC_RPC || (Number(process.env.NEXT_PUBLIC_CHAIN_ID || 999) === 999 ? "https://rpc.hyperliquid.xyz/evm" : "https://rpc.hyperliquid-testnet.xyz/evm"),
   arenaApi: (process.env.NEXT_PUBLIC_ARENA_API || "").replace(/\/$/, ""),
   mode: (process.env.NEXT_PUBLIC_MODE || "") as "" | "live" | "recorded",
   privyAppId: process.env.NEXT_PUBLIC_PRIVY_APP_ID || "",
@@ -105,7 +107,7 @@ export const config = {
    * (`access-control-allow-origin: *`, checked 2026-11-06), so the browser calls it directly.
    */
   hlApi: env.chainId === 999 ? "https://api.hyperliquid.xyz/info" : "https://api.hyperliquid-testnet.xyz/info",
-  /** The perp the hook reads (AGENTS.md §2: live asset = ETH, testnet perp index 4). */
+  /** The perp the hook reads (AGENTS.md §2: live asset = ETH; perp index 1 on mainnet, 4 on testnet). */
   hlCoin: "ETH",
   feedbackUrl: `${env.repoUrl}/blob/main/FEEDBACK.md`,
   sourceUrl: (path: string, line?: number) => `${env.repoUrl}/blob/main/${path}${line ? `#L${line}` : ""}`,
