@@ -235,7 +235,9 @@ contract ReplayTest is Deployers {
         uint256 usd = 100 + ((r >> 16) % 2_901);
         uint256 amountIn = buyBase ? usd * 1e6 : FullMath.mulDiv(usd * 1e18, 1e18, FV.oracleWad(cfg, oracleRaw));
         bool zeroForOne = buyBase ? !cfg.baseIsToken0 : cfg.baseIsToken0;
-        uint24 fee = pools[i].hook == address(0) ? pools[i].key.fee : AvenHook(pools[i].hook).previewFee(pools[i].key, zeroForOne).fee;
+        uint24 fee = pools[i].hook == address(0)
+            ? pools[i].key.fee
+            : AvenHook(pools[i].hook).previewFee(pools[i].key, zeroForOne).fee;
         uint256 inValue = buyBase ? amountIn * 1e12 : FullMath.mulDiv(amountIn, FV.oracleWad(cfg, oracleRaw), 1e18);
         pools[i].expectedRetailFeeValue += inValue * fee / 1e6;
         swapRouter.swap(

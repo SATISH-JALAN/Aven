@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import {Deployers} from "@uniswap/v4-core/test/utils/Deployers.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
@@ -49,6 +50,19 @@ abstract contract AvenTestBase is Deployers {
     PoolKey internal controlKey;
     PoolId internal avenId;
     PoolId internal controlId;
+
+    /// Everything an external invariant handler needs.
+    struct Ctx {
+        IPoolManager manager;
+        PoolSwapTest router;
+        AvenHook hook;
+        MockHyperCorePx oracleMock;
+        MockHyperCorePx markMock;
+        PoolKey key;
+        bool base0;
+        uint32 perp;
+        uint64 px0;
+    }
 
     /// Decoded FeeComputed + matching PoolManager Swap for one swap.
     struct SwapLog {

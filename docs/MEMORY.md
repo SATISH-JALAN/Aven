@@ -21,7 +21,8 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P7 market data | ✅ done 2026-11-06 (PLAN 5.1): binance-halt and calm each have 72 × 5m HYPE candles + 8 funding samples, 0 gaps. Oct 29 18:00–24:00 HYPE range 88.96–95.24. volatile-2 is a placeholder (Sayan to pick) | `backend/data/raw/` |
 | P8 replay engine | ✅ done 2026-11-06 (PLAN 5.2–5.3). **Oct 29: avenLive +$141 vs HODL, avenDelayed +$114, fixed30 +$7, fixed05 −$318. Calm: Aven ≈ fixed30 (+$323 vs +$317), live ≈ delayed.** Spec defaults, no tuning. Hand-checked steps 1–2; sanity tests (flat → LVR 0; collected fees = expected within 0.01%) | `backend/data/replay/README.md` |
 | P9 verify CLI + proofs | ✅ done 2026-11-06 (PLAN 6.1): `pnpm verify <tx>` / `--all`; `pnpm proofs --e2e` writes docs/PROOFS.md. Forge 88/0/4; diff 10k/10k + 2k/2k; local verify 2/2. Hook overhead 46,877 gas. **Arena e2e: Aven arb fee 8,700 vs 3,000; LPs kept $64.33 more** | docs/PROOFS.md |
-| **P11/P13 invariants, security, demo** | ⏭ next (PLAN 6.2–6.4) | — |
+| P11 invariants + security | ✅ done 2026-11-06 (PLAN 6.2–6.3): I1/I2/I3/I4/I9 hold over 64 runs × 64 calls (0 reverts); 3 mutations each caught by the matching invariant; `.gas-snapshot` baseline; docs/SECURITY.md maps every §10 threat to a test or limit. Forge **90 passed / 0 failed / 4 skipped** | `contracts/test/invariant/AvenInvariant.t.sol` |
+| **P13 demo script** | ⏭ next (PLAN 6.4) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
@@ -74,6 +75,9 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- Foundry persists failing invariant sequences (`cache/invariant/failures`) and replays them first. An `afterInvariant` assertion like "swaps > 0" then fails on a short replayed sequence. Keep non-vacuity in a deterministic test and only log counters in `afterInvariant`.
+- Invariant handler sizing matters: swaps too big for the pool's ~21-base virtual depth drift it >20% from the oracle, so most swaps hit GAP_TOO_LARGE and the clamped OK path goes under-tested.
 
 - Windows + Node 23: `process.exit()` while fetch sockets are closing trips a libuv assertion (`UV_HANDLE_CLOSING`), and a passing CLI exits non-zero. Use `process.exitCode` and return.
 - Foundry's gas report doesn't track contracts placed with `deployCodeTo` (etch). Measure hook gas inside tests (`test_gas_*`, read with `-vv`).
