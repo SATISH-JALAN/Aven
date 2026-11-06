@@ -313,3 +313,12 @@ can u record the video for me and also tell me what to do after that like not pu
 continue
 ```
 
+
+---
+
+## #28 — 2026-11-07T01:00:00Z (approx.) — Is the mainnet deployment complete?
+
+```text
+alll the contract deployment part and all is done??
+and also check that is there any other maainnet deployment still left
+```
