@@ -3,8 +3,8 @@ pragma solidity 0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
-import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
-import {PriceMath} from "../utils/PriceMath.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {PriceMath} from "test/utils/PriceMath.sol";
 
 /// @notice Differential-proof vector generator (PLAN 2.3, I7). Writes inputs + Solidity outputs to
 /// backend/data/vectors/{fee,anchor}-vectors.json (format: docs/spec/DATA.md). backend/core/test/differential.test.ts

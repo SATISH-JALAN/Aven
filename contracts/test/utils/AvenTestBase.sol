@@ -15,11 +15,11 @@ import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {SwapParams, ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
-import {AvenHook} from "../../src/AvenHook.sol";
-import {IAvenHook} from "../../src/interfaces/IAvenHook.sol";
-import {MockHyperCorePx} from "../mocks/MockHyperCorePx.sol";
-import {PriceMath} from "./PriceMath.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {AvenHook} from "src/AvenHook.sol";
+import {IAvenHook} from "src/interfaces/IAvenHook.sol";
+import {MockHyperCorePx} from "test/mocks/MockHyperCorePx.sol";
+import {PriceMath} from "test/utils/PriceMath.sol";
 
 /// @notice Shared setup for hook tests (PLAN 1.2): real v4 PoolManager + routers (Deployers), MockHyperCorePx etched at
 /// 0x0806/0x0807, AvenHook placed at an address whose low 14 bits are 0x2080, and an Aven pool (dynamic fee + hook)

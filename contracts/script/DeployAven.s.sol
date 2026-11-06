@@ -7,9 +7,9 @@ import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {HookMiner} from "@uniswap/v4-periphery/test/shared/HookMiner.sol";
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
-import {AvenFairValue as FV} from "../src/AvenFairValue.sol";
-import {AvenHook} from "../src/AvenHook.sol";
-import {AvenScript} from "./base/AvenScript.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {AvenHook} from "src/AvenHook.sol";
+import {AvenScript} from "script/base/AvenScript.sol";
 
 /// @notice Step 3 of §11.3: check the perp via perpAssetInfo (0x80a), derive Config from the tokens, mine a CREATE2 salt
 /// for permission bits 0x2080 against the CREATE2 proxy (recon decision 3) and deploy AvenHook with defaultParams.

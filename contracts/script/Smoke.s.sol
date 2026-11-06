@@ -9,9 +9,9 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
-import {AvenFairValue as FV} from "../src/AvenFairValue.sol";
-import {AvenHook} from "../src/AvenHook.sol";
-import {AvenScript} from "./base/AvenScript.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {AvenHook} from "src/AvenHook.sol";
+import {AvenScript} from "script/base/AvenScript.sol";
 
 /// @notice Step 6 of §11.3: one small exact-input swap in each direction on both pools, printing the Aven fee preview.
 /// Then: `pnpm verify <txHash>` (backend/core) must report MATCH on checks A and B for the Aven swaps.

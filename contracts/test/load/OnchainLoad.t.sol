@@ -6,8 +6,8 @@ import {console2} from "forge-std/console2.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
-import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
-import {AvenTestBase} from "../utils/AvenTestBase.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {AvenTestBase} from "test/utils/AvenTestBase.sol";
 
 /// @notice PLAN 7.1 on-chain load (Foundry part). BLOCKS blocks with 1..MAX_PER_BLOCK Aven swaps each (both directions,
 /// exact-in and exact-out, mixed sizes), a price/premium move every block and a burst of broken reads (revert, burn,

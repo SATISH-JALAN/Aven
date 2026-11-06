@@ -17,10 +17,10 @@ import {SwapParams, ModifyLiquidityParams} from "@uniswap/v4-core/src/types/Pool
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {LiquidityAmounts} from "@uniswap/v4-periphery/src/libraries/LiquidityAmounts.sol";
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
-import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
-import {AvenHook} from "../../src/AvenHook.sol";
-import {MockHyperCorePx} from "../mocks/MockHyperCorePx.sol";
-import {PriceMath} from "../utils/PriceMath.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {AvenHook} from "src/AvenHook.sol";
+import {MockHyperCorePx} from "test/mocks/MockHyperCorePx.sol";
+import {PriceMath} from "test/utils/PriceMath.sol";
 
 /// @notice Offline replay engine (PLAN 5.2, ARCHITECTURE §7.4). Four pools with identical liquidity, range and start:
 /// fixed05 (0.05%), fixed30 (0.30%), avenDelayed (AvenHook on perp index 1 = price lagged ~60 s), avenLive (AvenHook on

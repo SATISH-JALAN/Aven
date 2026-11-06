@@ -5,7 +5,7 @@ import {console2} from "forge-std/Script.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {PoolModifyLiquidityTest} from "@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol";
-import {AvenScript} from "./base/AvenScript.sol";
+import {AvenScript} from "script/base/AvenScript.sol";
 
 /// @notice Step 1 of §11.3: Uniswap v4 PoolManager + test routers (none exist on HyperEVM testnet, recon B.5).
 ///

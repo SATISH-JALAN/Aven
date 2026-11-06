@@ -13,7 +13,7 @@ import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {PoolModifyLiquidityTest} from "@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol";
 import {HookMiner} from "@uniswap/v4-periphery/test/shared/HookMiner.sol";
 import {LiquidityAmounts} from "@uniswap/v4-periphery/src/libraries/LiquidityAmounts.sol";
-import {IDynamicFeeHook} from "../../src/interfaces/IDynamicFeeHook.sol";
+import {IDynamicFeeHook} from "src/interfaces/IDynamicFeeHook.sol";
 
 /// @dev Test-only stub for a HyperCore price precompile (0x0806 markPx / 0x0807 oraclePx).
 /// Same ABI as the real precompile (docs/recon.md §C): input abi.encode(uint32), output abi.encode(uint64).

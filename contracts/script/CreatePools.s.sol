@@ -12,10 +12,10 @@ import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {PoolModifyLiquidityTest} from "@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol";
 import {LiquidityAmounts} from "@uniswap/v4-periphery/src/libraries/LiquidityAmounts.sol";
-import {AvenFairValue as FV} from "../src/AvenFairValue.sol";
-import {AvenHook} from "../src/AvenHook.sol";
-import {PriceMath} from "../test/utils/PriceMath.sol";
-import {AvenScript} from "./base/AvenScript.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {AvenHook} from "src/AvenHook.sol";
+import {PriceMath} from "test/utils/PriceMath.sol";
+import {AvenScript} from "script/base/AvenScript.sol";
 
 /// @notice Steps 4-5 of §11.3: initialise the Aven pool (fee 0x800000, hook) and the control pool (fee 3000, no hook)
 /// at the live oracle price, add IDENTICAL liquidity to both, and write contracts/deployments/<chainId>.json (§8.3).

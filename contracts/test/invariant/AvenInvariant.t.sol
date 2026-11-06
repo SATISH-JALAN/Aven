@@ -12,11 +12,11 @@ import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
-import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
-import {AvenHook} from "../../src/AvenHook.sol";
-import {IAvenHook} from "../../src/interfaces/IAvenHook.sol";
-import {MockHyperCorePx} from "../mocks/MockHyperCorePx.sol";
-import {AvenTestBase} from "../utils/AvenTestBase.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {AvenHook} from "src/AvenHook.sol";
+import {IAvenHook} from "src/interfaces/IAvenHook.sol";
+import {MockHyperCorePx} from "test/mocks/MockHyperCorePx.sol";
+import {AvenTestBase} from "test/utils/AvenTestBase.sol";
 
 /// @notice Random actions against the Aven pool. Every swap is checked on the spot; violations are counted and the
 /// invariants assert the counters stay 0. Swap reverts are caught (never bubble), so fail_on_revert stays meaningful.

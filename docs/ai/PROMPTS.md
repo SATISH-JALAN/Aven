@@ -155,3 +155,13 @@ RUN A LOOP AND COMPLETE THE BACKEND PART DONT DO MUCH IN FRONTEDN FOR NOW AS IT 
 SRRY TO INTERRUPT BUT DONT PUSH CODE NOW AND IN THE  LOOP PROPERLY TEST THINGS AND ALSO AT THE END DO LOADTESTING TOO
 CONTINUE EVERYTHING PROPERLY
 ```
+
+---
+
+## #10 — 2026-11-06T03:49:30Z — Editor import errors
+
+The user pasted two editor diagnostics (solidity-language-server, code 6275) for `contracts/src/interfaces/IAvenHook.sol`: `Source "src/interfaces/IDynamicFeeHook.sol" not found` and `Source "src/AvenFairValue.sol" not found` (`Searched the following locations: ""`), then wrote:
+
+```text
+fix it
+```

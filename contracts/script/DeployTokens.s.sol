@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import {console2} from "forge-std/Script.sol";
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
-import {AvenScript} from "./base/AvenScript.sol";
+import {AvenScript} from "script/base/AvenScript.sol";
 
 /// @notice Step 2 of §11.3: demo tokens aETH (18 dec, base: tracks the testnet ETH perp) and aUSD (6 dec, quote),
 /// minted to the deployer (liquidity), the bot and the shock wallet; deployer approves both routers.

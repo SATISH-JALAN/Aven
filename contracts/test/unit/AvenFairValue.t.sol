@@ -5,8 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {FullMath} from "@uniswap/v4-core/src/libraries/FullMath.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
-import {MockHyperCorePx} from "../mocks/MockHyperCorePx.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {MockHyperCorePx} from "test/mocks/MockHyperCorePx.sol";
 
 /// @dev External wrappers so tests can use vm.expectRevert and call the internal library functions.
 contract FVHarness {

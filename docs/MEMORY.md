@@ -36,6 +36,8 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 ## Decisions (with date and reason)
 
+- **2026-11-06: Solidity imports are root-style** (`src/…`, `test/…`, `script/…`), never `./` or `../`. Reason: the Nomic Foundation Solidity extension on Windows names sources with backslashes, so relative imports showed false "Source not found" errors in the editor. Forge resolves both forms; the runtime bytecode is identical (only the metadata hash changed); forge 90/0/5.
+
 - **2026-11-06: Replay design.**
   - 5m steps (1m isn't served).
   - The `avenDelayed` lag is 60 s, linearly interpolated between candles.
@@ -82,6 +84,8 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- **Editor "Source not found" (error 6275) on relative Solidity imports, Windows only.** The Nomic Foundation extension (`hardhat-solidity` 0.9.3, also in Antigravity IDE) renames Foundry sources with `path.relative`, which gives `src\interfaces\X.sol`. solc resolves `./Y.sol` to `src/interfaces/Y.sol`, so nothing matches. Remapped or root-style imports go through the extension's own resolver and work. Use root-style imports; reload the window after changing them.
 
 - **Gas estimates for Aven swaps need a margin.** `eth_estimateGas` sees the cheap "later swap in this block" hook path; the real tx is usually the first swap of the next block (top-of-block + anchor writes) and runs out of gas. Found by the load test (12/70 bot txs reverted); fixed with `withGasMargin` (×1.3 + 30k) → 0/76. Routers need the same.
 - **viem defaults that hurt a 1 s-block chain:**

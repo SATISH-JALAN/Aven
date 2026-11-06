@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {FullMath} from "@uniswap/v4-core/src/libraries/FullMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
 
 /// @notice Inverse of AvenFairValue.poolWad: the sqrtPriceX96 at which the pool's base price equals `wad`.
 /// Used by tests and by CreatePools.s.sol to initialise pools at the oracle price (PLAN 3.1).

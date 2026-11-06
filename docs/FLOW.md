@@ -174,6 +174,8 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 
 ## 10. Tests and checks
 
+Contract code imports project files root-style (`src/…`, `test/…`, `script/…`), relative to `contracts/`; dependencies go through `contracts/remappings.txt`. Don't use `./` or `../` (see MEMORY.md, Gotchas).
+
 | Command (run in) | Entry file | What it proves | Status |
 |---|---|---|---|
 | `forge test --match-path "test/recon/*"` (`contracts/`) | `contracts/test/recon/Recon.t.sol` | v4 paths and constants, mock-etch plan, gas-cap containment | ✅ 7 pass, 1 skipped |

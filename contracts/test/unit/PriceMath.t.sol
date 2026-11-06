@@ -3,8 +3,8 @@ pragma solidity 0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
-import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
-import {PriceMath} from "../utils/PriceMath.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {PriceMath} from "test/utils/PriceMath.sol";
 
 /// @notice CreatePools initialises pools at sqrtPriceFromWad(oracleWad); P5 requires poolWad(sqrtP) within 1 bp of
 /// oracleWad for both token orders (PLAN 3.1).

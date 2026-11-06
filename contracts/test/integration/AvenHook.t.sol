@@ -12,11 +12,11 @@ import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {HookMiner} from "@uniswap/v4-periphery/test/shared/HookMiner.sol";
-import {IDynamicFeeHook} from "../../src/interfaces/IDynamicFeeHook.sol";
-import {AvenFairValue as FV} from "../../src/AvenFairValue.sol";
-import {AvenHook} from "../../src/AvenHook.sol";
-import {IAvenHook} from "../../src/interfaces/IAvenHook.sol";
-import {AvenTestBase} from "../utils/AvenTestBase.sol";
+import {IDynamicFeeHook} from "src/interfaces/IDynamicFeeHook.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {AvenHook} from "src/AvenHook.sol";
+import {IAvenHook} from "src/interfaces/IAvenHook.sol";
+import {AvenTestBase} from "test/utils/AvenTestBase.sol";
 
 /// @notice AvenHook against a real v4 PoolManager (ARCHITECTURE §9, PLAN 1.4). Base = token0 here; the subclass at
 /// the bottom re-runs every test with base = token1.

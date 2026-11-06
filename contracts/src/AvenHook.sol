@@ -12,8 +12,8 @@ import {PoolId} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
-import {AvenFairValue as FV} from "./AvenFairValue.sol";
-import {IAvenHook} from "./interfaces/IAvenHook.sol";
+import {AvenFairValue as FV} from "src/AvenFairValue.sol";
+import {IAvenHook} from "src/interfaces/IAvenHook.sol";
 
 /// @title AvenHook
 /// @notice Reference Uniswap v4 hook for AvenFairValue: before every swap it reads HyperCore's oracle and mark price

@@ -3,8 +3,8 @@ pragma solidity ^0.8.26;
 
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId} from "@uniswap/v4-core/src/types/PoolId.sol";
-import {IDynamicFeeHook} from "./IDynamicFeeHook.sol";
-import {AvenFairValue} from "../AvenFairValue.sol";
+import {IDynamicFeeHook} from "src/interfaces/IDynamicFeeHook.sol";
+import {AvenFairValue} from "src/AvenFairValue.sol";
 
 /// @title IAvenHook
 /// @notice Aven's hook interface (docs/spec/ARCHITECTURE.md §6.5, §8.1). Extends Uniswap's IDynamicFeeHook, so
