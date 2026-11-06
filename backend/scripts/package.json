@@ -12,7 +12,8 @@
     "fetch-market-data": "tsx fetch-market-data.ts",
     "replay": "tsx replay.ts",
     "replay-to-web": "tsx replay-to-web.ts",
-    "proofs": "tsx proofs.ts"
+    "proofs": "tsx proofs.ts",
+    "demo": "tsx demo.ts"
   },
   "dependencies": {
     "@aven/core": "workspace:*",
@@ -25,6 +26,7 @@
     "vitest": "5.0.5"
   },
   "exports": {
-    "./src/localChain.ts": "./src/localChain.ts"
+    "./src/localChain.ts": "./src/localChain.ts",
+    "./src/demo.ts": "./src/demo.ts"
   }
 }

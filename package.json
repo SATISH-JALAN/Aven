@@ -13,6 +13,7 @@
     "verify": "pnpm --filter @aven/core verify",
     "replay:binance-halt": "pnpm --filter @aven/scripts replay binance-halt",
     "replay:calm": "pnpm --filter @aven/scripts replay calm",
-    "proofs": "pnpm --filter @aven/scripts proofs"
+    "proofs": "pnpm --filter @aven/scripts proofs",
+    "demo": "pnpm --filter @aven/scripts demo"
   }
 }

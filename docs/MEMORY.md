@@ -22,7 +22,8 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P8 replay engine | ✅ done 2026-11-06 (PLAN 5.2–5.3). **Oct 29: avenLive +$141 vs HODL, avenDelayed +$114, fixed30 +$7, fixed05 −$318. Calm: Aven ≈ fixed30 (+$323 vs +$317), live ≈ delayed.** Spec defaults, no tuning. Hand-checked steps 1–2; sanity tests (flat → LVR 0; collected fees = expected within 0.01%) | `backend/data/replay/README.md` |
 | P9 verify CLI + proofs | ✅ done 2026-11-06 (PLAN 6.1): `pnpm verify <tx>` / `--all`; `pnpm proofs --e2e` writes docs/PROOFS.md. Forge 88/0/4; diff 10k/10k + 2k/2k; local verify 2/2. Hook overhead 46,877 gas. **Arena e2e: Aven arb fee 8,700 vs 3,000; LPs kept $64.33 more** | docs/PROOFS.md |
 | P11 invariants + security | ✅ done 2026-11-06 (PLAN 6.2–6.3): I1/I2/I3/I4/I9 hold over 64 runs × 64 calls (0 reverts); 3 mutations each caught by the matching invariant; `.gas-snapshot` baseline; docs/SECURITY.md maps every §10 threat to a test or limit. Forge **90 passed / 0 failed / 4 skipped** | `contracts/test/invariant/AvenInvariant.t.sol` |
-| **P13 demo script** | ⏭ next (PLAN 6.4) | — |
+| P13 demo | ✅ done 2026-11-06 (PLAN 6.4): `pnpm demo` (any Arena) and `pnpm --filter @aven/arena demo:local` (local chain, in-process Arena over HTTP). The local run gave Aven arb fee 8,700 vs 3,000 and LPs kept $64.33 more; verify MATCH. `frontend/public/arena-fallback.json` holds the LOCAL recording; re-record on testnet. docs/DEMO.md has the script and video list | — |
+| **Phase 7 load testing** | ⏭ next (PLAN 7.1–7.4) | — |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.

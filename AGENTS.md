@@ -26,7 +26,7 @@ This file is the single rulebook for humans and AI agents (Claude Code, Codex, C
 backend/     off-chain TypeScript: core (fee port, ABIs, verifier), arena (bot service), scripts, data
 contracts/   Foundry: AvenFairValue, AvenHook, interfaces, tests, scripts, deployments
 frontend/    Next.js app (Home, Arena, Replay)
-docs/        spec/ (normative), recon.md, PLAN.md, MEMORY.md, FLOW.md, DEPLOYMENTS.md, PROOFS.md, SECURITY.md, ai/ (prompts + attribution), planning/ (pre-kickoff)
+docs/        spec/ (normative), recon.md, PLAN.md, MEMORY.md, FLOW.md, DEPLOYMENTS.md, PROOFS.md, SECURITY.md, DEMO.md, ai/ (prompts + attribution), planning/ (pre-kickoff)
 ```
 
 The spec and the build prompts still use the original paths. **Translate them with this table:**

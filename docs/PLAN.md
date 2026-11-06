@@ -152,7 +152,7 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - `pnpm proofs` writes `docs/PROOFS.md` (named tests, gas report, diff, verify --all).
 - [x] **6.2 Invariant suite:** `contracts/test/invariant/AvenInvariant.t.sol` covering I1, I2, I3, I4, I9. Plus `forge snapshot` and the gas report vs §6.7.
 - [x] **6.3 `docs/SECURITY.md`:** maps each §10 threat to its test or a stated limit. Slither isn't installed; note it.
-- [ ] **6.4 `backend/scripts/demo.ts`:** reset → shock → bot → summary, saved to `frontend/public/arena-fallback.json`.
+- [x] **6.4 `backend/scripts/demo.ts`:** reset → shock → bot → summary, saved to `frontend/public/arena-fallback.json`.
 
 ## Phase 7: Load testing (Sayan, 2026-11-06: "at the end do load testing")
 
