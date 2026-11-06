@@ -622,3 +622,21 @@ These are the main things that need to be completed.
 ```text
 change the login button into connect wallet buttonbcoz it is web3 blockchain based not in web2
 ```
+
+---
+
+## O11 — 2026-11-06T23:03:00Z (approx.) — Run servers
+
+```text
+run the frontend and bakcend server of this project
+```
+
+---
+
+## O12 — 2026-11-06T23:07:00Z (approx.) — Connect wallet error
+
+```text
+fix [Image #1] this connect wallet problem
+```
+
+(Screenshot: Privy modal "Could not log in with wallet. Please try connecting again." with MetaMask.)
