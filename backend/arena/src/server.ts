@@ -13,7 +13,36 @@ export interface ServerOptions {
   corsOrigins: string[];
   postRateLimitPerMin: number;
   ssePingMs?: number;
+  /** Overrides client identification (tests). */
   clientIp?: (c: Context) => string;
+  /**
+   * Trust X-Forwarded-For. Only behind our own proxy (e.g. cloudflared), and then only its LAST entry, the one the
+   * proxy appends: the first entries are whatever the client sent. Off by default: the socket address is used.
+   */
+  trustProxy?: boolean;
+  /** Max concurrent SSE clients (default 500). */
+  maxSseClients?: number;
+  /** GET /verify/:tx per client per minute (default 60): an uncached verify costs several RPC calls. */
+  verifyLimitPerMin?: number;
+}
+
+/** Fixed-window per-key counter. Expired windows are pruned, so spoofed or rotating keys can't grow it forever. */
+function windowLimiter(limitPerMin: number) {
+  const hits = new Map<string, { n: number; windowStart: number }>();
+  return {
+    allow(key: string, now = Date.now()): boolean {
+      if (hits.size > 1_000) for (const [k, v] of hits) if (now - v.windowStart >= 60_000) hits.delete(k);
+      const h = hits.get(key);
+      if (!h || now - h.windowStart >= 60_000) {
+        hits.set(key, { n: 1, windowStart: now });
+        return true;
+      }
+      return ++h.n <= limitPerMin;
+    },
+    get size() {
+      return hits.size;
+    },
+  };
 }
 
 const TX = /^0x[0-9a-fA-F]{64}$/;
@@ -27,20 +56,29 @@ function tokenOk(given: string | undefined, want: string): boolean {
 
 export function makeApp(arena: ArenaApi, opts: ServerOptions): Hono {
   const app = new Hono();
-  const ip = opts.clientIp ?? ((c: Context) => c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "local");
-  const hits = new Map<string, { n: number; windowStart: number }>();
+  const socketAddr = (c: Context) => (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming?.socket?.remoteAddress;
+  const ip =
+    opts.clientIp ??
+    ((c: Context) => {
+      if (opts.trustProxy) {
+        const last = c.req.header("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean).at(-1);
+        if (last) return last;
+      }
+      return socketAddr(c) ?? "local";
+    });
+  const postLimit = windowLimiter(opts.postRateLimitPerMin);
+  const verifyLimit = windowLimiter(opts.verifyLimitPerMin ?? 60);
+  const maxSse = opts.maxSseClients ?? 500;
+  let sseClients = 0;
 
   app.use("*", cors({ origin: (o) => (opts.corsOrigins.includes(o) ? o : null), allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["content-type", "x-admin-token"] }));
 
-  // Admin + rate limit on every POST.
+  // Every POST: admin token FIRST (unauthenticated requests never touch the counters, so they can't use up or
+  // poison anyone's budget), then a per-client rate limit, which caps the gas a leaked or misused token can spend.
   app.use("*", async (c, next) => {
     if (c.req.method !== "POST") return next();
-    const key = ip(c);
-    const now = Date.now();
-    const h = hits.get(key);
-    if (!h || now - h.windowStart >= 60_000) hits.set(key, { n: 1, windowStart: now });
-    else if (++h.n > opts.postRateLimitPerMin) return c.json({ error: "rate limited" }, 429);
     if (!tokenOk(c.req.header("x-admin-token"), opts.adminToken)) return c.json({ error: "unauthorized" }, 401);
+    if (!postLimit.allow(ip(c))) return c.json({ error: "rate limited" }, 429);
     return next();
   });
 
@@ -60,12 +98,15 @@ export function makeApp(arena: ArenaApi, opts: ServerOptions): Hono {
   app.get("/verify/:tx", async (c) => {
     const tx = c.req.param("tx");
     if (!TX.test(tx)) return c.json({ error: "tx must be a 0x-prefixed 32-byte hash" }, 400);
+    if (!verifyLimit.allow(ip(c))) return c.json({ error: "rate limited" }, 429);
     const r = await arena.verify(tx as `0x${string}`);
     return r ? c.json(r) : c.json({ error: "no FeeComputed event in this tx" }, 404);
   });
 
-  app.get("/stream", (c) =>
-    streamSSE(c, async (stream) => {
+  app.get("/stream", (c) => {
+    if (sseClients >= maxSse) return c.json({ error: "too many stream clients, retry later" }, 503);
+    sseClients++;
+    return streamSSE(c, async (stream) => {
       const queue: Array<{ event: ArenaEvent; data: string }> = [];
       let wake: (() => void) | null = null;
       const unsubscribe = arena.subscribe((event, data) => {
@@ -100,9 +141,10 @@ export function makeApp(arena: ArenaApi, opts: ServerOptions): Hono {
       } finally {
         clearInterval(ping);
         unsubscribe();
+        sseClients--;
       }
-    }),
-  );
+    });
+  });
 
   app.post("/shock", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as { sizeBase?: unknown; direction?: unknown };

@@ -100,6 +100,11 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
   7. `CreatePools.s.sol`: initial price from `oraclePx`, Aven pool + control pool, identical liquidity;
   8. `Smoke.s.sol`: one swap each direction on both pools.
 - **Exit:** **`contracts/deployments/998.json`** (§8.3). It's the single source of addresses for `backend/` and `frontend/`; tx links go into the docs.
+- **Mainnet (999), DEPLOYMENTS.md §M:**
+  - `DeployCore` **reuses Uniswap's canonical PoolManager** (`POOL_MANAGER`, which defaults to `0x12D4…6B1F` on 999), so steps 1, 2 and 4 are skipped;
+  - `PERP_INDEX=1` (ETH);
+  - exit: `contracts/deployments/999.json`.
+- **Precompile reads in scripts** (`DeployAven` perpAssetInfo, `CreatePools` oracle) go through `AvenScript._precompileCall`. With code at the address (local chain or a fork with mocks) it's a `staticcall`; on a live chain (no code) it's `vm.rpc("eth_call")`, because forge's simulation can't run precompiles.
 
 ## 5. Arena service (live demo bot) ✅ `backend/arena`
 
@@ -121,7 +126,10 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
      5. `eth_call` to simulate, then send the swap from the **bot wallet** only if it's profitable at oracle;
      6. read the receipt, decode `FeeComputed`, verify it, then append a `Trade` to `trades.jsonl` and update the stats.
   3. **SSE broadcaster:** pushes `state`, `trade`, `shock` and `bot` events.
-- **Admin entry:** `POST /shock` sends one identical swap on both pools from the **shock wallet**. Also `POST /bot/start`, `/bot/stop` and `/reset-stats`; all of these need `x-admin-token`.
+- **Admin entry:** `POST /shock` sends one identical swap on both pools from the **shock wallet**. Also `POST /bot/start`, `/bot/stop` and `/reset-stats`. All of these need `x-admin-token`, which is checked **before** the per-client POST limit.
+  - **Client identity:** the socket address, or with `ARENA_TRUST_PROXY=1` the **last** `X-Forwarded-For` entry.
+- **RPC-backed GETs:** `/verify/:tx` is cached per tx and limited per client (`ARENA_VERIFY_LIMIT_PER_MIN`, 429). `/bot/status` balances are cached per block. `/stream` is capped at `ARENA_MAX_SSE_CLIENTS` (503).
+- **Config guards for chain 999:** `NATIVE_USD` > 0 and `ARENA_ADMIN_TOKEN` ≥ 24 characters, or the Arena refuses to start.
 - **State reads:** `GET /state` is single-flight per block. The block is max(poller's last block, newest block from our own shock/bot receipts), so right after a shock it never serves the pre-shock block.
 - **Exit:**
   - REST JSON and the SSE stream to the frontend ([spec/API.md](spec/API.md));
@@ -195,7 +203,7 @@ Contract code imports project files root-style (`src/…`, `test/…`, `script/�
 | `pnpm verify <tx>` / `pnpm verify --all` (root; `CHAIN_ID`, `HYPEREVM_RPC`) | `backend/core/bin/verify.ts` | I8 per tx or for every FeeComputed since `deployedAtBlock` (≤ 50-block chunks) | ✅ local 2/2 |
 | `pnpm proofs [--e2e]` (root) | `backend/scripts/proofs.ts` | runs every proof and writes `docs/PROOFS.md` | ✅ |
 | `pnpm --filter @aven/scripts test` | `backend/scripts/test/{marketData,replayPrep}.test.ts` | premium forward-fill, oracleProxy, gaps, paging, 1m→5m fallback; raw conversion and lag interpolation | ✅ 9 pass |
-| `pnpm --filter @aven/arena test` | `backend/arena/test/{math,server}.test.ts` | direction, p*, sqrtPriceLimit (both orders), valuation, stats; B4 routes, admin token, CORS, rate limit, SSE | ✅ 22 pass |
+| `pnpm --filter @aven/arena test` | `backend/arena/test/{math,server,chain,state}.test.ts` | direction, p*, sqrtPriceLimit (both orders), valuation, stats; B4 routes, admin token, CORS, rate limit, SSE; pre-mainnet hardening (auth before limiter, XFF spoofing, verify limit, SSE cap, mainnet config guards); `/state` + `/bot/status` + `/verify` caching | ✅ 36 pass |
 | `pnpm --filter @aven/arena test:e2e` | `backend/arena/test/e2e.test.ts` (E2E=1, local anvil chain) | PLAN 4.4 gate: shock → arbs → Aven fee > control → lpKeptMoreUsd > 0 → verify MATCH; persistence reload | ✅ 2 pass (~2.5 min) |
 | `pnpm test` (frontend) | `frontend/` | UI | 🔜 P10 (teammate) |
 

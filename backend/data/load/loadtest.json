@@ -1,13 +1,13 @@
 {
-  "startedAt": "2026-11-06T01:40:06.172Z",
+  "startedAt": "2026-11-06T13:17:06.694Z",
   "onchainBurst": {
     "sent": 280,
-    "sendMs": 2890,
+    "sendMs": 1820,
     "success": 280,
     "reverted": 0,
-    "blocks": 4,
-    "maxSwapsPerBlock": 92,
-    "maxBlockGasOfSwaps": 15101055,
+    "blocks": 3,
+    "maxSwapsPerBlock": 161,
+    "maxBlockGasOfSwaps": 26431172,
     "blocksWithMoreThanOneTopPrice": 0,
     "verify": {
       "events": 280,
@@ -19,74 +19,74 @@
   "apiLoad": {
     "routes": {
       "/health": {
-        "reqPerSec": 1910,
-        "p50": 23,
-        "p97_5": 58,
-        "p99": 71,
-        "max": 102,
+        "reqPerSec": 2681,
+        "p50": 16,
+        "p97_5": 36,
+        "p99": 44,
+        "max": 74,
         "errors": 0,
         "timeouts": 0,
         "non2xx": 0,
-        "total": 28650
+        "total": 40200
       },
       "/config": {
-        "reqPerSec": 1803,
-        "p50": 25,
-        "p97_5": 58,
-        "p99": 66,
-        "max": 94,
+        "reqPerSec": 2611,
+        "p50": 17,
+        "p97_5": 36,
+        "p99": 43,
+        "max": 72,
         "errors": 0,
         "timeouts": 0,
         "non2xx": 0,
-        "total": 27046
+        "total": 39150
       },
       "/stats": {
-        "reqPerSec": 1980,
-        "p50": 23,
-        "p97_5": 50,
-        "p99": 60,
-        "max": 104,
+        "reqPerSec": 2671,
+        "p50": 17,
+        "p97_5": 36,
+        "p99": 42,
+        "max": 88,
         "errors": 0,
         "timeouts": 0,
         "non2xx": 0,
-        "total": 29695
+        "total": 40056
       },
       "/trades?limit=50": {
-        "reqPerSec": 1483,
-        "p50": 31,
-        "p97_5": 55,
-        "p99": 68,
-        "max": 116,
+        "reqPerSec": 1605,
+        "p50": 29,
+        "p97_5": 52,
+        "p99": 56,
+        "max": 108,
         "errors": 0,
         "timeouts": 0,
         "non2xx": 0,
-        "total": 22250
+        "total": 24074
       },
       "/state": {
-        "reqPerSec": 2452,
-        "p50": 18,
-        "p97_5": 43,
+        "reqPerSec": 2639,
+        "p50": 17,
+        "p97_5": 37,
         "p99": 63,
-        "max": 94,
+        "max": 109,
         "errors": 0,
         "timeouts": 0,
         "non2xx": 0,
-        "total": 36778
+        "total": 39569
       }
     },
     "sse": {
       "clients": 200,
       "subscribersDuringLoad": 200,
       "subscribersAfterClose": 0,
-      "minEventsPerClient": 140,
+      "minEventsPerClient": 133,
       "clientErrors": 0
     },
     "bot": {
       "chainBlocksDuringLoad": 75,
-      "botIterationsDuringLoad": 64,
-      "lastRunBlock": 346,
-      "headAfter": 347,
-      "arbTradesDuringLoad": 58
+      "botIterationsDuringLoad": 51,
+      "lastRunBlock": 315,
+      "headAfter": 316,
+      "arbTradesDuringLoad": 50
     },
     "rateLimit": {
       "sent": 60,
@@ -94,10 +94,10 @@
       "limited": 30
     },
     "memoryMB": {
-      "heapBefore": 50.5,
-      "heapAfter": 53.8,
-      "rssBefore": 180.3,
-      "rssAfter": 379.7,
+      "heapBefore": 49.7,
+      "heapAfter": 54.3,
+      "rssBefore": 175.7,
+      "rssAfter": 273.9,
       "gcExposed": true
     }
   },
@@ -137,36 +137,36 @@
       }
     ],
     "proxy": {
-      "requests": 3096,
-      "failed503": 67,
+      "requests": 2972,
+      "failed503": 79,
       "hung": 5
     },
     "health": {
-      "ok": 146,
+      "ok": 150,
       "failed": 0
     },
     "loop": {
-      "iterations": 94,
-      "iterationErrors": 2,
-      "pollErrors": 46
+      "iterations": 83,
+      "iterationErrors": 1,
+      "pollErrors": 50
     },
     "arbTradesAfterRecovery": 5,
     "distinctErrorsSeen": [
-      "bot: The contract function \"swap\" reverted with the following signature:",
-      "poll: HTTP request failed."
+      "poll: HTTP request failed.",
+      "bot: The contract function \"swap\" reverted with the following signature:"
     ],
     "nonceErrors": 0,
     "verifyAllSinceStart": {
-      "events": 348,
-      "checkA": 348,
-      "checkB": 348,
+      "events": 341,
+      "checkA": 341,
+      "checkB": 341,
       "mismatches": 0
     },
     "autoPause": {
       "enabledAfter": false,
-      "lastError": "auto-paused: bot native balance 9999.988103212916629541 < 1000000000"
+      "lastError": "auto-paused: bot native balance 9999.989150196905786704 < 1000000000"
     },
-    "durationSec": 76
+    "durationSec": 77
   },
-  "finishedAt": "2026-11-06T01:47:17.720Z"
+  "finishedAt": "2026-11-06T13:23:47.503Z"
 }

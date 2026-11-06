@@ -164,6 +164,17 @@ So every deploy and bot path is first proven end-to-end on a **local anvil chain
   - Check: the loop never crashes; nonces stay consistent; retries back off; auto-pause triggers on low balance.
 - [x] **7.4 Report:** `docs/LOADTEST.md` with the commands, numbers and findings. Fix anything it finds (and add a regression test).
 
+## Phase 8: Pre-mainnet (Sayan, 2026-11-06: "real money needs proper audits")
+
+- [x] **8.1 Mainnet recon** (recon §E): blocks, gas, canonical PoolManager, precompiles vs API, public RPC limits.
+- [x] **8.2 Fork rehearsal:** five scripts + full app on a fork of 999 (canonical PoolManager), verify A+B.
+- [x] **8.3 Deep re-test:** fuzz 10×, invariants × 4 seeds, on-chain load, differential, e2e, load test.
+- [x] **8.4 Contract audit** (SECURITY.md §6.2): no critical, high or medium findings.
+- [x] **8.5 Backend audit + fixes** (B-1…B-5), each with a mutation-checked test.
+- [x] **8.6 Script fix:** precompile reads via `vm.rpc` on live chains; checked inside forge's simulation against mainnet.
+- [x] **8.7 Budget chart** (DEPLOYMENTS.md §M.2) and the Arena's RPC request rate (SECURITY.md §6.4).
+- [ ] **8.8 Deploy to mainnet:** BLOCKED on Sayan (dedicated RPC + funded wallets, DEPLOYMENTS.md §M.3–M.4).
+
 ## Testing rule for every step (Sayan, 2026-11-06)
 
 A step is ticked only when:

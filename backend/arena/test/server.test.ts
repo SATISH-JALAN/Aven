@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ArenaApi, ArenaEvent } from "../src/arena.ts";
+import { configSchema } from "../src/config.ts";
 import { makeApp } from "../src/server.ts";
 import type { Breakdown, StateResponse } from "../src/types.ts";
 
@@ -104,8 +105,8 @@ describe("admin + rate limit + CORS", () => {
     expect((await app.request(post("/bot/start", undefined, TOKEN, "3.3.3.3"))).status).toBe(200);
     expect(f.calls).toEqual(["bot:true"]);
   });
-  it("rate-limits POSTs per client (limit 3/min here)", async () => {
-    const app = makeApp(fakeArena().api, opts);
+  it("rate-limits POSTs per client (limit 3/min here; clients told apart behind a trusted proxy)", async () => {
+    const app = makeApp(fakeArena().api, { ...opts, trustProxy: true });
     const codes = [];
     for (let i = 0; i < 5; i++) codes.push((await app.request(post("/reset-stats", undefined, TOKEN, "9.9.9.9"))).status);
     expect(codes).toEqual([200, 200, 200, 429, 429]);
@@ -155,5 +156,73 @@ describe("SSE /stream", () => {
     await reader.cancel().catch(() => undefined);
     for (let i = 0; i < 50 && f.hasListener(); i++) await new Promise((r) => setTimeout(r, 10));
     expect(f.hasListener()).toBe(false);
+  });
+});
+
+describe("pre-mainnet hardening (audit 2026-11-06)", () => {
+  it("without a trusted proxy, rotating X-Forwarded-For does NOT bypass the POST rate limit", async () => {
+    const app = makeApp(fakeArena().api, opts);
+    const codes = [];
+    for (let i = 0; i < 5; i++) codes.push((await app.request(post("/reset-stats", undefined, TOKEN, `10.0.0.${i}`))).status);
+    expect(codes).toEqual([200, 200, 200, 429, 429]);
+  });
+  it("behind a trusted proxy only the LAST X-Forwarded-For entry counts (the client controls the first ones)", async () => {
+    const app = makeApp(fakeArena().api, { ...opts, trustProxy: true });
+    const codes = [];
+    for (let i = 0; i < 5; i++) codes.push((await app.request(post("/reset-stats", undefined, TOKEN, `spoof-${i}, 7.7.7.7`))).status);
+    expect(codes).toEqual([200, 200, 200, 429, 429]);
+  });
+  it("unauthenticated POSTs are rejected before the limiter: they can't use up the admin's budget", async () => {
+    const app = makeApp(fakeArena().api, opts);
+    for (let i = 0; i < 10; i++) expect((await app.request(post("/bot/stop", undefined, "wrong-token-x"))).status).toBe(401);
+    const codes = [];
+    for (let i = 0; i < 4; i++) codes.push((await app.request(post("/bot/stop"))).status);
+    expect(codes).toEqual([200, 200, 200, 429]);
+  });
+  it("GET /verify/:tx is rate-limited per client (each uncached verify costs RPC calls)", async () => {
+    const app = makeApp(fakeArena().api, { ...opts, verifyLimitPerMin: 2 });
+    const codes = [];
+    for (let i = 0; i < 3; i++) codes.push((await app.request(`/verify/${TX}`)).status);
+    expect(codes).toEqual([200, 200, 429]);
+  });
+  it("caps concurrent SSE clients (503 beyond the cap), and frees the slot when a client leaves", async () => {
+    const app = makeApp(fakeArena().api, { ...opts, ssePingMs: 60_000, maxSseClients: 1 });
+    const ac = new AbortController();
+    const first = await app.request("/stream", { signal: ac.signal });
+    const reader = first.body!.getReader();
+    await reader.read(); // the initial state event: the stream is live
+    expect((await app.request("/stream")).status).toBe(503);
+    ac.abort();
+    await reader.cancel().catch(() => undefined);
+    let status = 503;
+    for (let i = 0; i < 50 && status === 503; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+      const ac2 = new AbortController();
+      const r = await app.request("/stream", { signal: ac2.signal });
+      status = r.status;
+      ac2.abort();
+      await r.body?.cancel().catch(() => undefined);
+    }
+    expect(status).toBe(200);
+  });
+});
+
+describe("config (pre-mainnet audit)", () => {
+  const base = { BOT_PK: `0x${"11".repeat(32)}`, SHOCK_PK: `0x${"22".repeat(32)}`, ARENA_ADMIN_TOKEN: "admin-token-123" };
+  it("refuses mainnet (999) with NATIVE_USD = 0: the bot would value real gas at $0", () => {
+    expect(() => configSchema.parse({ ...base, CHAIN_ID: "999" })).toThrow(/NATIVE_USD/);
+    expect(() => configSchema.parse({ ...base, CHAIN_ID: "999", NATIVE_USD: "0" })).toThrow(/NATIVE_USD/);
+    expect(configSchema.parse({ ...base, CHAIN_ID: "999", NATIVE_USD: "78.46", ARENA_ADMIN_TOKEN: "x".repeat(24) }).NATIVE_USD).toBe(78.46);
+    expect(configSchema.parse({ ...base, CHAIN_ID: "998" }).NATIVE_USD).toBe(0); // testnet HYPE has no value
+  });
+  it("refuses a short admin token on mainnet (it guards actions that spend real gas)", () => {
+    expect(() => configSchema.parse({ ...base, CHAIN_ID: "999", NATIVE_USD: "78.46" })).toThrow(/ARENA_ADMIN_TOKEN/); // 15 chars
+    expect(configSchema.parse({ ...base, CHAIN_ID: "999", NATIVE_USD: "78.46", ARENA_ADMIN_TOKEN: "a".repeat(24) }).CHAIN_ID).toBe(999);
+    expect(configSchema.parse({ ...base, CHAIN_ID: "998" }).ARENA_ADMIN_TOKEN).toBe("admin-token-123"); // testnet: 8+ is enough
+  });
+  it("ARENA_TRUST_PROXY is off unless set to 1/true", () => {
+    expect(configSchema.parse(base).ARENA_TRUST_PROXY).toBe(false);
+    expect(configSchema.parse({ ...base, ARENA_TRUST_PROXY: "1" }).ARENA_TRUST_PROXY).toBe(true);
+    expect(configSchema.parse({ ...base, ARENA_TRUST_PROXY: "no" }).ARENA_TRUST_PROXY).toBe(false);
   });
 });

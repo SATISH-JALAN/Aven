@@ -82,6 +82,11 @@ export class Arena implements ArenaApi {
    * fair" right after a shock). state() uses max(lastBlock, ownTxBlock); the poller and its SSE emits are unchanged.
    */
   private ownTxBlock = 0n;
+  /** GET /bot/status reads 6 balances over RPC: computed at most once per block (single-flight, like state()). */
+  private balanceCache: { block: bigint; value: Promise<[Awaited<ReturnType<typeof balances>>, Awaited<ReturnType<typeof balances>>]> } | null = null;
+  /** GET /verify/:tx: a mined tx's verification never changes, so cache it (bounded; failures are not cached). */
+  private verifyCache = new Map<string, VerifyResult | null>();
+  private static readonly VERIFY_CACHE_MAX = 1_000;
   private noteOwnTxBlock(b: bigint): void {
     if (b > this.ownTxBlock) this.ownTxBlock = b;
   }
@@ -377,7 +382,16 @@ export class Arena implements ArenaApi {
   }
 
   async botStatus() {
-    const [b, s] = await Promise.all([balances(this.c, this.c.bot.account.address), balances(this.c, this.c.shock.account.address)]);
+    const seen = this.lastBlock > this.ownTxBlock ? this.lastBlock : this.ownTxBlock;
+    const block = seen || (await this.c.publicClient.getBlockNumber());
+    if (!this.balanceCache || this.balanceCache.block !== block) {
+      const value = Promise.all([balances(this.c, this.c.bot.account.address), balances(this.c, this.c.shock.account.address)]);
+      this.balanceCache = { block, value };
+      value.catch(() => {
+        if (this.balanceCache?.value === value) this.balanceCache = null; // don't cache a failure
+      });
+    }
+    const [b, s] = await this.balanceCache.value;
     const fmt = (x: { native: bigint; base: bigint; quote: bigint }) => {
       const cfg = this.c.d.config;
       return { native: formatUnits(x.native, 18), base: formatUnits(x.base, cfg.baseIsToken0 ? cfg.decimals0 : cfg.decimals1), quote: formatUnits(x.quote, cfg.baseIsToken0 ? cfg.decimals1 : cfg.decimals0) };
@@ -393,11 +407,18 @@ export class Arena implements ArenaApi {
   }
 
   async verify(tx: Hex): Promise<VerifyResult | null> {
+    const key = tx.toLowerCase();
+    if (this.verifyCache.has(key)) return this.verifyCache.get(key)!;
     const d = this.c.d;
+    // Throws (and is not cached) if the tx isn't mined yet.
     const r = await verifyTx(this.c.publicClient, tx, { hook: d.hook as Address, poolManager: d.poolManager as Address, avenPoolId: d.pools.aven.id, config: d.config, params: d.params });
     const first: CoreVerifyResult | undefined = r.results[0];
-    if (!first) return null;
-    return { match: r.match, checkA: first.checkA, checkB: first.checkB, onchainFee: first.onchainFee, recomputedFee: first.recomputedFee, swapEventFee: first.swapEventFee ?? -1, inputs: first.inputs, breakdown: first.breakdown };
+    const out: VerifyResult | null = first
+      ? { match: r.match, checkA: first.checkA, checkB: first.checkB, onchainFee: first.onchainFee, recomputedFee: first.recomputedFee, swapEventFee: first.swapEventFee ?? -1, inputs: first.inputs, breakdown: first.breakdown }
+      : null;
+    if (this.verifyCache.size >= Arena.VERIFY_CACHE_MAX) this.verifyCache.delete(this.verifyCache.keys().next().value!);
+    this.verifyCache.set(key, out);
+    return out;
   }
 
   setBot(enabled: boolean) {

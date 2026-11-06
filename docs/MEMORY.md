@@ -29,6 +29,11 @@ The running record of status, decisions and open items. It saves you from re-rea
   - API: ≤ 71 ms p99 at ~1.6–2.7k req/s, 0 errors; 200 SSE clients, no leak; rate limit exact.
   - Stress: 348/348 verified, 0 nonce errors; bot 64 iterations over 75 blocks under API load.
   - **4 bugs found and fixed** (viem block-number cache, 4 s receipt polling, /state thundering herd, out of gas on the first swap of a block), each with a regression test. | docs/LOADTEST.md |
+| **Pre-mainnet audit + mainnet fork rehearsal** | ✅ done 2026-11-06 (SECURITY.md §6, recon §E, DEPLOYMENTS.md §M); **not deployed yet**.
+  - Fork of 999: all 5 scripts on Uniswap's canonical PoolManager, smoke A+B MATCH. Full app: 8,800 vs 3,000 pips, LPs kept $64.05 more, `verify --all` 4/4.
+  - Deep tests: fuzz 10× (90/0); invariants × 4 seeds (16,384 calls, 0 reverts); on-chain load; diff 10k+2k; Arena e2e; load test on the hardened code (p99 ≤ 63 ms, 0 errors, 0 nonce errors).
+  - **Found and fixed:** the deploy scripts read precompiles directly, which gets 0 bytes in forge's simulation on a live chain, so `DeployAven` would have failed on mainnet → `vm.rpc` path. Backend B-1…B-5 (rate-limit spoofing, RPC-amplifying GETs, SSE cap, `NATIVE_USD` guard, admin token length); 8 mutations caught.
+  - **Budget:** ~0.008 HYPE ($0.62) of gas for the deploy + 200 bot swaps + 10 shocks; fund 0.11 HYPE (survives 10× gas). | `contracts/script/base/AvenScript.sol`, `backend/arena/src/{server,config,arena}.ts` |
 | **Backend plan** | ✅ every step done or BLOCKED on Sayan (testnet deploy) | docs/PLAN.md |
 | P3–P13 | not started | — |
 
@@ -41,6 +46,11 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
     - The **Arena `/state` fix** is kept, because the bug affects any chain. `state()` serves max(poller block, newest block in our own receipts), so right after a shock it no longer serves the pre-shock block. Mutation-checked test in `backend/arena/test/state.test.ts`.
     - The **prompt log** is kept (ETHGlobal disclosure).
   - Before anything is deployed: a mainnet budget, a full re-test and a security audit. Results go in DEPLOYMENTS.md (mainnet section) and SECURITY.md.
+- **2026-11-06: Mainnet setup (pre-mainnet audit).**
+  - **PoolManager:** reuse **Uniswap's canonical PoolManager** `0x12D4…6B1F` on 999. It's identical to our build (recon §E.2), so no big blocks and no HyperCore-user step. `DeployCore` defaults `POOL_MANAGER` to it on chain 999.
+  - **Asset:** mainnet **ETH, perp 1, szDecimals 4**, so `aETH`/`aUSD` and `EXPECT_COIN=ETH` stay.
+  - **RPC:** the Arena and the deploy need a **dedicated HyperEVM RPC**. The public one allows 100 requests/min per IP; the Arena makes 118/min idle and ~1,900/min active.
+  - **Funding:** 0.02 / 0.08 / 0.01 HYPE for deployer / bot / shock (DEPLOYMENTS.md §M.2). Buy ~$10–15 of HYPE, not 5–10 HYPE.
 
 - **2026-11-06: Solidity imports are root-style** (`src/…`, `test/…`, `script/…`), never `./` or `../`. Reason: the Nomic Foundation Solidity extension on Windows names sources with backslashes, so relative imports showed false "Source not found" errors in the editor. Forge resolves both forms; the runtime bytecode is identical (only the metadata hash changed); forge 90/0/5.
 
@@ -79,7 +89,16 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 - **Replay scenario C (`volatile-2`):** pick a window (`backend/scripts/scenarios.json`; placeholder Oct 29 00:00–06:00 is skipped by default).
 
-0. **Testnet deploy (BLOCKED on Sayan):** fund the deployer (testnet HYPE for gas on HyperEVM; how is UNVERIFIED, see DEPLOYMENTS.md §0), make it a HyperCore user, then run docs/DEPLOYMENTS.md.
+0. **Mainnet deploy (Sayan):**
+   - get a **dedicated HyperEVM RPC** that handles ~30–40 requests/s;
+   - buy ~$10–15 of HYPE and fund the deployer, bot and shock wallets (DEPLOYMENTS.md §M.2–M.3);
+   - run §M.4.
+0a. **Decide C-5 (SECURITY.md §6.2):** keep open-mint demo tokens (anyone can swap, including judges, but also grief the pools) or deploy owner-mint demo tokens.
+0b. **Frontend (teammate):**
+   - chain **999** and badge **"Live mainnet"**;
+   - handle **429** on `/verify/:tx` (per-client limit) and **503** on `/stream` (client cap: retry with backoff);
+   - put a read RPC in `NEXT_PUBLIC_RPC`. The public endpoint is OK for a few reads; the dedicated one if traffic grows.
+0c. Testnet (998) stays blocked: no testnet HYPE (DEPLOYMENTS.md §T).
 1. **Big blocks on testnet: UNVERIFIED** until we send `evmUserModify`. The deployer must be a HyperCore user. The faucet only serves addresses that have deposited on mainnet; otherwise someone must `usdSend` testnet USDC to the deployer.
 2. Repo must be made **public** before submission (Sat Nov 7, 09:00 IST).
 
@@ -90,6 +109,9 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- **`forge script` can't read HyperCore precompiles in its simulation.** On a live HyperEVM chain the precompile addresses have no code (`eth_getCode` = 0x). Forge runs every script in its own EVM first, where a `staticcall` to them "succeeds" with 0 bytes. Scripts must read them with `vm.rpc("eth_call")` (`AvenScript._precompileCall`). The hook's own reads inside a simulated swap take the fallback path, so give Smoke a bigger gas multiplier. Found by the pre-mainnet audit; a fork with mocks etched can't show it.
+- **The public HyperEVM RPC allows 100 requests/min per IP** (official docs). A polling bot at 500 ms already needs 118/min. Measure an app's request rate with a counting proxy before going live.
 
 - **`/state` right after our own tx could be one block stale.** It's cached by the poller's last block, refreshed every 500 ms, so a recording once showed "0 bp off fair" after a shock. Fixed with `ownTxBlock` (kept through the live-mode revert).
 - **Mutation checks: restore from a copy, never `git checkout`.** `git checkout` reset a file with uncommitted work in it (caught and restored, 2026-11-06).

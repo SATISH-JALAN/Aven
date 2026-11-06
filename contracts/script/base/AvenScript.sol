@@ -69,4 +69,39 @@ abstract contract AvenScript is Script {
         vm.createDir(string.concat(vm.projectRoot(), "/deployments"), true);
         vm.writeJson(j, _wipPath());
     }
+
+    // ------------------------------------------------------------------------------------------------ precompile reads
+
+    /// @notice Read a HyperCore precompile from a script. On a real HyperEVM chain the precompile addresses have NO code
+    /// (eth_getCode = 0x, recon §E). Forge simulates every script in its own EVM first, where a staticcall to them
+    /// "succeeds" with 0 bytes, so a direct read breaks the deploy before anything is broadcast (found by the pre-mainnet
+    /// audit, 2026-11-06). There, ask the node instead (vm.rpc eth_call: the real precompile answers). Where code
+    /// exists (the local chain or a fork with MockHyperCorePx etched), staticcall it as before.
+    function _precompileCall(address precompile, bytes memory data) internal returns (bool ok, bytes memory ret) {
+        if (precompile.code.length > 0) return precompile.staticcall(data);
+        string memory params =
+            string.concat('[{"to":"', vm.toString(precompile), '","data":"', vm.toString(data), '"},"latest"]');
+        ret = vm.rpc("eth_call", params);
+        ok = true;
+    }
+
+    /// @notice Oracle (0x807) and mark (0x806) for `perpIndex`, with AvenFairValue's readOk rule: both answer at least
+    /// 32 bytes, and each value is > 0 and fits in uint64.
+    function _readOracleMark(uint32 perpIndex) internal returns (bool readOk, uint64 oracleRaw, uint64 markRaw) {
+        bool okO;
+        bool okM;
+        (okO, oracleRaw) = _readPx(0x0000000000000000000000000000000000000807, perpIndex);
+        (okM, markRaw) = _readPx(0x0000000000000000000000000000000000000806, perpIndex);
+        readOk = okO && okM;
+    }
+
+    function _readPx(address precompile, uint32 perpIndex) private returns (bool ok, uint64 px) {
+        (bool success, bytes memory ret) = _precompileCall(precompile, abi.encode(perpIndex));
+        if (!success || ret.length < 32) return (false, 0);
+        uint256 w = abi.decode(ret, (uint256));
+        if (w == 0 || w > type(uint64).max) return (false, 0);
+        // casting to 'uint64' is safe because w <= type(uint64).max was just checked
+        // forge-lint: disable-next-line(unsafe-typecast)
+        return (true, uint64(w));
+    }
 }

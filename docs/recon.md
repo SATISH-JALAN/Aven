@@ -231,6 +231,73 @@ The market is sane and has a live book. **Note for the demo:** the testnet premi
 
 ---
 
+## E. HyperEVM mainnet (999), checked 2026-11-06 (pre-mainnet audit)
+
+All reads below are read-only (`eth_*` calls and info-API reads); nothing was signed or sent. RPC: `https://rpc.hyperliquid.xyz/evm`; API: `https://api.hyperliquid.xyz/info`.
+
+### E.1 Blocks: speed and partitions (120 consecutive blocks from 50,541,339)
+
+| Item | Value |
+|---|---|
+| Block time | **1 s** (p50, p90 and max all 1 s) |
+| Block gas limits | 118 × **3,000,000** (small) + 2 × 30,000,000 (big) |
+| Small-block fill | p50 37.2 %, p90 64.0 %, max 99.2 % |
+| `eth_gasPrice` (next small block) | 124,975,686 – 133,004,821 wei (0.125–0.133 gwei) |
+| `eth_bigBlockGasPrice` | 100,000,000 wei (0.1 gwei) |
+| Base fee over the last 1,024 blocks (`eth_feeHistory`) | p50 0.1272, p90/p99/max 0.133 gwei: flat |
+
+An Aven swap (~167k gas on the fork, E.5) uses ~5.6 % of a small block.
+
+### E.2 Uniswap v4 on 999
+
+- PoolManager `0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F`: 24,009 B of code. **Identical to our `out-v4core` build** once the immutable is masked (A.5 method).
+- `owner()` = `0x2D09D0C2F82c59B19B3C65a48CE2c550Bf0921f9` (Uniswap governance).
+- `protocolFeeController()` = `0x0`, so no protocol fee can be set today. Governance could set a controller later. That wouldn't change the hook; verify check B would then need the protocol share.
+- CREATE2 proxy `0x4e59b44847b379578588920cA78FbF26c0B4956C`: present, with the same runtime as on 998 (B.4).
+- **Consequence:** on 999 the deploy reuses Uniswap's PoolManager. `DeployCore` defaults `POOL_MANAGER` to it on chain 999, so no big blocks and no HyperCore-user step are needed.
+
+### E.3 Perps and precompiles on 999
+
+- `perpAssetInfo(1)` = `{coin: "ETH", marginTableId: 55, szDecimals: 4, maxLeverage: 25, onlyIsolated: false}`.
+- `perpAssetInfo(159)` = `{coin: "HYPE", marginTableId: 52, szDecimals: 2, maxLeverage: 10, onlyIsolated: false}`.
+- 0x807/0x806 vs `metaAndAssetCtxs`, 3 rounds about 2.5 s apart: ETH oracle and mark **0.00 bp** every round (e.g. 2237.74 = 2237.74). HYPE oracle 0.00 bp; mark 0.00 / 0.00 / −0.13 bp (read timing). Scaling `raw / 10^(6 − szDecimals)` confirmed on mainnet.
+- `eth_estimateGas` of a 0x807 call: 24,591 gas, so the precompile execution costs ~3,451 gas (minus 21,000 intrinsic and 140 calldata). That's under `precompileGas` = 30,000.
+
+### E.4 Public RPC limits (official docs + probes)
+
+- Docs, rate-limits page: "Maximum of 100 EVM JSON-RPC requests per minute for `rpc.hyperliquid.xyz/evm`", per IP. https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/rate-limits
+- Docs, JSON-RPC page: `eth_call`, `eth_estimateGas`, `eth_getBalance`, `eth_getCode`, `eth_getStorageAt` and `eth_getTransactionCount` serve the latest block only, and "Requests that require historical state are not supported … on the default RPC implementation". The docs don't list `eth_sendRawTransaction`.
+- Probes:
+  - `eth_sendRawTransaction("0x00")` → `-32602 failed to decode signed transaction`, so the method **is** served;
+  - `eth_estimateGas` works;
+  - `eth_getCode`/`eth_getStorageAt` at head−100 returned data on the day, but that's not guaranteed.
+- **Consequence:** the Arena makes more than 100 requests per minute (measured in SECURITY.md §6), so it needs a **dedicated HyperEVM RPC endpoint** on mainnet. The public one is fine for one-off reads.
+
+### E.5 Mainnet fork rehearsal (anvil `--fork-url` 999 at block 50,541,674)
+
+The precompiles don't exist in anvil, so `MockHyperCorePx` was placed there and loaded with the **real** mainnet ETH oracle/mark (raw 223,843 / 223,781). Then the five deploy scripts ran unchanged (`PERP_INDEX=1`, `EXPECT_COIN=ETH`):
+- `DeployCore` **reused** Uniswap's PoolManager;
+- all 23 transactions succeeded;
+- both Aven smoke swaps verified (A and B MATCH against the canonical PoolManager).
+
+| Step | gasUsed |
+|---|---|
+| PoolSwapTest / PoolModifyLiquidityTest | 1,349,983 / 1,282,555 |
+| MockERC20 × 2 | 747,765 each |
+| 6 mints + 4 approvals | 527,438 |
+| AvenHook via CREATE2 | 2,111,463 |
+| pool inits (Aven / control) | 79,726 / 51,803 |
+| liquidity (2 positions) | 296,944 + 262,516 |
+| 4 smoke swaps | 200,067 + 136,640 + 184,021 + 136,928 |
+| **Deployer total** | **8,115,614** |
+
+The full app ran on the same fork as chain 999 (Arena with `NATIVE_USD` 78.46, then `pnpm demo`):
+- shock 164 bp;
+- **Aven arb fee 8,800 vs 3,000 pips; LPs kept $64.05 more**;
+- verify MATCH; `verify --all` A 4/4, B 4/4.
+
+Per-swap gas there: Aven 166,889 / 167,021 (gas limit with margin ~250k), control 119,563 / 119,928.
+
 ## Decisions
 
 1. **BaseHook source:** OpenZeppelin `uniswap-hooks` **`v1.3.0-rc.0`**, imported as `@openzeppelin/uniswap-hooks/src/base/BaseHook.sol`. It's the only v1.3.x tag (no final 1.3.0 exists yet); it pins the same v4-core/periphery as stable v1.2.1, and it adds `onlyValidPools`. Re-pin to `v1.3.0` if it ships. Subclass `BaseHook` directly; `BaseOverrideFee` uses `afterInitialize`, not our `beforeInitialize`.

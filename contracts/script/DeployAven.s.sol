@@ -41,8 +41,8 @@ contract DeployAven is AvenScript {
     }
 
     /// perpAssetInfo returns ONE struct (recon C.2); require the expected coin.
-    function _checkPerp(uint32 perpIndex, string memory expectCoin) internal view returns (PerpAssetInfo memory info) {
-        (bool ok, bytes memory ret) = PERP_ASSET_INFO.staticcall(abi.encode(perpIndex));
+    function _checkPerp(uint32 perpIndex, string memory expectCoin) internal returns (PerpAssetInfo memory info) {
+        (bool ok, bytes memory ret) = _precompileCall(PERP_ASSET_INFO, abi.encode(perpIndex)); // live chain: via the node
         require(ok && ret.length > 0, "perpAssetInfo read failed");
         info = abi.decode(ret, (PerpAssetInfo));
         require(keccak256(bytes(info.coin)) == keccak256(bytes(expectCoin)), "perpAssetInfo coin mismatch");

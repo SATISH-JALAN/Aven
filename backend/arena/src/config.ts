@@ -38,8 +38,27 @@ export const configSchema = z.object({
   NATIVE_USD: z.coerce.number().min(0).default(0),
   POLL_MS: z.coerce.number().int().positive().default(500),
   POST_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(30),
+  /** Trust X-Forwarded-For (its LAST entry, the one our own proxy adds). Only behind a proxy such as cloudflared. */
+  ARENA_TRUST_PROXY: z
+    .string()
+    .default("0")
+    .transform((v) => v === "1" || v.toLowerCase() === "true"),
+  /** Max concurrent SSE clients (each holds a socket). */
+  ARENA_MAX_SSE_CLIENTS: z.coerce.number().int().positive().default(500),
+  /** GET /verify/:tx per client per minute (uncached verifies cost several RPC calls). */
+  ARENA_VERIFY_LIMIT_PER_MIN: z.coerce.number().int().positive().default(60),
   DATA_DIR: z.string().default(`${backendDir}data/arena`),
   DEPLOYMENTS_DIR: z.string().optional(),
+}).superRefine((c, ctx) => {
+  // Mainnet: gas is real money. With NATIVE_USD = 0 the bot would value gas at $0 and send trades whose profit
+  // doesn't cover their real HYPE gas cost (pre-mainnet audit, docs/SECURITY.md).
+  if (c.CHAIN_ID === 999 && !(c.NATIVE_USD > 0)) {
+    ctx.addIssue({ code: "custom", path: ["NATIVE_USD"], message: "NATIVE_USD must be > 0 on mainnet (999): set it to the HYPE price in USD" });
+  }
+  // Mainnet: the admin token guards actions that spend real gas, so it must be long and random (e.g. openssl rand -hex 24).
+  if (c.CHAIN_ID === 999 && c.ARENA_ADMIN_TOKEN.length < 24) {
+    ctx.addIssue({ code: "custom", path: ["ARENA_ADMIN_TOKEN"], message: "ARENA_ADMIN_TOKEN must be at least 24 random characters on mainnet (999)" });
+  }
 });
 
 export type ArenaConfig = z.infer<typeof configSchema> & { corsOrigins: string[] };

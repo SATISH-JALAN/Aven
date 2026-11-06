@@ -44,9 +44,9 @@ contract CreatePools is AvenScript {
     }
 
     /// Pool price = live oracle price (within 1 bp after sqrt rounding).
-    function _initialPrice(FV.Config memory cfg) internal view returns (uint160 sqrtP, uint64 oracleRaw) {
+    function _initialPrice(FV.Config memory cfg) internal returns (uint160 sqrtP, uint64 oracleRaw) {
         bool ok;
-        (ok, oracleRaw,) = FV.readPrices(cfg.perpIndex, 30_000);
+        (ok, oracleRaw,) = _readOracleMark(cfg.perpIndex); // live chain: via the node (AvenScript._precompileCall)
         require(ok, "oracle/mark read failed");
         uint256 want = FV.oracleWad(cfg, oracleRaw);
         sqrtP = PriceMath.sqrtPriceFromWad(cfg, want);
