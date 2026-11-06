@@ -198,6 +198,18 @@ Precompile = API exactly when the two reads land in the same oracle update. The 
 
 The market is sane and has a live book. **Note for the demo:** the testnet premium (+37–39 bp) is larger than mainnet's (single digits). Under §6.3, swaps that **buy** base pay an extra ≈ 37 × 50 = 1,850 pips (with pressure); swaps that sell base don't.
 
+### C.7 Browser market data and mempool (Trade page)
+
+Checked 2026-11-06T18:48Z with `curl` and `origin: http://localhost:3000`:
+- `POST https://api.hyperliquid-testnet.xyz/info` with `{"type":"l2Book","coin":"ETH"}` and `{"type":"metaAndAssetCtxs"}`: HTTP 200 with **`access-control-allow-origin: *`**, so the browser calls it directly (`frontend/src/lib/hl.ts`). `candleSnapshot` for ETH **1m** returns candles (`{t,T,s,i,o,c,h,l,v,n}`).
+- HyperEVM testnet RPC: **no mempool view.** `txpool_status` and `txpool_content` return `-32601 Method not found`, and `eth_getBlockByNumber("pending")` returns `null`. The app shows only the pending state of the user's own transactions.
+
+### C.8 Hosting the Arena URL and the frontend (checked 2026-11-07)
+
+- **Cloudflare Quick Tunnels** (`cloudflared tunnel --url …`, trycloudflare.com), from Cloudflare's trycloudflare page: "Quick Tunnels do not support Server-Sent Events (SSE)." · "Each Quick Tunnel supports up to 200 in-flight requests. Additional requests return a `429` response." · "The hostname changes each time you create a Quick Tunnel." · "Quick Tunnels have no uptime guarantee." · "You do not need a Cloudflare account or domain." The page states no price. **Consequence:** behind a quick tunnel the Arena's `/stream` won't work; the frontend falls back to polling `/state` (it does this on any stream error).
+- **Named Cloudflare Tunnels:** "Available on all plans" (developers.cloudflare.com/tunnel). A public hostname maps to a local service (`app.example.com` → `http://localhost:8080`). **UNVERIFIED:** whether a hostname needs your own domain on Cloudflare (the pages fetched don't say; assume yes).
+- **Vercel Hobby:** "The Hobby plan is **free**" and "restricts users to non-commercial, personal use only" (vercel.com/docs/plans/hobby). **UNVERIFIED:** pnpm 12.9.1 (`packageManager`) on Vercel's build image.
+
 ### C.5 Precompile gas
 
 | Measurement (testnet, `oraclePx(135)`) | Value |

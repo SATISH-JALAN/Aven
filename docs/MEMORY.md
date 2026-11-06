@@ -48,11 +48,27 @@ The running record of status, decisions and open items. It saves you from re-rea
   - **Found and fixed:** the deploy scripts read precompiles directly, which gets 0 bytes in forge's simulation on a live chain, so `DeployAven` would have failed on mainnet → `vm.rpc` path. Backend B-1…B-5 (rate-limit spoofing, RPC-amplifying GETs, SSE cap, `NATIVE_USD` guard, admin token length); 8 mutations caught.
   - **Budget (corrected on re-check):** the base fee is volatile (0.10–10.8 gwei over 3 h), so every tx is capped at 2 gwei: forge `--with-gas-price`, Arena `MAX_GAS_PRICE_GWEI`. The deploy + 200 bot swaps + 10 shocks cost $0.43 calm / $1.29 median / **max $7.07 at the cap**. Fund 0.03 / 0.10 / 0.02 HYPE; buy ~$20. | `contracts/script/base/AvenScript.sol`, `backend/arena/src/{server,config,arena,chain}.ts` |
 | **Backend plan** | ✅ every step done or BLOCKED on Sayan (testnet deploy) | docs/PLAN.md |
-| P3–P13 | not started | — |
+| P10 frontend: Trade / Swap / Pool / Docs | ✅ 2026-11-06/07 (prompts F22–F25; the session froze and was resumed). Nav is now Trade · Swap · Pool · Replay · Docs.
+  - **Trade:** ClickOptions-style one-screen terminal with a TradingView chart and live Hyperliquid book and stats; Long/Short = spot buy/sell aETH on either pool.
+  - **Swap:** card routing to either pool.
+  - **Pool:** who earns, plus add liquidity.
+  - **Docs:** GitBook-style, 12 pages.
+  - Arena/How/Build/Verify are folded in, with redirects.
+  - Tests: web 25 and build OK (8 routes); all four pages render in headless Chrome with no console errors.
+  - **`pnpm --filter @aven/arena check:frontend` 30/30 on the local chain:** the UI's own swap/liquidity args; fee shown = fee charged on all four swaps; quote within 0.05%; liquidity 99.5% of plan; Aven LPs $156 vs plain $96 after one shock.
+  - Not yet run against testnet (no deployment). | `frontend/src/components/{trade,docs}/`, `frontend/src/lib/{hl,trade-math,swap,liquidity}.ts` |
+| P10 frontend polish | ✅ 2026-11-06, second pass (prompt F18: Uniswap / Unichain references, "clean and professional", crisp captions, breathing space). Every page: shorter copy, shared `PageHero`/`SectionHead`, long notes in `Details` drawers, balanced headings (no one-word widows), one left edge on every page. Fixes from screenshots: hero ticker no longer overlaps the CTAs, gap-story legend matches the solid pool line, recorded-run banner is one line, the pending replay scenario shows "Soon", share card compact, empty-target GSAP warnings gone. 15 tests; build OK (8 routes); checked with headless Chrome over CDP (the Chrome extension wasn't connected) | `frontend/src/` |
+| P10 frontend redesign | ✅ 2026-11-06 (requested: "product level", less text). New landing `/`: preloader, three.js particle emblem, live ticker, pinned gap story, morphing swap card, stats, replay teaser, big rows. Arena moved to `/arena`; new pill nav, cursor and footer. 15 tests; build OK (8 routes); checked in Chrome. three 0.186.1 added | `frontend/src/components/landing/` |
+| P10 frontend | ✅ built 2026-11-06 (`@aven/web`, Next 16.4.2 + React 19.3.1 + GSAP 3.15.0 + Privy 3.51.0 + Tailwind 4.3.3). Pages: Arena `/`, `/replay`, `/verify`, `/verify/[tx]`, `/how`, `/build`. 12 vitest tests (fee walkthrough ≡ `compute()` on the spec example, 2,000 random inputs and the recorded 8,700-pip trade); production build passes (7 routes); checked in Chrome in RECORDED and REPLAY modes. **Not yet exercised against a live Arena or chain** (no deployment). Optional "Try it yourself" swap: written but untested on chain | `frontend/README.md`, FLOW.md §9 |
+| P12 README memo, FEEDBACK.md | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`4978cd0`), on Sayan's "push". **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
+
+- **2026-11-07: Frontend thread merged with Sayan's mainnet work** (merge commit, not a rebase: every frontend commit touched the same docs). Only docs conflicted. The two prompt logs had clashing numbers, so the frontend thread is listed as **F13–F28** after Sayan's #13–#27. The frontend test pinned to the old local recording (8,700 pips) now pins the mainnet recording (10,000, ceiling; recomputed = on-chain). **Rule from F28: no backend or contract change without a reviewed plan; never send mainnet txs from the frontend machine** (it holds no keys).
+
+- **2026-11-07: Privy is configured.** App ID `cmw5c1yk300nh0ilbwmn26mnw` (public by design) is in `frontend/.env.local` (gitignored); set the same `NEXT_PUBLIC_PRIVY_APP_ID` on the host. Checked on localhost:3000: the Privy API accepts the ID, and the modal shows wallets + email. The **app secret is not used anywhere**: the app has no server-side Privy calls, and a `NEXT_PUBLIC_*` secret would ship to browsers. Never put it in the repo or the frontend env; rotate it if it leaks. Before the hosted site works, add its domain to the Privy dashboard's allowed origins.
 
 - **2026-11-06: Go to HyperEVM mainnet (999); live mode reverted. Decided by Sayan.**
   - Live mode (local chain + relayed prices, `4ae5305`) is reverted in full, with two exceptions.
@@ -71,7 +87,30 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
   - **Funding:** 0.03 / 0.10 / 0.02 HYPE for deployer / bot / shock (DEPLOYMENTS.md §M.2). Buy ~$20 of HYPE, not 5–10 HYPE.
   - **Route:** the official one only (DEPLOYMENTS.md §M.3): USDC + a little ETH on Arbitrum → Hyperliquid deposit (≥ 5 USDC; less is lost) → spot buy (≥ 10 USDC) → "Transfer to/from EVM" → three NEW MetaMask accounts. Never put the main key in `.env`.
   - **Gas cap:** every mainnet tx is capped at 2 gwei (deploy: `$FEES`; Arena: `MAX_GAS_PRICE_GWEI=2`, required on 999).
+- **2026-11-06: Frontend restructure** (prompt F23: "remove pages with no details", trading like clickoptions.ai, docs like GitBook / docs.clickoptions.ai).
+  - **Routes:** Trade, Swap, Pool, Replay and Docs. `/arena` → `/pool`; `/how`, `/build` and `/verify` → `/docs/*` (redirects in `next.config.ts`).
+  - **"Long / Short" on Trade is spot.** It buys or sells aETH on a pool: no leverage, no liquidation, no perp orders, because the scope rules forbid perp trading and CoreWriter. The page says so under the toggle. The chart, book, funding and OI are read-only Hyperliquid data, labelled as such.
+  - **No mempool panel:** the RPC has no txpool or pending block (recon C.7); only the user's own pending txs are shown.
+  - **Charts:** TradingView `lightweight-charts` 5.2.1 (exact pin). Hyperliquid info API is called from the browser (CORS `*`, recon C.7).
+  - **The UI's contract args live in `lib/trade-math.ts`,** so `check:frontend` sends the very same transactions from Node.
 
+- **2026-11-06: Frontend redesign.** References given: vouch-zcash.vercel.app, silica-monard.vercel.app, arc.io, qclay.design, 1inch.com, plus the sponsor sites uniswap.org and hyperliquid.xyz.
+  - **Look:** near-black with a deep HyperCore green. Hyperliquid mint `#97fce4` is the brand accent, with a Uniswap pink `#ff4fb8`; both are **UI only**. Tested as chart series, they fail CVD (deutan ΔE < 5), so data keeps the validated aqua/orange/blue. Type: Instrument Serif (display), Michroma (labels; it matches the Λ wordmark), Manrope (UI), JetBrains Mono (numbers).
+  - **Landing at `/`, Arena at `/arena`.** The content checklist put Arena at `/`, but the redesign asked for a landing page, so Arena moved and every link points to `/arena`.
+  - **Motion:** the particle field is three.js, but its states (form / lens / stream) and its render loop are all GSAP (tweens, ScrollTrigger scrub, `gsap.ticker`). There's a static SVG fallback without WebGL or with reduced motion.
+  - **Honesty on the landing page:**
+    - the swap story's fees come from `compute()` on stated, illustrative inputs, and a test pins its claims;
+    - the ticker reads the live precompiles;
+    - each stat cites its source (replay, recorded run, prove:diff, AvenHook.sol).
+- **2026-11-06: Frontend design and data rules** (`frontend/`).
+  - **Brand:** the emblem from `frontend/public/*Emblem.png` is rebuilt as two parametric SVG lobes. The lens between them is the price gap: it opens with the live gap on the Aven pool card and on scroll in the hero. Monochrome ink on near-black; colour only for meaning.
+  - **Motion:** GSAP only (ScrollSmoother, ScrollTrigger pins/scrub, SplitText, DrawSVG; all free in `gsap` 3.13+), built inside `gsap.matchMedia()` and off for reduced motion. ScrollSmoother is created by a component placed before the page inside `#smooth-content`, so it exists before any page ScrollTrigger; drawers are portalled to `<body>`; the route transition is opacity-only (a transform would offset pins).
+  - **Chart colours** validated with the dataviz checker against `#111113`, all-pairs PASS: Aven/live aqua `#199e70`, plain/fixed 0.30% orange `#d95926`, delayed blue `#3987e5`; fixed 0.05% is a dashed neutral. Status good/warn/crit always with icon + label.
+  - **Modes:** LIVE (Arena reachable) / RECORDED (`arena-fallback.json`) / REPLAY. A recording from another chain (today's is LOCAL anvil 31337) supplies config/params for math (`math`) but **never** this chain's addresses (`deployments`): the footer shows "pending deploy" instead of local addresses.
+  - **Verify runs in the browser** (`@aven/core/verify` against `NEXT_PUBLIC_RPC`), independent of the Arena. `@aven/core/package.json` gained subpath exports (`./fee`, `./abi`, `./pool`, `./price`, `./verify`) so the bundle never pulls `addresses.ts` (node:fs). This is additive; the `.` export is unchanged.
+  - **Privy is optional:** without `NEXT_PUBLIC_PRIVY_APP_ID` the button reads "Login off".
+  - **Content spec mapped to the repo:** "HyperFairValue.sol" → `AvenFairValue.sol`; "FeeQuoter" → none (AvenHook quotes itself via `getFee`/`previewFee`); "prevMarkRaw" → `anchorMarkRaw`; "fallbackUsed" → `reason ≠ OK`; "velocity" → stress `moveBps`.
+  - **Replay settings** (fee ceiling 3%, premium off, other seeds) are shown but not precomputed: only the untuned spec defaults exist, and the page says so. Arbitrage profit and LP share per replay pool are "n/r": the replay doesn't log arb profit, and we don't estimate it.
 - **2026-11-06: Solidity imports are root-style** (`src/…`, `test/…`, `script/…`), never `./` or `../`. Reason: the Nomic Foundation Solidity extension on Windows names sources with backslashes, so relative imports showed false "Source not found" errors in the editor. Forge resolves both forms; the runtime bytecode is identical (only the metadata hash changed); forge 90/0/5.
 
 - **2026-11-06: Replay design.**
@@ -107,6 +146,23 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 ## Open questions (need a decision)
 
+- **Deploy target: ✅ RESOLVED 2026-11-06: HyperEVM mainnet (999)**, see the decision above and DEPLOYMENTS.md §M. The original proposal is kept below for the record. Testnet HYPE is the blocker: the testnet faucet only serves addresses that have deposited on **mainnet**, so some real money is needed either way. Proposal: **deploy on HyperEVM mainnet (chain 999) with mock tokens**; the only real cost is gas.
+  - **Evidence** (read-only RPC/API calls, 2026-11-06 ~09:50 UTC):
+    - official v4 PoolManager `0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F` has code on 999; its owner is `0x2d09d0c2f82c59b19b3c65a48ce2c550bf0921f9` and `protocolFeeController()` is `address(0)`, so new pools start with protocol fee 0 (verify reads `protocolFee` from slot0 anyway);
+    - the CREATE2 proxy `0x4e59…956C` exists on 999;
+    - precompile `eth_call`s on the mainnet RPC are free and sane: ETH oracle raw 223952 (2,239.52), HYPE 778625 (77.86);
+    - mainnet perp indexes: **ETH = 1 (szDecimals 4)**, HYPE = 159 (szDecimals 2), BTC = 0;
+    - base fee ≈ 0.14 gwei, HYPE ≈ $78, so ≈ $0.01 per 1M gas.
+  - **Cost:** deploy (2 test routers, 2 mock tokens, hook, 2 pools, smoke) ≈ 10M gas ≈ $0.10; a bot swap ≈ 190k gas ≈ $0.002. $5–10 of HYPE covers the whole demo.
+  - **Why it's simpler than testnet:** no PoolManager deploy, so **no big blocks and no HyperCore-user step** (AvenHook, 9.3 KB, fits a 3M small block). It uses the official Uniswap PoolManager and real prices, and mainnet has block explorers.
+  - **Getting HYPE onto HyperEVM:** (a) a teammate or the venue help desk sends ~0.1 HYPE; (b) deposit USDC to Hyperliquid, buy HYPE on spot, "Transfer to EVM"; (c) an exchange that withdraws HYPE on HyperEVM (UNVERIFIED which). Use a fresh wallet holding only a few dollars. A mainnet deposit also unlocks the testnet faucet for that address.
+  - **Changes needed if chosen (~1–2 h):**
+    - `DeployCore.s.sol`: option to reuse the official PoolManager and deploy only the test routers;
+    - `DeployAven`: `PERP_INDEX=1 EXPECT_COIN=ETH` (same decimals as today);
+    - Arena: `CHAIN_ID=999`, `NATIVE_USD≈78`, a `MIN_NATIVE_BALANCE`;
+    - frontend: chain 999 + mainnet RPC;
+    - docs: mainnet runbook in DEPLOYMENTS.md, facts into recon.md, AGENTS.md §2 asset row.
+  - **Rejected:** Unichain Sepolia with relayed prices (needs a relayer, contradicting the pitch, and a price-source rewrite; too late). **Zero-cost fallback:** the local anvil chain with live mainnet oracle/mark copied into the mock precompiles every second, labelled "local chain, live mainnet prices".
 - **Replay scenario C (`volatile-2`):** pick a window (`backend/scripts/scenarios.json`; placeholder Oct 29 00:00–06:00 is skipped by default).
 
 0. **Mainnet deploy: ✅ DONE 2026-11-06** (DEPLOYMENTS.md §M.5). Next:
@@ -133,6 +189,26 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- **`forge test` on the frontend laptop (forge 1.8.1, 2026-11-07): `test_constructor_rejectsBadConfig` fails with OutOfGas** inside `HookMiner.find` on its third case (89 pass / 1 fail / 5 skip). The constructor reverts correctly on the cases before it; the gas goes on salt mining. Test and `foundry.toml` are unchanged since it passed, so it's likely the forge version. Not fixed (contracts are Sayan's): he should run it with his forge and compare versions.
+
+- **`useGSAP` with a `scope` ref that isn't rendered** (footer on app routes, an empty feed) floods the console with "Invalid scope" / "GSAP target not found" in dev. Return early when `ref.current` is null.
+- **2026-11-06 23:27 IST: the dev server died from low memory again** (Brave ~4.8 GB + `next dev` 1.6 GB; Windows Resource-Exhaustion event). Pages that "rendered blank" in screenshots were just the dead server. Close the browser's heavy tabs, or check with `next build` + `next start` instead of `next dev`.
+
+- **Hydration: never put raw float math into an inline style.** `50 + Math.cos(a) * 48` serialized as `26%` on the server and `25.99999999999998%` in the browser (landing `NoKeysGraphic`). Round with `toFixed(3)` so both sides render the same string.
+- **Don't run `next build` while `next dev`/`next start` is up on this laptop.** Together they ran out of memory (Windows error 1450) and are the likely cause of the two freezes on 2026-11-06. Stop the server, build, then start it again. `TaskStop` on `npx next start` kills only the npx wrapper; the node child keeps the port and serves a stale `.next` (chunk 404s, "Uncaught (in promise)"). Start the server as `node node_modules/next/dist/bin/next start` so stopping it really stops it.
+- **Headless Chrome screenshots of the site:** `--virtual-time-budget` doesn't run the GSAP intros, and a tall window just stretches the 100svh hero. Drive Chrome over CDP instead (1440×900 viewport, wheel-scroll, real time).
+
+- **Fixed overlays must live outside `#smooth-content`.** ScrollSmoother transforms it, so `position: fixed` inside acts like absolute. The preloader and drawers are portalled to `<body>`; the cursor and nav sit outside the wrapper.
+- **React StrictMode runs effects twice in dev.** A "once per session" check that writes sessionStorage inside the effect skips itself on the second run. Decide once per page load in a module variable.
+- **GSAP `.from(..., { paused: true })` applies its start state at creation.** If the tween is later reverted or the element re-created, the element can stay hidden. For intros that wait for an event, create a `fromTo` with `clearProps` when the event fires.
+- **SplitText breaks `background-clip: text`** on the words it wraps, so gradient text went invisible. Use a solid colour on split headlines.
+- **2026-11-06 11:27 UTC: the HyperEVM testnet RPC returned HTTP 502** (CloudFront) for minutes. The site showed "RPC down" and kept the last block, as designed.
+- **Next 16 `next dev` writes `frontend/AGENTS.md`** (its own agent notes). The repo has one rulebook at the root (rule 6), so `next.config.ts` sets `agentRules: false`.
+- **pnpm on this machine:** the global pnpm 10.6.5 tries to self-switch to `packageManager: pnpm@12.9.1`, then runs pnpm 12's native `.exe` through node and crashes ("Invalid or unexpected token"). Workaround: run `%LOCALAPPDATA%\pnpm\.tools\pnpm\12.9.1_tmp_*\node_modules\pnpm\pnpm.exe` directly. Fix: `npm i -g pnpm@12.9.1`. pnpm 12 also fails an install on unreviewed build scripts: Privy's optional `@reown/appkit`, `bufferutil`, `keccak` and `utf-8-validate` are set to `false` in `allowBuilds`.
+- **Browser automation tabs get ~1 animation frame per second**, so GSAP's lag smoothing (≤ 33 ms per frame) makes a 2.6 s intro take over a minute and pages look half-revealed. Not a site bug. In dev, `window.gsap` is exposed: run `gsap.ticker.lagSmoothing(0)` before judging motion in automation.
+- **Hydration:** never read `window` during render (the replay share URL did, and React threw away the tree). Compute it after mount.
+- **Python on Windows** reads piped text as cp1252, so `cat file | python` showed a correct "—" as "â€”". Pass a path and `encoding='utf-8'` instead.
 
 - **`.env` trailing comments.** Our loader used to keep `  # comment` as part of the value, so `NATIVE_USD=78  # price` failed to parse. Since 2026-11-06 it strips a trailing ` # …` from unquoted values (test `loadDotEnv`). Keep comments on their own lines anyway.
 

@@ -4,7 +4,7 @@ How every part runs: where it **starts** (entry point), what it calls, and where
 
 **Status:** ✅ exists in the repo · 🔜 planned (the build prompt that creates it). Section numbers (§) refer to [spec/ARCHITECTURE.md](spec/ARCHITECTURE.md).
 
-_Last updated: 2026-11-06. Live Arena asset is testnet ETH (perp 4); tx links go to our own `/tx/<hash>` page (no testnet explorer). Only recon code exists so far._
+_Last updated: 2026-11-06. Live Arena asset is testnet ETH (perp 4). Tx links go to the chain explorer when one exists (mainnet), else to our own `/verify/<tx>` page._
 
 ---
 
@@ -30,8 +30,8 @@ flowchart LR
     SCR["scripts: fetch-market-data, replay, replay-to-web ✅"]
     DATA["data/: raw, replay, vectors, arena"]
   end
-  subgraph frontend["frontend/ (Next.js) 🔜P10"]
-    WEB["Home · Arena · Replay"]
+  subgraph frontend["frontend/ (Next.js) ✅"]
+    WEB["Arena · Replay · Verify · How · Build"]
   end
   SC -->|deploy| PM
   SC --> DEP
@@ -168,16 +168,42 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
   4. `backend/scripts/replay-to-web.ts` writes `frontend/public/replay/<scenario>.json`.
 - **Exit:** CSV and summary files, plus the downsampled JSON that the Replay page loads.
 
-## 9. Frontend 🔜P10
+## 9. Frontend ✅ `frontend/` (`@aven/web`)
 
-- **Entry:** a browser opens the Vercel URL. Next.js App Router pages: `/` (Home), `/arena`, `/replay`, and `/tx/[hash]`. That last one is our explorer stand-in: it shows the receipt and decoded `FeeComputed`/`Swap` from `NEXT_PUBLIC_RPC`, plus the verify result.
+- **Entry:** a browser opens the app (Vercel or `pnpm --filter @aven/web dev`). Next.js 16 App Router, client pages:
+  - `/`: landing (`src/components/landing/*`):
+    - a preloader, once per session;
+    - `Hero` with the three.js `ParticleField` (the emblem as particles, driven by GSAP);
+    - `LiveTicker`: oracle/mark via `@aven/core/precompiles` `readOracleMark` straight from `NEXT_PUBLIC_RPC` (perp from the deployment, else the recon index);
+    - then `GapStory`, `Marquee`, `Features` (bento cards), `SwapStory` (fees from `@aven/core/fee` `compute`), `Stats`, `ReplayTeaser` (`public/replay/binance-halt.json`) and `BigRows`;
+  - `/trade`: one-screen trading terminal (`src/components/trade/*`):
+    - `MarketBar`: Hyperliquid ETH-PERP mark, 24h change, oracle, premium, funding, volume, open interest; plus the Aven pool price, gap and fees;
+    - `PriceChart`: TradingView `lightweight-charts` 5.2.1, Hyperliquid candles + volume, an oracle line, and (LIVE) both pool prices and arb markers;
+    - `OrderBook`: Hyperliquid `l2Book`, read-only;
+    - `OrderPanel`: Long = buy aETH, Short = sell aETH, spot on the Aven or plain pool (no leverage). The quote is `indicativeOut` × `feeFor`; it sends through `useSwap`;
+    - `Activity`: arb feed, all trades, your trades, shocks, who earned what, and the proof drawer from `arena/Tape.tsx`;
+  - `/swap`: a single swap card that routes to either pool and shows both quotes;
+  - `/pool`: who earns (LPs vs the arb bot) from live or recorded `/stats`, backed by the mainnet replay; cost per swap; add liquidity (`useAddLiquidity`);
+  - `/replay`: four-pool replay with playback, results, share link + QR, and method notes in a collapsible `Details` drawer;
+  - `/docs/[[...slug]]`: GitBook-style docs (`src/components/docs/*`): `DocsShell` (sidebar with Ctrl+K search, content column, "On this page" scrollspy), `Doc` primitives (anchored headings, callouts, code with copy, tables, steps, link cards), 12 pages in four groups (`pages.tsx`). `/docs/verify` embeds `VerifyTool` (the old `/verify` page);
+  - `/verify/[tx]`: our explorer stand-in and fee proof.
+  - Redirects (`next.config.ts`): `/arena` → `/pool`, `/how` → `/docs/how-it-works`, `/build` → `/docs/build`, `/verify` → `/docs/verify`.
+
+  Every inner page opens with `PageHero` (eyebrow, one-line headline, one-line lede) and uses `SectionHead` for sections, both in `src/components/ui.tsx`; long explanations sit in `Details` drawers. Headings use `text-wrap: balance` and body copy `text-wrap: pretty` (`globals.css`).
+
+  Trade and Docs are app routes (`isAppRoute` in `shell.tsx`): native scroll and no marketing footer.
+
+  Shell: `src/app/layout.tsx`. Privy `WalletProvider` → `ArenaProvider` → `ReadyOutsideLanding`, custom `Cursor`, pill `Nav`, RPC banner, then `#smooth-wrapper` (GSAP ScrollSmoother) holding the page and the `Footer` (CTA, link columns, contracts, a giant wordmark that draws on scroll). The landing `Preloader` fires `aven:ready`; other pages are ready at once; the nav and hero intros wait for it. Config lives in one file: `src/config.ts` (+ `src/config/deployments.json`, synced from `contracts/deployments/` by `pnpm --filter @aven/web sync:deployments`).
 - **Path:**
-  - Arena reads `NEXT_PUBLIC_ARENA_API` (`/config`, `/state`, `/stats`, `/trades`, `/stream` SSE, `/verify/:tx`);
-  - direct chain reads go through `NEXT_PUBLIC_RPC` (wagmi/viem, chain 998);
-  - Replay loads `frontend/public/replay/*.json`;
-  - when the service is offline, the page shows `frontend/public/arena-fallback.json`, labelled "Recorded run";
-  - admin buttons (`?admin=<token>`) POST to the backend.
-- **Exit:** the rendered UI. Every number carries a source label and a badge.
+  - `src/lib/arena.tsx` `ArenaProvider`: `/health` → `/config`, `/stats`, `/trades`, `/bot/status`, `/state`, then the `/stream` SSE (`state`, `trade`, `shock`, `bot`). It polls `/state` while the stream reconnects. If the service is unreachable or unset, it loads `public/arena-fallback.json` (RECORDED). A recording from another chain supplies config/params for math (`math`) but never this chain's addresses (`deployments`).
+  - Admin POSTs (`/shock`, `/bot/start|stop`, `/reset-stats`) send `x-admin-token` from `?admin=` or the session.
+  - `src/lib/chain.ts`: one shared `eth_blockNumber` poller (nav "last updated" block, RPC-down banner). `verifyTxInBrowser` / `verifyAllInBrowser` call `@aven/core/verify` `verifyTx` / `verifyAll` (≤ 50-block chunks) straight against `NEXT_PUBLIC_RPC`.
+  - `src/lib/steps.ts` `feeSteps`: every §6.3 intermediate value with the core BigInt helpers, cross-checked against `compute()` (`consistent`).
+  - Replay reads `public/replay/<scenario>.json`; playback is a GSAP tween over the step index.
+  - `src/lib/hl.ts`: Hyperliquid info API from the browser (`candleSnapshot`, `l2Book`, `metaAndAssetCtxs`; CORS open, recon C.7) for the Trade page. There is no mempool view (recon C.7).
+  - `src/lib/trade-math.ts` (pure): `tokenSide`, `feeFor`, `indicativeOut`, `planLiquidity`, and the exact contract args `swapArgs`, `liquidityArgs`, `liquidityNeeds`, `withGasMargin` (estimate × 1.3 + 30k).
+  - `src/lib/swap.ts` `useSwap` (Trade, Swap): from the user's Privy wallet, MockERC20 `mint` → `approve` → `PoolSwapTest.swap` on either pool. `src/lib/liquidity.ts` `useAddLiquidity` (Pool): `mint` → `approve` both tokens → `PoolModifyLiquidityTest.modifyLiquidity`.
+- **Exit:** the rendered UI (`/` needs only the RPC; `/trade`, `/swap`, `/pool` need the Arena or the recording for pool data, and Hyperliquid for market data); admin POSTs to the Arena; user swaps and liquidity on chain (Trade, Swap, Pool; LIVE only); CSV download and share link (replay). Every number carries a source label and a LIVE / RECORDED / REPLAY badge.
 
 ## 9b. Demo run ✅
 
@@ -209,7 +235,9 @@ Contract code imports project files root-style (`src/…`, `test/…`, `script/�
 | `pnpm --filter @aven/scripts test` | `backend/scripts/test/{marketData,replayPrep}.test.ts` | premium forward-fill, oracleProxy, gaps, paging, 1m→5m fallback; raw conversion and lag interpolation | ✅ 9 pass |
 | `pnpm --filter @aven/arena test` | `backend/arena/test/{math,server,chain,state}.test.ts` | direction, p*, sqrtPriceLimit (both orders), valuation, stats; B4 routes, admin token, CORS, rate limit, SSE; pre-mainnet hardening (auth before limiter, XFF spoofing, verify limit, SSE cap, mainnet config guards); `/state` + `/bot/status` + `/verify` caching | ✅ 36 pass |
 | `pnpm --filter @aven/arena test:e2e` | `backend/arena/test/e2e.test.ts` (E2E=1, local anvil chain) | PLAN 4.4 gate: shock → arbs → Aven fee > control → lpKeptMoreUsd > 0 → verify MATCH; persistence reload | ✅ 2 pass (~2.5 min) |
-| `pnpm test` (frontend) | `frontend/` | UI | 🔜 P10 (teammate) |
+| `pnpm --filter @aven/arena check:frontend` | `backend/arena/scripts/check-frontend.ts` (local anvil chain + Arena on HTTP; imports `frontend/src/lib/trade-math.ts`) | every GET the frontend reads + CORS; `/config` = deployments file; SSE `state`; a wallet swaps on both pools both ways with the UI's args (fee shown = FeeComputed = Swap event fee; output ≤ quote, within 1%); `/verify` MATCH; add liquidity on both pools (pulled ≤ approved, ≥ 95% of plan); shock + bot: bot profits on both pools, Aven LPs keep more | ✅ 30/30 (~2 min) |
+| `pnpm --filter @aven/web test` | `frontend/test/{steps,format,landing,trade}.test.ts` | the proof walkthrough equals `compute()` (spec worked example 9,000/500, 2,000 random inputs, the recorded 8,700-pip trade); premium truncation; replay CSV and series shapes; the landing swap story's three claims against `compute()`; indicative quote; liquidity planner for both token orders | ✅ 25 pass |
+| `pnpm --filter @aven/web build` | `frontend/` | Next production build (Turbopack bundles `@aven/core`, Privy and three.js), 8 routes | ✅ |
 
 ## 11. What exists today ✅
 
@@ -242,4 +270,11 @@ Contract code imports project files root-style (`src/…`, `test/…`, `script/�
   4. returns `{publicClient, deployer/bot/shock accounts, deployments, setPrices(), setMockMode(), stop()}`;
   5. `verifySmoke()` verifies the smoke swaps.
 - `contracts/deployments/README.md`: what lives there (`998.json` committed after the testnet run; `31337.json` and `*.wip.json` are gitignored).
-- `frontend/`: README + `.env.example` only.
+- `frontend/` (`@aven/web`):
+  - `src/app/*`: pages (above), `layout.tsx`, `template.tsx` (route fade), `icon.svg`, `globals.css` (tokens + validated chart palette);
+  - `src/components/brand.tsx`: the emblem as two parametric SVG lobes (`lobePath(which, h)`, lens = gap) and the stroke wordmark;
+  - `src/components/landing/*`: `Preloader`, `ParticleField` (three.js, ~13k points sampled from the lobes; states form / lens / stream), `Hero`, `LiveTicker`, `GapStory`, `SwapStory`, `Sections` (Marquee, Features, Stats, ReplayTeaser, BigRows);
+  - `src/components/motion.tsx`: GSAP `Smoother`, `useReveal`, `SplitReveal`, `CountUp`, `Magnetic` (all reduced-motion aware);
+  - `src/components/{shell,ui,wallet,LineChart}.tsx`, `src/components/{arena,verify,trade,docs}/*`;
+  - `src/lib/{arena.tsx,chain.ts,steps.ts,format.ts,replay.ts,types.ts,gsap.ts,hl.ts,trade-math.ts,swap.ts,liquidity.ts}` (`types.ts` re-exports `backend/arena/src/types.ts`, type-only);
+  - imports `@aven/core` only through its browser-safe subpath exports `./fee`, `./abi`, `./pool`, `./price`, `./verify`, `./precompiles`.
