@@ -1,1 +1,60 @@
-{}
+{
+  "999": {
+    "chainId": 999,
+    "config": {
+      "baseIsToken0": true,
+      "decimals0": 18,
+      "decimals1": 6,
+      "perpIndex": 1,
+      "szDecimals": 4
+    },
+    "deployedAtBlock": 50557638,
+    "explorer": "",
+    "hook": "0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080",
+    "hookSalt": "0x0000000000000000000000000000000000000000000000000000000000007b9d",
+    "liquidityRouter": "0x4da494CB3f82c3d01c2D720BB23B38E505141A5b",
+    "params": {
+      "baseFee": 500,
+      "fallbackFee": 3000,
+      "gapWeight": 50,
+      "maxFee": 10000,
+      "maxGapBps": 2000,
+      "minFee": 500,
+      "precompileGas": 30000,
+      "premiumWeight": 50,
+      "stressTauSec": 60,
+      "stressThresholdBps": 50,
+      "stressWeight": 20
+    },
+    "poolManager": "0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F",
+    "pools": {
+      "aven": {
+        "id": "0x659c1cbd66a079592fd333ec44f76b4878aabfe5d9c17b7a14faaabbe7e0d1df",
+        "key": {
+          "currency0": "0xD4a26168e47acc1b514aF23Fb5a360d171745756",
+          "currency1": "0xFC91A98c4bDbF5b20a2Da89e514C66295051efd6",
+          "fee": 8388608,
+          "hooks": "0xfdd13cA6D7FcF4Ca710Bc8C77546592F42CF6080",
+          "tickSpacing": 60
+        }
+      },
+      "control": {
+        "id": "0x4bf2e188c58f409792aae72afe12c7d025ce093d4ca92d8a100a810d8b1681b6",
+        "key": {
+          "currency0": "0xD4a26168e47acc1b514aF23Fb5a360d171745756",
+          "currency1": "0xFC91A98c4bDbF5b20a2Da89e514C66295051efd6",
+          "fee": 3000,
+          "hooks": "0x0000000000000000000000000000000000000000",
+          "tickSpacing": 60
+        }
+      }
+    },
+    "swapRouter": "0xFe6baCe2E548fD06735A4242BBD46A3c842E02B1",
+    "tokens": {
+      "base": "0xD4a26168e47acc1b514aF23Fb5a360d171745756",
+      "baseSymbol": "aETH",
+      "quote": "0xFC91A98c4bDbF5b20a2Da89e514C66295051efd6",
+      "quoteSymbol": "aUSD"
+    }
+  }
+}
