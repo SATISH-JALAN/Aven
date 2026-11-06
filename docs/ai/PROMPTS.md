@@ -302,3 +302,14 @@ how to get the dedicated hyperevm rpc and where to getthe backend/.env all that 
 
 The user pasted their terminal output: the Arena is listening on chain 999, and the health check returned `{"ok":true,"chainId":999,"block":50561879,"botEnabled":false,"version":"0.1.0"}`.
 
+---
+
+## #27 — 2026-11-07T00:30:00Z (approx.) — Mainnet recording, video, next steps
+
+The user quoted my offer ("Mainnet recording (optional, under 1¢ of HYPE): I can run the scripted demo once to replace the frontend's fallback recording, which is currently a local-chain one. Say if you want it.") and wrote:
+
+```text
+can u record the video for me and also tell me what to do after that like not push and all but waht aafter that
+continue
+```
+

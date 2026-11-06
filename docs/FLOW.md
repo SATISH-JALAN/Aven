@@ -183,7 +183,7 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 
 - **Entry:** `pnpm demo` (`backend/scripts/demo.ts` → `src/demo.ts` `runDemo`, HTTP only against `ARENA_URL`) or `pnpm --filter @aven/arena demo:local` (`backend/arena/scripts/demo-local.ts`: local chain + in-process Arena on a port).
 - **Path:** `/bot/stop` → `/reset-stats` → `/shock` → `/bot/start` → poll `/trades` until both pools have an arb → `/bot/stop` → `/stats`, `/state`, `/verify/:tx`.
-- **Exit:** a one-screen summary, plus `frontend/public/arena-fallback.json` (`badge: "Recorded run"`, with its source stated).
+- **Exit:** a one-screen summary, plus `frontend/public/arena-fallback.json` (`badge: "Recorded run"`). Its `source` names the chain: "Recorded run on HyperEVM MAINNET (chain 999)…" / testnet 998 / LOCAL 31337.
 
 ## 10. Tests and checks
 

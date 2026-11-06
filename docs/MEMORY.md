@@ -29,6 +29,9 @@ The running record of status, decisions and open items. It saves you from re-rea
   - API: ≤ 71 ms p99 at ~1.6–2.7k req/s, 0 errors; 200 SSE clients, no leak; rate limit exact.
   - Stress: 348/348 verified, 0 nonce errors; bot 64 iterations over 75 blocks under API load.
   - **4 bugs found and fixed** (viem block-number cache, 4 s receipt polling, /state thundering herd, out of gas on the first swap of a block), each with a regression test. | docs/LOADTEST.md |
+| **Mainnet recording** | ✅ 2026-11-07: `frontend/public/arena-fallback.json` now holds a HyperEVM **mainnet** run, labelled with the chain.
+  - Shock 194 bp → Aven 10,000 pips (ceiling) vs 3,000; LPs kept $124.91 more; verify MATCH.
+  - `docs/DEMO.md` has the mainnet numbers and a one-take video plan. | `backend/scripts/demo.ts` labels the chain |
 | **First live Arena test on mainnet** | ✅ 2026-11-07 (DEPLOYMENTS.md §M.5).
   - Shock 188 bp → bot arb on Aven paid **9,950 pips** vs 3,000 on control. **LPs kept $97.25 more** (demo-token $ at the oracle).
   - Aven arb verify MATCH A+B on real HyperCore oracle/mark.
