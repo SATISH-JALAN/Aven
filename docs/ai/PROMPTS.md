@@ -249,3 +249,21 @@ continue
 continue
 ```
 
+---
+
+## #21 — 2026-11-06T16:30:00Z (approx.) — One account; why not swap inside MetaMask
+
+```text
+no like i will only use 1 account why i have to do that through hyperliquid platform like why i cant swap it insidemetamask like i have usdc in my metamask wallet and a little hype like around 0.017 hype in my metamask wallet so why i cany buy it through that and i have to buy it through hyperliquid
+```
+
+---
+
+## #22 — 2026-11-06T16:40:00Z (approx.) — MetaMask screenshot
+
+The user attached a MetaMask screenshot: Account 2 `0xFF844…AB535`, 0.0176 HYPE, Network: HyperEVM.
+
+```text
+like i havve this check it and continu what u were doing
+```
+

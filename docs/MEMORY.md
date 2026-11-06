@@ -46,6 +46,11 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
     - The **Arena `/state` fix** is kept, because the bug affects any chain. `state()` serves max(poller block, newest block in our own receipts), so right after a shock it no longer serves the pre-shock block. Mutation-checked test in `backend/arena/test/state.test.ts`.
     - The **prompt log** is kept (ETHGlobal disclosure).
   - Before anything is deployed: a mainnet budget, a full re-test and a security audit. Results go in DEPLOYMENTS.md (mainnet section) and SECURITY.md.
+- **2026-11-06: One account for everything (Sayan).** Deployer = bot = shock = Sayan's MetaMask Account 2 (`0xFF844…AB535`), which holds 0.0176 native HYPE on HyperEVM.
+  - **Tested on a local chain:** one key as bot + shock concurrently gave 35 txs, 0 reverted, contiguous nonces (viem's shared `nonceManager` is keyed by address), 12 shocks + 21 arbs, verify 21/21.
+  - **Budget:** 0.0176 HYPE covers the whole deploy even at the 2-gwei cap. The full 200-swap test needs ~0.08 HYPE more.
+  - **Risk accepted:** the key sits in two `.env` files; keep only demo funds in that account.
+  - **Funding:** MetaMask Swap is acceptable if the result is native HYPE on HyperEVM (not a HYPE token on another chain, not WHYPE).
 - **2026-11-06: Mainnet setup (pre-mainnet audit).**
   - **PoolManager:** reuse **Uniswap's canonical PoolManager** `0x12D4…6B1F` on 999. It's identical to our build (recon §E.2), so no big blocks and no HyperCore-user step. `DeployCore` defaults `POOL_MANAGER` to it on chain 999.
   - **Asset:** mainnet **ETH, perp 1, szDecimals 4**, so `aETH`/`aUSD` and `EXPECT_COIN=ETH` stay.
@@ -93,7 +98,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 0. **Mainnet deploy (Sayan):**
    - get a **dedicated HyperEVM RPC** that handles ~30–40 requests/s;
-   - buy ~$20 of HYPE via the official route and fund three NEW accounts with 0.03 / 0.10 / 0.02 HYPE (DEPLOYMENTS.md §M.2–M.3);
+   - one account (Account 2, 0.0176 HYPE now): enough to deploy. Top up ~0.08 HYPE (MetaMask Swap to native HYPE on HyperEVM is fine) for the full bot test (DEPLOYMENTS.md §M.2–M.3);
    - run §M.4.
 0a. **Decide C-5 (SECURITY.md §6.2):** keep open-mint demo tokens (anyone can swap, including judges, but also grief the pools) or deploy owner-mint demo tokens.
 0b. **Frontend (teammate):**

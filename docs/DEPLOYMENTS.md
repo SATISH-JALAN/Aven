@@ -49,6 +49,11 @@ Other costs:
 
 That covers the whole plan at the 2-gwei cap, plus the bot's floor and a re-run of the smoke step.
 
+**One account (Sayan's setup, 2026-11-06).** Deployer, bot and shock can be the same account; it needs the sum: **~0.10 HYPE** for the full plan at the cap, ~0.027 at median gas.
+- It holds **0.0176 HYPE** on HyperEVM (MetaMask screenshot). That's already enough for the **whole deploy** even at the 2-gwei cap (max 0.0162).
+- After the deploy, the bot auto-pauses at 0.01 HYPE. What's left runs roughly 60 bot swaps at median gas, or 20 at 1 gwei.
+- For the full 200-swap / 10-shock test, top up about **0.08 HYPE (~$6–7)**.
+
 **Buy about $20 of HYPE (≈ 0.26 HYPE)**, which is above Hyperliquid's spot minimum order (next section), and keep the rest as buffer. That's **dollars, not 5–10 HYPE** (5–10 HYPE would be $390–780).
 
 ### M.3 From USDC in MetaMask to HYPE on HyperEVM (official route)
@@ -73,11 +78,18 @@ Each fact below is quoted from Hyperliquid's official docs (recon §E.6).
    - explorer `https://hyperevmscan.io/`.
 
    Known MetaMask issue on HyperEVM (official FAQ): "Invalid transaction envelope type … 0x2". The docs suggest another wallet such as **Rabby** if it happens.
-6. **Never put your main MetaMask key in a `.env` file.**
-   - Create **three new accounts**: deployer, bot and shock.
-   - Send them **0.03 / 0.10 / 0.02 HYPE** on HyperEVM from your main account.
-   - Export only those new accounts' keys, into `contracts/.env` (deployer) and `backend/.env` (bot, shock).
-7. **Don't buy "HYPE" on other chains** with MetaMask Swaps. Gas on HyperEVM is **native HYPE on chain 999**; a token named HYPE on Arbitrum/Base/Ethereum isn't it.
+6. **Choose the accounts.**
+   - **One account works (tested on a local chain, 2026-11-06):** one key as bot and shock at the same time sent 35 txs with 0 reverted, contiguous nonces, 12 shock swaps + 21 bot arbs, and 21/21 fees verified on A and B.
+     - Set `DEPLOYER_PK` = `BOT_PK` = `SHOCK_PK` = that key.
+     - Set `BOT_ADDRESS` = `SHOCK_ADDRESS` = its address.
+     - **Risk:** that key then sits in plain text in `contracts/.env` and `backend/.env`, so anything else in that account (e.g. USDC) is exposed if those files leak. Keep only what the demo needs in it.
+   - Three accounts (deployer / bot / shock, 0.03 / 0.10 / 0.02 HYPE) isolate the risk further. It's optional.
+   - Never put a key that holds savings into `.env`.
+7. **Swapping inside MetaMask is fine *if* the result is native HYPE on HyperEVM.**
+   - The Hyperliquid app (steps 2–4) is the officially documented route, not the only one.
+   - With MetaMask **Swap**, before confirming check that the **destination network is HyperEVM** and the token is **HYPE** with the verified badge. Afterwards it should show under *Network: HyperEVM* like the existing 0.0176 HYPE.
+   - Wrong results: a token named HYPE on Arbitrum/Base/Ethereum, or **WHYPE** (wrapped). Those aren't gas on chain 999; WHYPE would first need unwrapping.
+   - The quote shows MetaMask's own fee; on a ~$7 swap it's cents.
 8. **Check:** `cast balance <address> --ether --rpc-url https://rpc.hyperliquid.xyz/evm` for each wallet.
 
 ### M.4 Runbook
@@ -107,7 +119,7 @@ cd .. && CHAIN_ID=999 HYPEREVM_RPC=<RPC> pnpm verify <each Aven smoke tx>   # MA
 - **Arena on mainnet:** set these in `backend/.env`:
   - `CHAIN_ID=999`;
   - `HYPEREVM_RPC=<dedicated RPC>`;
-  - `BOT_PK`/`SHOCK_PK` (fresh hot wallets);
+  - `BOT_PK`/`SHOCK_PK` (separate hot wallets, or the **same key** for a one-account setup, as tested in §M.3);
   - `NATIVE_USD=<HYPE price>` (the config refuses 0 on 999);
   - `ARENA_ADMIN_TOKEN=$(openssl rand -hex 24)` (≥ 24 characters on 999);
   - `ARENA_TRUST_PROXY=1` only behind cloudflared;
