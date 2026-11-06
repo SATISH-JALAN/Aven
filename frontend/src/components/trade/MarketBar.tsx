@@ -5,6 +5,7 @@ import { config } from "@/config";
 import { useArena } from "@/lib/arena";
 import { bps, num, pipsPct, usd } from "@/lib/format";
 import { useCandles, useCtx } from "@/lib/hl";
+import { pushState } from "@/lib/pressure";
 import { feeFor } from "@/lib/swap";
 
 const UP = "#22c08a";
@@ -18,6 +19,7 @@ export function MarketBar() {
   const chg = c ? c.markPx - c.prevDayPx : 0;
   const chgPct = c && c.prevDayPx ? (chg / c.prevDayPx) * 100 : 0;
   const aven = a.state?.pools.aven;
+  const plain = a.state?.pools.control;
   const sellFee = feeFor(a.state, "aven", "sellBase");
   const buyFee = feeFor(a.state, "aven", "buyBase");
   const tag = a.mode === "LIVE" && a.status === "ok" ? "live" : a.mode === "RECORDED" ? "recorded" : null;
@@ -58,8 +60,11 @@ export function MarketBar() {
         <Stat k="Open interest" v={c ? usd(c.openInterest * c.markPx, 0) : "—"} />
         <span className="h-8 w-px bg-line" aria-hidden />
         <Stat k={`Aven pool${tag ? ` · ${tag}` : ""}`} v={aven ? num(aven.price, 2) : "—"} />
-        <Stat k="Pool gap" v={aven ? bps(aven.gapBps) : "—"} color={aven && Math.abs(aven.gapBps) >= 30 ? "var(--color-warn)" : undefined} />
+        <Stat k="Pool gap" v={aven ? bps(aven.gapBps) : "—"} color={aven && pushState(aven.gapBps).pushed ? "var(--color-warn)" : undefined} />
         <Stat k="Aven fee · sell / buy" v={sellFee !== null && buyFee !== null ? `${pipsPct(sellFee)} / ${pipsPct(buyFee)}` : "—"} />
+        <span className="h-8 w-px bg-line" aria-hidden />
+        <Stat k={`Plain pool (0.30%)${tag ? ` · ${tag}` : ""}`} v={plain ? num(plain.price, 2) : "—"} />
+        <Stat k="Plain gap" v={plain ? bps(plain.gapBps) : "—"} color={plain && pushState(plain.gapBps).pushed ? "var(--color-warn)" : undefined} />
       </div>
     </div>
   );
