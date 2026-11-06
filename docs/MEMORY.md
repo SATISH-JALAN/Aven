@@ -32,7 +32,7 @@ The running record of status, decisions and open items. It saves you from re-rea
 | **Backend plan** | ✅ every step done or BLOCKED on Sayan (testnet deploy) | docs/PLAN.md |
 | P3–P13 | not started | — |
 
-GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
+GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06, the whole backend, on Sayan's "push". **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
 
@@ -86,6 +86,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 ## Gotchas learned
 
 - **Editor "Source not found" (error 6275) on relative Solidity imports, Windows only.** The Nomic Foundation extension (`hardhat-solidity` 0.9.3, also in Antigravity IDE) renames Foundry sources with `path.relative`, which gives `src\interfaces\X.sol`. solc resolves `./Y.sol` to `src/interfaces/Y.sol`, so nothing matches. Remapped or root-style imports go through the extension's own resolver and work. Use root-style imports; reload the window after changing them.
+- **The same extension applies the LAST matching remapping, not the longest.** Forge's auto-detected `@openzeppelin/=lib/v4-core/lib/openzeppelin-contracts/` therefore hijacked `@openzeppelin/uniswap-hooks/...`, and `BaseHook.sol` showed "not found". `BaseHook` is now imported as `uniswap-hooks/base/BaseHook.sol` through an explicit `uniswap-hooks/=lib/uniswap-hooks/src/` remapping. The runtime bytecode is identical. Checked by driving the extension's own language server headless: the old `IAvenHook.sol` reproduced the two errors exactly, and the new one gives 0.
 
 - **Gas estimates for Aven swaps need a margin.** `eth_estimateGas` sees the cheap "later swap in this block" hook path; the real tx is usually the first swap of the next block (top-of-block + anchor writes) and runs out of gas. Found by the load test (12/70 bot txs reverted); fixed with `withGasMargin` (×1.3 + 30k) → 0/76. Routers need the same.
 - **viem defaults that hurt a 1 s-block chain:**

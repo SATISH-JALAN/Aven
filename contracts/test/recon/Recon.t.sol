@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 // Recon §A: these exact import paths must compile with contracts/remappings.txt.
-import {BaseHook} from "@openzeppelin/uniswap-hooks/src/base/BaseHook.sol";
+import {BaseHook} from "uniswap-hooks/base/BaseHook.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";

@@ -165,3 +165,21 @@ The user pasted two editor diagnostics (solidity-language-server, code 6275) for
 ```text
 fix it
 ```
+
+---
+
+## #11 — 2026-11-06T04:10:00Z — Editor import errors (again)
+
+The user pasted the same two diagnostics as #10 again, then wrote:
+
+```text
+fix it
+```
+
+---
+
+## #12 — 2026-11-06T05:28:29Z — Push
+
+```text
+do it later .....first push everything in the main repo
+```

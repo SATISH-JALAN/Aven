@@ -6,3 +6,4 @@ forge-std/=lib/forge-std/src/
 solmate/=lib/v4-core/lib/solmate/
 permit2/=lib/v4-periphery/lib/permit2/
 hyper-evm-lib/=lib/hyper-evm-lib/
+uniswap-hooks/=lib/uniswap-hooks/src/
