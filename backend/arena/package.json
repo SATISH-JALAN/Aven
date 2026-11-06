@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:e2e": "tsx scripts/e2e.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "demo:local": "tsx scripts/demo-local.ts"
+    "demo:local": "tsx scripts/demo-local.ts",
+    "loadtest": "node --expose-gc --import tsx scripts/loadtest.ts",
+    "loadtest:report": "tsx scripts/loadtest-report.ts"
   },
   "dependencies": {
     "@aven/core": "workspace:*",
@@ -24,6 +26,8 @@
     "@types/node": "22.20.5",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "autocannon": "8.0.0",
+    "@types/autocannon": "7.12.7"
   }
 }

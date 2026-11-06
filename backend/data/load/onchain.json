@@ -1,0 +1,18 @@
+{
+  "anchorViolations": 0,
+  "blockGasMax": 3024869,
+  "blockGasP95": 2780006,
+  "blocks": 250,
+  "fallbackSwaps": 387,
+  "feeViolations": 0,
+  "maxSwapsPerBlock": 16,
+  "reverts": 0,
+  "smallBlockGasLimit": 3000000,
+  "swapGasMax": 214024,
+  "swapGasP50": 174880,
+  "swapGasP95": 187767,
+  "swaps": 2318,
+  "swapsUnderBrokenReads": 387,
+  "topOfBlockViolations": 0,
+  "zeroFeeSwaps": 0
+}

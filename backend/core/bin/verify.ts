@@ -48,7 +48,7 @@ async function main() {
   const args = process.argv.slice(2);
   const chainId = Number(process.env.CHAIN_ID ?? 998);
   const rpc = process.env.HYPEREVM_RPC ?? defaultRpc(chainId);
-  const client = createPublicClient({ transport: http(rpc, { retryCount: 3 }) });
+  const client = createPublicClient({ transport: http(rpc, { retryCount: 3 }), cacheTime: 0 });
   const { target, deployedAtBlock } = targetFor(chainId, process.env.DEPLOYMENTS_DIR);
 
   if (args[0] === "--all") {

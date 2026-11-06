@@ -73,7 +73,8 @@ export class Arena implements ArenaApi {
   private lastError: string | null = null;
   private listeners = new Set<Listener>();
   private poller: NodeJS.Timeout | null = null;
-  private stateCache: { block: bigint; value: StateResponse } | null = null;
+  /** One in-flight /state computation per block, shared by every caller (avoids a thundering herd on each new block). */
+  private stateCache: { block: bigint; value: Promise<StateResponse> } | null = null;
   private readonly file: string;
   readonly stats_ = { iterations: 0, iterationErrors: 0, pollErrors: 0 };
 
@@ -311,6 +312,15 @@ export class Arena implements ArenaApi {
   async state(): Promise<StateResponse> {
     const block = this.lastBlock || (await this.c.publicClient.getBlockNumber());
     if (this.stateCache && this.stateCache.block === block) return this.stateCache.value;
+    const value = this.computeState(block);
+    this.stateCache = { block, value };
+    value.catch(() => {
+      if (this.stateCache?.value === value) this.stateCache = null; // don't cache a failure
+    });
+    return value;
+  }
+
+  private async computeState(block: bigint): Promise<StateResponse> {
     const cfg = this.c.d.config;
     const px = await withRetry(() => readOracle(this.c));
     const oW = oracleWad(cfg, px.oracleRaw || 1n);
@@ -343,7 +353,6 @@ export class Arena implements ArenaApi {
       mark: { raw: px.markRaw.toString(), price: rawToPrice(px.markRaw, cfg.szDecimals) },
       pools,
     };
-    this.stateCache = { block, value };
     return value;
   }
 

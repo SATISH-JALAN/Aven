@@ -9,7 +9,7 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P0 bootstrap | ✅ done | `5934448`, aligned in `f94f3b5` |
 | P1 recon | ✅ done; gate passed (precompile = info API after scaling) | `2a56c3b`; details in [recon.md](recon.md) |
 | Repo restructure | ✅ done 2026-11-06 | backend/, contracts/, frontend/; AGENTS.md, MEMORY.md, FLOW.md |
-| Backend build loop | ▶ running, see [PLAN.md](PLAN.md) | started 2026-11-06 |
+| Backend build loop | ✅ finished 2026-11-06 | see [PLAN.md](PLAN.md) |
 | P2 AvenFairValue | ✅ done 2026-11-06 (PLAN 1.1): 34 unit + fuzz tests (1,000 runs each) | `contracts/src/AvenFairValue.sol` |
 | P3 mocks + AvenHook | ✅ done 2026-11-06 (PLAN 1.2–1.4): 20 integration tests × 2 token orders, incl. all nine §9 named tests; 3 mutation checks caught | `contracts/src/AvenHook.sol` (9,337 B runtime) |
 | P4a TS port + differential | ✅ done 2026-11-06 (PLAN 2.1–2.3): **10,000/10,000 fee + 2,000/2,000 anchor vectors match exactly**; 2 mutation checks caught | `pnpm prove:diff` (~45 s) |
@@ -23,7 +23,13 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P9 verify CLI + proofs | ✅ done 2026-11-06 (PLAN 6.1): `pnpm verify <tx>` / `--all`; `pnpm proofs --e2e` writes docs/PROOFS.md. Forge 88/0/4; diff 10k/10k + 2k/2k; local verify 2/2. Hook overhead 46,877 gas. **Arena e2e: Aven arb fee 8,700 vs 3,000; LPs kept $64.33 more** | docs/PROOFS.md |
 | P11 invariants + security | ✅ done 2026-11-06 (PLAN 6.2–6.3): I1/I2/I3/I4/I9 hold over 64 runs × 64 calls (0 reverts); 3 mutations each caught by the matching invariant; `.gas-snapshot` baseline; docs/SECURITY.md maps every §10 threat to a test or limit. Forge **90 passed / 0 failed / 4 skipped** | `contracts/test/invariant/AvenInvariant.t.sol` |
 | P13 demo | ✅ done 2026-11-06 (PLAN 6.4): `pnpm demo` (any Arena) and `pnpm --filter @aven/arena demo:local` (local chain, in-process Arena over HTTP). The local run gave Aven arb fee 8,700 vs 3,000 and LPs kept $64.33 more; verify MATCH. `frontend/public/arena-fallback.json` holds the LOCAL recording; re-record on testnet. docs/DEMO.md has the script and video list | — |
-| **Phase 7 load testing** | ⏭ next (PLAN 7.1–7.4) | — |
+| Phase 7 load testing | ✅ done 2026-11-06 (PLAN 7.1–7.4).
+  - Foundry: 2,318 swaps / 250 blocks with broken reads, 0 reverts or violations; ~16 Aven swaps fit a 3M small block.
+  - Burst: 280/280 swaps verified.
+  - API: ≤ 59 ms p99 at ~1.6–2.7k req/s, 0 errors; 200 SSE clients, no leak; rate limit exact.
+  - Stress: 344/344 verified, 0 nonce errors.
+  - **3 bugs found and fixed** (viem block-number cache, 4 s receipt polling, /state thundering herd), each with a mutation-checked regression test. | docs/LOADTEST.md |
+| **Backend plan** | ✅ every step done or BLOCKED on Sayan (testnet deploy) | docs/PLAN.md |
 | P3–P13 | not started | — |
 
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`40f5174`). **Local commits after that are not pushed** until Sayan says so.
@@ -76,6 +82,13 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- **viem defaults that hurt a 1 s-block chain:**
+  - `getBlockNumber()` is cached ~4 s: pass `cacheTime: 0` on clients that poll or scan to head;
+  - `waitForTransactionReceipt` polls at `pollingInterval` (4 s default): set 250 ms.
+  - Both were found by the load test.
+- A per-block cache that is only filled after the computation finishes still stampedes: cache the in-flight promise (single-flight).
+- `vm.pauseGasMetering()` plus a mock that burns "all gas" loops forever. Resume metering around any call that can burn gas.
 
 - Foundry persists failing invariant sequences (`cache/invariant/failures`) and replays them first. An `afterInvariant` assertion like "swaps > 0" then fails on a short replayed sequence. Keep non-vacuity in a deterministic test and only log counters in `afterInvariant`.
 - Invariant handler sizing matters: swaps too big for the pool's ~21-base virtual depth drift it >20% from the oracle, so most swaps hit GAP_TOO_LARGE and the clamped OK path goes under-tested.

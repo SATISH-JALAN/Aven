@@ -96,7 +96,7 @@ export async function startLocalChain(opts: LocalChainOptions = {}): Promise<Loc
   };
   try {
     await waitForRpc(rpcUrl);
-    const publicClient = createPublicClient({ chain: foundry, transport: http(rpcUrl) }) as PublicClient;
+    const publicClient = createPublicClient({ chain: foundry, transport: http(rpcUrl), cacheTime: 0 }) as PublicClient;
     const [deployer, bot, shock] = [accountAt(0), accountAt(1), accountAt(2)];
     const wallet = (a: HDAccount) => createWalletClient({ account: a, chain: foundry, transport: http(rpcUrl) });
 

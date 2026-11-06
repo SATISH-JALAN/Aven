@@ -53,7 +53,7 @@ export interface Chain {
   keys: { aven: PoolKey; control: PoolKey };
 }
 
-export function makeChain(opts: { rpcUrl: string; chainId: number; botPk: Hex; shockPk: Hex; deployments: Deployments }): Chain {
+export function makeChain(opts: { rpcUrl: string; chainId: number; botPk: Hex; shockPk: Hex; deployments: Deployments; pollingIntervalMs?: number }): Chain {
   const chain = defineChain({
     id: opts.chainId,
     name: opts.chainId === 998 ? "HyperEVM testnet" : `chain ${opts.chainId}`,
@@ -61,10 +61,14 @@ export function makeChain(opts: { rpcUrl: string; chainId: number; botPk: Hex; s
     rpcUrls: { default: { http: [opts.rpcUrl] } },
   });
   const transport = http(opts.rpcUrl, { retryCount: 2, timeout: 15_000 });
-  const publicClient = createPublicClient({ chain, transport }) as PublicClient;
+  // cacheTime 0: the poller asks for the head every POLL_MS (500 ms); viem's default ~4 s cache made it see only about
+  // 1 block in 4 (10 bot iterations over 74 blocks in the PLAN 7.2 load test).
+  // pollingInterval 250 ms: waitForTransactionReceipt polls at this rate. viem's 4 s default made every bot trade wait
+  // up to 4 s for a 1 s block, so a two-pool iteration took 8 s+ (PLAN 7.2 load test).
+  const publicClient = createPublicClient({ chain, transport, cacheTime: 0, pollingInterval: opts.pollingIntervalMs ?? 250 }) as PublicClient;
   const mk = (pk: Hex) => {
     const account = privateKeyToAccount(pk, { nonceManager });
-    return { account, wallet: createWalletClient({ account, chain, transport }) };
+    return { account, wallet: createWalletClient({ account, chain, transport, pollingInterval: opts.pollingIntervalMs ?? 250 }) };
   };
   const d = opts.deployments;
   return {

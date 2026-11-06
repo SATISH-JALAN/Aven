@@ -30,6 +30,7 @@ Which files in this repo were written by AI (Claude Code, model Claude Opus 5.5)
 | `backend/core/bin/verify.ts`, `backend/scripts/proofs.ts`, `docs/PROOFS.md` (generated) | AI | P9 verify CLI and proofs report |
 | `contracts/test/invariant/AvenInvariant.t.sol`, `contracts/.gas-snapshot` (generated), `docs/SECURITY.md` | AI | P11 invariant suite, gas baseline, security notes |
 | `backend/scripts/demo.ts`, `backend/scripts/src/demo.ts`, `backend/arena/scripts/demo-local.ts`, `docs/DEMO.md`, `frontend/public/arena-fallback.json` (generated) | AI | P13 demo run, fallback recording, demo script |
+| `contracts/test/load/OnchainLoad.t.sol`, `backend/arena/scripts/loadtest.ts`, `backend/arena/scripts/loadtest-report.ts`, `backend/arena/test/{chain,state}.test.ts`, `docs/LOADTEST.md` (generated), `backend/data/load/*.json` (generated) | AI | Phase 7 load testing, regression tests, report |
 | `docs/PLAN.md` | AI | Backend build plan, ticked off per step |
 | `docs/FLOW.md`, `docs/MEMORY.md` | AI | Code flow and project memory, kept in sync with changes |
 | `docs/recon.md` | AI | P1. Facts from installed deps, official docs and live RPC/API output; sources inline |

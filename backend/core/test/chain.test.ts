@@ -5,7 +5,7 @@ import { parseDeployments } from "../src/addresses.ts";
 import { Q96, defaultParams, type Config } from "../src/fee.ts";
 import { decodeSlot0, poolId, poolStateSlot } from "../src/pool.ts";
 import { decodePerpAssetInfo, readOracleMark } from "../src/precompiles.ts";
-import { verifyLogs } from "../src/verify.ts";
+import { verifyAll, verifyLogs } from "../src/verify.ts";
 
 describe("pool", () => {
   const key = {
@@ -135,5 +135,23 @@ describe("verify (§7.3)", () => {
   });
   it("ignores logs from other addresses", () => {
     expect(verifyLogs([{ ...feeLog(9_000), address: A(77) }, swapLog(9_000)], opts)).toEqual([]);
+  });
+});
+
+describe("verifyAll (load-test regression)", () => {
+  it("asks for the live head (cacheTime 0), never a cached block number", async () => {
+    const calls: unknown[] = [];
+    const client = {
+      getBlockNumber: async (args?: unknown) => {
+        calls.push(args);
+        return 10n;
+      },
+      getLogs: async () => [],
+      getTransactionReceipt: async () => ({ logs: [] }),
+      readContract: async () => `0x${"00".repeat(32)}`,
+    };
+    const r = await verifyAll(client as never, { hook: A(1), poolManager: A(2), avenPoolId: `0x${"11".repeat(32)}`, config: { perpIndex: 0, szDecimals: 0, baseIsToken0: true, decimals0: 18, decimals1: 18 }, params: defaultParams() }, { fromBlock: 1n });
+    expect(r.count).toBe(0);
+    expect(calls).toEqual([{ cacheTime: 0 }]);
   });
 });

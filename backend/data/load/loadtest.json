@@ -1,0 +1,181 @@
+{
+  "startedAt": "2026-11-06T01:06:44.807Z",
+  "onchainBurst": {
+    "sent": 280,
+    "sendMs": 1793,
+    "success": 280,
+    "reverted": 0,
+    "blocks": 3,
+    "maxSwapsPerBlock": 166,
+    "maxBlockGasOfSwaps": 27236997,
+    "blocksWithMoreThanOneTopPrice": 0,
+    "verify": {
+      "events": 280,
+      "checkA": 280,
+      "checkB": 280,
+      "mismatches": 0
+    }
+  },
+  "apiLoad": {
+    "routes": {
+      "/health": {
+        "reqPerSec": 2477,
+        "p50": 17,
+        "p97_5": 42,
+        "p99": 50,
+        "max": 105,
+        "errors": 0,
+        "timeouts": 0,
+        "non2xx": 0,
+        "total": 37150
+      },
+      "/config": {
+        "reqPerSec": 2685,
+        "p50": 17,
+        "p97_5": 35,
+        "p99": 43,
+        "max": 83,
+        "errors": 0,
+        "timeouts": 0,
+        "non2xx": 0,
+        "total": 40271
+      },
+      "/stats": {
+        "reqPerSec": 2382,
+        "p50": 18,
+        "p97_5": 42,
+        "p99": 50,
+        "max": 73,
+        "errors": 0,
+        "timeouts": 0,
+        "non2xx": 0,
+        "total": 35721
+      },
+      "/trades?limit=50": {
+        "reqPerSec": 1631,
+        "p50": 29,
+        "p97_5": 52,
+        "p99": 58,
+        "max": 85,
+        "errors": 0,
+        "timeouts": 0,
+        "non2xx": 0,
+        "total": 24461
+      },
+      "/state": {
+        "reqPerSec": 2710,
+        "p50": 16,
+        "p97_5": 36,
+        "p99": 59,
+        "max": 76,
+        "errors": 0,
+        "timeouts": 0,
+        "non2xx": 0,
+        "total": 40641
+      }
+    },
+    "sse": {
+      "clients": 200,
+      "subscribersDuringLoad": 200,
+      "subscribersAfterClose": 0,
+      "minEventsPerClient": 127,
+      "clientErrors": 0
+    },
+    "bot": {
+      "chainBlocksDuringLoad": 75,
+      "botIterationsDuringLoad": 49,
+      "lastRunBlock": 320,
+      "headAfter": 321,
+      "arbTradesDuringLoad": 44
+    },
+    "rateLimit": {
+      "sent": 60,
+      "ok": 30,
+      "limited": 30
+    },
+    "memoryMB": {
+      "heapBefore": 49.5,
+      "heapAfter": 53.5,
+      "rssBefore": 182.2,
+      "rssAfter": 323.7,
+      "gcExposed": true
+    }
+  },
+  "stress": {
+    "shocks": [
+      {
+        "phase": "healthy",
+        "ok": false,
+        "error": "shock swap reverted on aven: 0x4e1b31ee1273655e8cf8257998bf93f58e5a77101bf94f45ebd74b649bd4a575"
+      },
+      {
+        "phase": "flaky",
+        "ok": false,
+        "error": "The request took too long to respond."
+      },
+      {
+        "phase": "flaky",
+        "ok": true
+      },
+      {
+        "phase": "flaky",
+        "ok": true
+      },
+      {
+        "phase": "down",
+        "ok": false,
+        "error": "oracle read failed"
+      },
+      {
+        "phase": "healthy",
+        "ok": true
+      },
+      {
+        "phase": "healthy",
+        "ok": true
+      }
+    ],
+    "proxy": {
+      "requests": 3055,
+      "failed503": 30,
+      "hung": 12
+    },
+    "health": {
+      "ok": 228,
+      "failed": 0
+    },
+    "loop": {
+      "iterations": 85,
+      "iterationErrors": 11,
+      "pollErrors": 31
+    },
+    "arbTradesAfterRecovery": 4,
+    "distinctErrorsSeen": [
+      "bot: swap reverted: 0x26bb735da457320b73577b9402a421b55f12f49b2e0f27ed276006ba52cda853",
+      "bot: swap reverted: 0x4c1b9200f9b8dc2084c27ca91109effd2647eceaaf072911513e968120676a17",
+      "bot: swap reverted: 0x05d076347a18f715360e694a5d728febb35f889057fdb98b5f409e7e4117b85e",
+      "bot: swap reverted: 0x1bdedbe0b95f3c492223aecbc0f884561e463e891c32dcaf7a76b275bedf34da",
+      "bot: swap reverted: 0x35acf73937e506a0e247ba3f8b532e1d31b377cb7dde952cc7a3f18ff8e1228b",
+      "bot: swap reverted: 0xf74324ae9c7dce26703b19b3e72b8084ffbd976972dce36180c4abe623bb3467",
+      "bot: swap reverted: 0xf06586eb0653327b42fe0a6fbaa0d8df258f74873b94d059970f44c7c1201529",
+      "bot: swap reverted: 0xdb09524247d817850578d11d0474cd7f83749d579f718f00a392d01d05607552",
+      "bot: swap reverted: 0xdb578fb73d8d86429cc0036555a5b2c89a4064c39d7db3f4367a3d20891dff43",
+      "bot: swap reverted: 0x249e8cd3ae2a85f5564b8e2500544f4ab33ef3708b79d0bb9da6a68ae262ce2b",
+      "bot: swap reverted: 0x563948e82cfa59032d32f2dbef3b48c201a39ba076337e1817be7b01f1a22080",
+      "poll: HTTP request failed."
+    ],
+    "nonceErrors": 0,
+    "verifyAllSinceStart": {
+      "events": 344,
+      "checkA": 344,
+      "checkB": 344,
+      "mismatches": 0
+    },
+    "autoPause": {
+      "enabledAfter": false,
+      "lastError": "auto-paused: bot native balance 9999.987144568900809933 < 1000000000"
+    },
+    "durationSec": 118
+  },
+  "finishedAt": "2026-11-06T01:14:15.450Z"
+}

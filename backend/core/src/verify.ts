@@ -180,7 +180,9 @@ export async function verifyAll(
   t: VerifyTarget,
   opts: { fromBlock: bigint; toBlock?: bigint; chunk?: bigint; onProgress?: (b: bigint) => void },
 ): Promise<{ count: number; checkA: number; checkB: number; mismatches: VerifyResult[]; txs: number }> {
-  const to = opts.toBlock ?? (await client.getBlockNumber());
+  // cacheTime 0: viem caches getBlockNumber (~4 s) by default, which made `verify --all` right after a burst miss
+  // the newest blocks (found by the PLAN 7.1 load test).
+  const to = opts.toBlock ?? (await client.getBlockNumber({ cacheTime: 0 }));
   const chunk = opts.chunk ?? 50n;
   const txs = new Set<Hex>();
   for (let from = opts.fromBlock; from <= to; from += chunk) {
