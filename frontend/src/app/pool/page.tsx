@@ -9,8 +9,9 @@ import { UsePageMode } from "@/components/shell";
 import { Card, Details, PageHero, SectionHead, TxLink } from "@/components/ui";
 import { useArena } from "@/lib/arena";
 import { useBlockNumber, publicClient } from "@/lib/chain";
-import { bps, num, pipsPct, signedUsd } from "@/lib/format";
+import { bps, num, pipsPct, signedUsd, timeUtc } from "@/lib/format";
 import { planLiquidity, useAddLiquidity } from "@/lib/liquidity";
+import { poolActivity, pushState } from "@/lib/pressure";
 import { POOLS, type ReplayFile } from "@/lib/replay";
 import { feeFor } from "@/lib/swap";
 import type { PoolName } from "@/lib/types";
@@ -99,11 +100,55 @@ function PoolTile({ which }: { which: PoolName }) {
       </div>
       <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
         <Kv k="Price" v={p ? num(p.price, 2) : "—"} />
-        <Kv k="Gap vs oracle" v={p ? bps(p.gapBps) : "—"} warn={!!p && Math.abs(p.gapBps) >= 30} />
+        <Kv k="Gap vs oracle" v={p ? bps(p.gapBps) : "—"} warn={!!p && pushState(p.gapBps).pushed} />
         <Kv k="Fee · buy" v={buy === null ? "—" : pipsPct(buy)} />
         <Kv k="Fee · sell" v={sell === null ? "—" : pipsPct(sell)} />
       </dl>
+      <PushStatus which={which} />
     </Card>
+  );
+}
+
+/** Whether this pool is pushed off the oracle right now, what last pushed it, and the bot's last arb back. */
+function PushStatus({ which }: { which: PoolName }) {
+  const a = useArena();
+  const p = a.state?.pools[which];
+  const { lastPush, lastArb } = useMemo(() => poolActivity(which, a.trades), [which, a.trades]);
+  if (!p) return null;
+  const s = pushState(p.gapBps);
+  return (
+    <div className="mt-5 space-y-2 border-t border-line pt-4 text-[13px]">
+      <p className="flex items-center gap-2">
+        <span className={`h-2 w-2 rounded-full ${s.pushed ? "bg-warn" : "bg-good"}`} aria-hidden />
+        <span className={s.pushed ? "text-warn" : "text-good"}>{s.label}</span>
+      </p>
+      <p className="text-muted">
+        Last push:{" "}
+        {lastPush ? (
+          <>
+            <span className="text-ink-2">{lastPush.direction === "buyBase" ? "buy" : "sell"} at {timeUtc(lastPush.ts)} UTC</span> · <TxLink hash={lastPush.txHash} />
+          </>
+        ) : (
+          "none yet"
+        )}
+      </p>
+      <p className="text-muted">
+        Last arb back:{" "}
+        {lastArb ? (
+          <>
+            <span className="text-ink-2">
+              {timeUtc(lastArb.ts)} UTC, paid {pipsPct(lastArb.feePips)}
+            </span>{" "}
+            · <TxLink hash={lastArb.txHash} />
+          </>
+        ) : (
+          "none yet"
+        )}
+      </p>
+      {which === "aven" && s.pushed && lastArb && lastPush && lastArb.ts > lastPush.ts && (
+        <p className="text-[11px] text-faint">The bot only arbs while the gap beats the fee, so part of the gap stays with the Aven LPs.</p>
+      )}
+    </div>
   );
 }
 
