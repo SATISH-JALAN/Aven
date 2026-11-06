@@ -70,11 +70,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     <PrivyProvider
       appId={config.privyAppId}
       config={{
-        appearance: { theme: "#111113", accentColor: "#199e70", walletChainType: "ethereum-only", showWalletLoginFirst: true },
-        loginMethods: ["wallet", "email"],
+        appearance: { theme: "#111113", accentColor: "#199e70", walletChainType: "ethereum-only", showWalletLoginFirst: true, landingHeader: "Connect a wallet" },
+        loginMethods: ["wallet"],
         defaultChain: appChain,
         supportedChains: [appChain],
-        embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
       }}
     >
       <PrivyBridge>{children}</PrivyBridge>
@@ -88,17 +87,17 @@ export function WalletButton() {
     return (
       <button
         disabled
-        title="Login is off: set NEXT_PUBLIC_PRIVY_APP_ID (dashboard.privy.io) to enable Privy."
+        title="Wallet connect is off: set NEXT_PUBLIC_PRIVY_APP_ID (dashboard.privy.io) to enable it."
         className="rounded-full border border-line px-3.5 py-1.5 text-xs text-faint"
       >
-        Login off
+        Wallet off
       </button>
     );
   if (!w.ready) return <span className="h-7 w-20 animate-pulse rounded-full bg-raised" />;
   if (!w.authenticated)
     return (
       <button onClick={w.login} className="btn btn-ghost btn-sm">
-        Log in
+        Connect wallet
       </button>
     );
   return (
@@ -116,7 +115,7 @@ export function WalletButton() {
         {w.address ? shortHex(w.address) : "no wallet"}
       </span>
       <button onClick={() => void w.logout()} className="text-xs text-muted transition hover:text-ink">
-        Log out
+        Disconnect
       </button>
     </div>
   );
