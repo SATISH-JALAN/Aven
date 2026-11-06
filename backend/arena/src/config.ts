@@ -5,14 +5,19 @@ import { z } from "zod";
 
 export const backendDir = fileURLToPath(new URL("../../", import.meta.url));
 
-/** Minimal .env loader (KEY=VALUE lines; existing process env wins). Keys are never logged. */
+/**
+ * Minimal .env loader (KEY=VALUE lines; existing process env wins). Keys are never logged. A trailing ` # comment`
+ * after an unquoted value is dropped (so `NATIVE_USD=78  # HYPE price` reads as 78); quoted values are kept as-is.
+ */
 export function loadDotEnv(path = `${backendDir}.env`): void {
   if (!existsSync(path)) return;
   for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
     const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
     if (!m || line.trimStart().startsWith("#")) continue;
     const [, k, v] = m;
-    if (process.env[k!] === undefined) process.env[k!] = v!.replace(/^["']|["']$/g, "");
+    const quoted = /^(["']).*\1$/.test(v!);
+    const value = quoted ? v!.slice(1, -1) : v!.replace(/\s+#.*$/, "");
+    if (process.env[k!] === undefined) process.env[k!] = value;
   }
 }
 

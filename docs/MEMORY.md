@@ -104,7 +104,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 
 0. **Mainnet deploy: ✅ DONE 2026-11-06** (DEPLOYMENTS.md §M.5). Next:
    - **Rotate the key.** It was pasted into chat. Move anything of value out of `0x4412…34Ee`, and use it for demo funds only.
-   - **Arena on mainnet** needs a dedicated RPC (below) and `backend/.env` with `BOT_PK`=`SHOCK_PK`= that key, `CHAIN_ID=999`, `NATIVE_USD`, `MAX_GAS_PRICE_GWEI=2` and a 24+ character admin token. Sayan should write the key into the file himself, not paste it in chat.
+   - **Arena on mainnet** needs a dedicated RPC (Alchemy or Chainstack free tier, ~25 rps; `POLL_MS=2000`, DEPLOYMENTS.md §M.4b). `backend/.env` is pre-created with every setting; Sayan fills in the RPC URL and the key himself. It needs with `BOT_PK`=`SHOCK_PK`= that key, `CHAIN_ID=999`, `NATIVE_USD`, `MAX_GAS_PRICE_GWEI=2` and a 24+ character admin token. Sayan should write the key into the file himself, not paste it in chat.
    - **Bot testing:** 0.0165 HYPE left, about 60 bot swaps at median gas before the 0.01 auto-pause. Top up ~0.08 HYPE for the full 200-swap test.
 0-old. **Mainnet deploy (Sayan), original plan:**
    - get a **dedicated HyperEVM RPC** that handles ~30–40 requests/s;
@@ -126,6 +126,8 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- **`.env` trailing comments.** Our loader used to keep `  # comment` as part of the value, so `NATIVE_USD=78  # price` failed to parse. Since 2026-11-06 it strips a trailing ` # …` from unquoted values (test `loadDotEnv`). Keep comments on their own lines anyway.
 
 - **The HyperEVM RPC's `eth_feeHistory` returns only 5 blocks, whatever count you ask for.** A "1,024-block" fee window built on it is really 5 blocks. Sample block headers to measure gas. Mainnet base fee measured 0.10–10.8 gwei within 3 h: always cap `maxFeePerGas`.
 

@@ -109,7 +109,7 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 ## 5. Arena service (live demo bot) ✅ `backend/arena`
 
 - **Entry:** `pnpm --filter @aven/arena start` (or `dev`) → `src/main.ts`:
-  - `loadDotEnv` + `loadConfig` (zod: `src/config.ts`);
+  - `loadDotEnv` (strips trailing ` # comments` from unquoted values) + `loadConfig` (zod: `src/config.ts`);
   - `loadDeployments(CHAIN_ID)`;
   - `makeChain` (`src/chain.ts`: viem with a nonce manager per wallet);
   - `new Arena(...).start()` (`src/arena.ts`: reloads `backend/data/arena/trades.jsonl`, approves the routers for bot and shock, starts the poller);

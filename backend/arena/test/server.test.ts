@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { ArenaApi, ArenaEvent } from "../src/arena.ts";
-import { configSchema } from "../src/config.ts";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { configSchema, loadDotEnv } from "../src/config.ts";
 import { makeApp } from "../src/server.ts";
 import type { Breakdown, StateResponse } from "../src/types.ts";
 
@@ -234,3 +237,14 @@ describe("config (pre-mainnet audit)", () => {
     expect(configSchema.parse({ ...base, ARENA_TRUST_PROXY: "no" }).ARENA_TRUST_PROXY).toBe(false);
   });
 });
+
+describe("loadDotEnv", () => {
+  it("drops a trailing ' # comment' on unquoted values, keeps quoted values and '#' inside values", () => {
+    const f = join(mkdtempSync(join(tmpdir(), "aven-env-")), ".env");
+    writeFileSync(f, ["ZZ_A=78                # HYPE price", "ZZ_B='keep # this'", "ZZ_C=abc#def", "# ZZ_D=1", "ZZ_E=2"].join("\n"));
+    for (const k of ["ZZ_A", "ZZ_B", "ZZ_C", "ZZ_D", "ZZ_E"]) delete process.env[k];
+    loadDotEnv(f);
+    expect([process.env.ZZ_A, process.env.ZZ_B, process.env.ZZ_C, process.env.ZZ_D, process.env.ZZ_E]).toEqual(["78", "keep # this", "abc#def", undefined, "2"]);
+  });
+});
+

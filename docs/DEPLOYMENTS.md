@@ -133,6 +133,30 @@ cd .. && CHAIN_ID=999 HYPEREVM_RPC=<RPC> pnpm verify <each Aven smoke tx>   # MA
   - update MEMORY.md;
   - remove `DEPLOYER_PK` from `contracts/.env`.
 
+### M.4b Run the Arena on mainnet
+
+1. **Get a dedicated HyperEVM mainnet RPC URL** (free tiers, as the vendors state them, 2026-11-06):
+   - Alchemy: free, 25 requests/s, 30M compute units a month. https://www.alchemy.com/hyperevm
+   - Chainstack: free Developer plan, ~25 requests/s, 3M requests a month. https://chainstack.com/hyperliquid-rpc-node/
+   - QuickNode: trial only.
+
+   Create a HyperEVM **mainnet** endpoint and copy its HTTPS URL. Check it before use:
+
+   ```bash
+   cast chain-id --rpc-url <URL>   # 999
+   cast call 0x0000000000000000000000000000000000000807 0x0000000000000000000000000000000000000000000000000000000000000001 --rpc-url <URL>   # non-zero
+   ```
+2. **`backend/.env` already exists** (gitignored) with every setting for this deployment:
+   - chain 999, `NATIVE_USD=78`, `MAX_GAS_PRICE_GWEI=2`;
+   - pool-sized trade caps;
+   - `MIN_NATIVE_BALANCE=0.005`;
+   - `POLL_MS=2000` (measured ~17.5 requests/s at peak, under a 25 rps free tier);
+   - a generated 48-character admin token.
+
+   Fill in the three `PASTE_…` lines **yourself, in the file, not in chat:** `HYPEREVM_RPC` = the URL; `BOT_PK` = `SHOCK_PK` = `0x` + the key of `0x4412…34Ee`. The Arena refuses to start until they're real.
+3. **Start it:** `pnpm --filter @aven/arena start`. Check with `curl http://localhost:8787/health` (`chainId` should be 999).
+4. **Stop it:** Ctrl+C when not demoing. A free tier's monthly quota lasts days of continuous running, not weeks.
+
 ### M.5 Deployed (chain 999) — 2026-11-06, block 50,557,638
 
 **23 transactions, all succeeded; total cost 0.001044 HYPE (~$0.08)** at 0.10–0.18 gwei. Deployer = bot = shock = `0x4412A5313aFd9b6f447EcE820Ce55a30A20034Ee` (one account). Record: `contracts/deployments/999.json`.

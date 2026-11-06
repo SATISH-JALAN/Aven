@@ -288,3 +288,11 @@ Asked which account should deploy (the pasted key controls `0x4412…34Ee`, the 
 Use 0x4412…34Ee
 ```
 
+---
+
+## #25 — 2026-11-06T17:20:00Z (approx.) — Dedicated RPC and backend/.env
+
+```text
+how to get the dedicated hyperevm rpc and where to getthe backend/.env all that u mentioned
+```
+
