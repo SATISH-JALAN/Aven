@@ -29,6 +29,11 @@ The running record of status, decisions and open items. It saves you from re-rea
   - API: ≤ 71 ms p99 at ~1.6–2.7k req/s, 0 errors; 200 SSE clients, no leak; rate limit exact.
   - Stress: 348/348 verified, 0 nonce errors; bot 64 iterations over 75 blocks under API load.
   - **4 bugs found and fixed** (viem block-number cache, 4 s receipt polling, /state thundering herd, out of gas on the first swap of a block), each with a regression test. | docs/LOADTEST.md |
+| **Production check (2026-11-07, Om)** | ✅ All green, nothing sent on chain.
+  - Builds and tests: typecheck in all 4 packages; forge 90/0/5; TS tests; web build (8 routes); Arena e2e 2/2; `check:frontend` 30/30 (`CHECK_PORT=18797` on this Windows machine, see Gotchas).
+  - **`pnpm health` on 999 passes**: hook code, bits, config and params match `999.json`; Uniswap's PoolManager with protocol fee controller 0x0; real oracle/mark reads; both pools initialized; Aven LP fee 0 (dynamic); the 4 recorded Aven txs verify MATCH A + B.
+  - **Uniswap's own routers reach the Aven pool:** V4Quoter quotes both pools, and Universal Router 2.0 and 2.1.2 (`execute(V4_SWAP)`, simulated with Permit2 allowance overrides) deliver exactly the quote on both pools, both directions.
+  - **Frontend:** push status per pool (Pool page tiles; plain pool gap on the Trade bar); default chain is now 999 + the public mainnet RPC (was 998 testnet); `src/config/deployments.json` holds 999 (was `{}`). | `backend/scripts/health.ts`, `frontend/src/lib/pressure.ts` |
 | **Mainnet recording** | ✅ 2026-11-07: `frontend/public/arena-fallback.json` now holds a HyperEVM **mainnet** run, labelled with the chain.
   - Shock 194 bp → Aven 10,000 pips (ceiling) vs 3,000; LPs kept $124.91 more; verify MATCH.
   - `docs/DEMO.md` has the mainnet numbers and a one-take video plan. | `backend/scripts/demo.ts` labels the chain |
@@ -65,6 +70,11 @@ The running record of status, decisions and open items. It saves you from re-rea
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`4978cd0`), on Sayan's "push". **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
+
+- **2026-11-07: Wallet only, "Connect wallet" wording.** Privy `loginMethods` is `["wallet"]` (email sign-in and the embedded-wallet-on-login option removed), and every "Log in" / "Log out" / "Login off" label now reads "Connect wallet" / "Disconnect" / "Wallet off"; the Privy modal title is "Connect a wallet" (`appearance.landingHeader`). Checked in headless Brave on localhost:3000 with the app ID: every page shows "Connect wallet", no console errors, and the modal lists MetaMask, Coinbase Wallet, Rainbow and Other wallets only. Reason (Om): Aven is a web3 app, so users connect their own wallet.
+- **2026-11-07: Swaps stay on `PoolSwapTest` → Uniswap's PoolManager; no other DEX.** Every swap (web app, bot, shock) goes through our `PoolSwapTest` into Uniswap's canonical v4 PoolManager, which calls AvenHook. `pnpm health` proves Uniswap's own V4Quoter and Universal Router (2.0, 2.1.2) also route the Aven pool. Other HyperEVM DEXs were not added: `aETH`/`aUSD` only have liquidity in our two pools, another DEX wouldn't run the hook, and AGENTS.md §6 rules out extra integrations. Moving the web app's swap path to the Universal Router (Permit2 approvals) is possible but was not done right before submission.
+- **2026-11-07: "Pushed" = |pool price − oracle| ≥ 30 bp** in the web app (`PUSH_BPS`, the threshold the gap colour already used); the health CLI reports at 25 bp. The last push is the newest non-bot trade on the pool (shock or wallet swap); the last arb is the newest bot trade.
+- **2026-11-07: Web app defaults to mainnet** (`NEXT_PUBLIC_CHAIN_ID` 999, `NEXT_PUBLIC_RPC` the public mainnet RPC), because that's where Aven is deployed. Wallet swaps still need the Arena (LIVE mode), since quotes and fee previews come from its live state.
 
 - **2026-11-07: Frontend thread merged with Sayan's mainnet work** (merge commit, not a rebase: every frontend commit touched the same docs). Only docs conflicted. The two prompt logs had clashing numbers, so the frontend thread is listed as **F13–F28** after Sayan's #13–#27. The frontend test pinned to the old local recording (8,700 pips) now pins the mainnet recording (10,000, ceiling; recomputed = on-chain). **Rule from F28: no backend or contract change without a reviewed plan; never send mainnet txs from the frontend machine** (it holds no keys).
 
@@ -175,7 +185,7 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
    - run §M.4.
 0a. **Decide C-5 (SECURITY.md §6.2):** keep open-mint demo tokens (anyone can swap, including judges, but also grief the pools) or deploy owner-mint demo tokens.
 0b. **Frontend (teammate):**
-   - chain **999** and badge **"Live mainnet"**;
+   - chain **999**: ✅ the default since 2026-11-07; badge **"Live mainnet"** still open;
    - handle **429** on `/verify/:tx` (per-client limit) and **503** on `/stream` (client cap: retry with backoff);
    - put a read RPC in `NEXT_PUBLIC_RPC`. The public endpoint is OK for a few reads; the dedicated one if traffic grows.
 0c. Testnet (998) stays blocked: no testnet HYPE (DEPLOYMENTS.md §T).
@@ -189,6 +199,10 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - `compute` evaluates `|a−b|·10000/oracle` as `FullMath.mulDiv(|a−b|, 10000, oracle)`. The floor result is identical; it just can't overflow for extreme pool prices.
 
 ## Gotchas learned
+
+- **Windows reserves port ranges** (Hyper-V/WinNAT): on the 2026-11-07 machine `netsh int ipv4 show excludedportrange protocol=tcp` lists 8699–8798, which contains the Arena default 8787 and `check:frontend`'s 8797 (`listen EACCES`). Use `ARENA_PORT` / `CHECK_PORT` / `DEMO_PORT` outside the ranges.
+- **Uniswap's Universal Routers on 999 (2.0 and 2.1.2) take `ExactInputSingleParams` with `minHopPriceX36`**, the layout in our pinned v4-periphery; the older layout without it reverts. Found by simulating both in `pnpm health`.
+- **Simulating a Universal Router swap without approvals:** `eth_call` state overrides work on the public HyperEVM RPC. solmate ERC20 `allowance` is mapping slot 4 (`balanceOf` slot 3); Permit2 `allowance[owner][token][spender]` is slot 1, packed amount | expiration << 160 | nonce << 208 (checked against Permit2's own getter).
 
 - **`forge test` on the frontend laptop (forge 1.8.1, 2026-11-07): `test_constructor_rejectsBadConfig` fails with OutOfGas** inside `HookMiner.find` on its third case (89 pass / 1 fail / 5 skip). The constructor reverts correctly on the cases before it; the gas goes on salt mining. Test and `foundry.toml` are unchanged since it passed, so it's likely the forge version. Not fixed (contracts are Sayan's): he should run it with his forge and compare versions.
 
