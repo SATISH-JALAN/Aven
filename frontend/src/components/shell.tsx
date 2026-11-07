@@ -47,6 +47,8 @@ const LINKS = [
   { href: "/trade", label: "Trade" },
   { href: "/swap", label: "Swap" },
   { href: "/pool", label: "Pool" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/portfolio", label: "Portfolio" },
   { href: "/replay", label: "Replay" },
   { href: "/docs", label: "Docs" },
 ];
@@ -219,6 +221,8 @@ const COLS = [
       ["Trade", "/trade"],
       ["Swap", "/swap"],
       ["Pool", "/pool"],
+      ["Dashboard", "/dashboard"],
+      ["Portfolio", "/portfolio"],
       ["Replay", "/replay"],
     ],
   },
