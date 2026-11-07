@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from "react";
 import { createPublicClient, defineChain, getAbiItem, http, type Hex, type PublicClient } from "viem";
 import { avenHookAbi } from "@aven/core/abi";
-import { verifyAll, verifyTx, type VerifyTarget } from "@aven/core/verify";
+import { verifyTx, type VerifyResult, type VerifyTarget } from "@aven/core/verify";
 import { config, type Deployments } from "@/config";
 
 export const appChain = defineChain({
@@ -32,6 +32,8 @@ let rpcState: RpcStatus = { block: null, error: null, updatedAt: null };
 const rpcListeners = new Set<() => void>();
 let rpcTimer: ReturnType<typeof setInterval> | null = null;
 async function rpcTick() {
+  // Hidden tabs don't poll: the public RPC's 100 requests/min limit is per IP, shared by every open tab.
+  if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
   try {
     const b = await publicClient().getBlockNumber({ cacheTime: 0 });
     rpcState = { block: b, error: null, updatedAt: Date.now() };
@@ -67,17 +69,32 @@ export function verifyTarget(d: Deployments): VerifyTarget {
 
 export const verifyTxInBrowser = (tx: Hex, d: Deployments) => verifyTx(publicClient(), tx, verifyTarget(d));
 
-export const verifyAllInBrowser = (d: Deployments, onProgress?: (block: bigint, head: bigint) => void) =>
-  (async () => {
-    const c = publicClient();
-    const head = await c.getBlockNumber({ cacheTime: 0 });
-    return verifyAll(c, verifyTarget(d), {
-      fromBlock: BigInt(d.deployedAtBlock),
-      toBlock: head,
-      chunk: config.logChunk,
-      onProgress: (b) => onProgress?.(b, head),
-    });
-  })();
+/**
+ * Verify a known list of swaps (the Arena's trades, or a same-chain recording's), one every `gapMs`. A scan since
+ * deployment doesn't fit mainnet: `eth_getLogs` is capped at 50 blocks (recon B.3), so it grows by ~1,700 calls a
+ * day, and the public RPC allows 100 requests/min per IP (recon §E.4). Each verify is 2 calls (receipt + slot0);
+ * with the 2 s block poller that's ~70 requests/min at the default 3 s gap.
+ */
+export async function verifyKnownInBrowser(d: Deployments, hashes: Hex[], onProgress?: (done: number, total: number) => void, gapMs = 3_000) {
+  const c = publicClient();
+  const t = verifyTarget(d);
+  let count = 0;
+  let checkA = 0;
+  let checkB = 0;
+  const mismatches: VerifyResult[] = [];
+  for (let i = 0; i < hashes.length; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, gapMs));
+    const { results } = await verifyTx(c, hashes[i]!, t);
+    for (const r of results) {
+      count++;
+      if (r.checkA) checkA++;
+      if (r.checkB) checkB++;
+      if (!r.match) mismatches.push(r);
+    }
+    onProgress?.(i + 1, hashes.length);
+  }
+  return { count, checkA, checkB, mismatches, txs: hashes.length };
+}
 
 /** The newest FeeComputed tx within the last `lookback` blocks (≤ 50-block chunks, newest first). */
 export async function latestFeeComputedTx(d: Deployments, lookback = 2_000n): Promise<Hex | null> {

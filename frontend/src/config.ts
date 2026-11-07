@@ -75,11 +75,12 @@ const CHAINS: Record<number, { name: string; explorer: string | null; testnet: b
   31337: { name: "Local anvil", explorer: null, testnet: true },
 };
 
+const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 999); // live chain: HyperEVM mainnet (AGENTS.md §2)
 const env = {
   // Aven is deployed on HyperEVM mainnet (999), so that's the default. The public RPC allows 100 requests/min per IP,
   // which one browser stays under; set NEXT_PUBLIC_RPC to a dedicated endpoint for heavier use.
-  chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 999),
-  rpcUrl: process.env.NEXT_PUBLIC_RPC || (Number(process.env.NEXT_PUBLIC_CHAIN_ID || 999) === 999 ? "https://rpc.hyperliquid.xyz/evm" : "https://rpc.hyperliquid-testnet.xyz/evm"),
+  chainId,
+  rpcUrl: process.env.NEXT_PUBLIC_RPC || (chainId === 999 ? "https://rpc.hyperliquid.xyz/evm" : "https://rpc.hyperliquid-testnet.xyz/evm"),
   arenaApi: (process.env.NEXT_PUBLIC_ARENA_API || "").replace(/\/$/, ""),
   mode: (process.env.NEXT_PUBLIC_MODE || "") as "" | "live" | "recorded",
   privyAppId: process.env.NEXT_PUBLIC_PRIVY_APP_ID || "",
