@@ -4,7 +4,7 @@
  * Request shapes checked against the live API on 2026-11-06 (candleSnapshot, l2Book, metaAndAssetCtxs).
  * Nothing here trades: Aven only reads the perp market (AGENTS.md §6).
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { config } from "@/config";
 
 export type Interval = "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
@@ -52,6 +52,13 @@ type RawCandle = { t: number; o: string; h: string; l: string; c: string; v: str
 export async function fetchCandles(coin: string, interval: Interval, bars = 300, signal?: AbortSignal): Promise<Candle[]> {
   const end = Date.now();
   const raw = await info<RawCandle[]>({ type: "candleSnapshot", req: { coin, interval, startTime: end - bars * INTERVAL_MS[interval], endTime: end } }, signal);
+  return raw.map((c) => ({ time: Math.floor(c.t / 1000), open: +c.o, high: +c.h, low: +c.l, close: +c.c, volume: +c.v }));
+}
+
+/** Candles for a fixed time range (ms), e.g. the minutes that on-chain swaps fall in. One call; Hyperliquid serves
+ *  up to 5,000 candles per request. */
+export async function fetchCandleRange(coin: string, interval: Interval, startMs: number, endMs: number, signal?: AbortSignal): Promise<Candle[]> {
+  const raw = await info<RawCandle[]>({ type: "candleSnapshot", req: { coin, interval, startTime: startMs, endTime: endMs } }, signal);
   return raw.map((c) => ({ time: Math.floor(c.t / 1000), open: +c.o, high: +c.h, low: +c.l, close: +c.c, volume: +c.v }));
 }
 
@@ -118,6 +125,53 @@ function usePoll<T>(fn: (s: AbortSignal) => Promise<T>, ms: number, deps: unknow
   return s;
 }
 
-export const useCandles = (interval: Interval, coin = config.hlCoin) => usePoll((s) => fetchCandles(coin, interval, 300, s), 4_000, [coin, interval]);
+type PollState<T> = { data: T | null; error: string | null; at: number | null };
+const EMPTY: PollState<never> = { data: null, error: null, at: null };
+type Shared = { state: PollState<unknown>; subs: Set<() => void>; fn: (s: AbortSignal) => Promise<unknown>; ms: number; timer?: ReturnType<typeof setTimeout>; ctl?: AbortController };
+const shared = new Map<string, Shared>();
+
+/** One poll per `key` for the whole page, however many components read it (same visibility rule as usePoll). */
+function useSharedPoll<T>(key: string, fn: (s: AbortSignal) => Promise<T>, ms: number): PollState<T> {
+  let e = shared.get(key);
+  if (!e) shared.set(key, (e = { state: EMPTY, subs: new Set(), fn, ms }));
+  e.fn = fn;
+  const entry = e;
+  const subscribe = useCallback(
+    (l: () => void) => {
+      entry.subs.add(l);
+      if (entry.subs.size === 1) {
+        const tick = async () => {
+          if (document.visibilityState === "visible") {
+            entry.ctl = new AbortController();
+            try {
+              entry.state = { data: await entry.fn(entry.ctl.signal), error: null, at: Date.now() };
+            } catch (err) {
+              if ((err as Error).name !== "AbortError") entry.state = { ...entry.state, error: (err as Error).message };
+            }
+            entry.subs.forEach((f) => f());
+          }
+          if (entry.subs.size) entry.timer = setTimeout(tick, entry.ms);
+        };
+        void tick();
+      }
+      return () => {
+        entry.subs.delete(l);
+        if (!entry.subs.size) {
+          clearTimeout(entry.timer);
+          entry.ctl?.abort();
+        }
+      };
+    },
+    [entry],
+  );
+  return useSyncExternalStore(subscribe, () => entry.state as PollState<T>, () => EMPTY);
+}
+
+/*
+ * Poll rates, budgeted against Hyperliquid's 1,200 weight/min per IP ("REST requests share an aggregated weight limit
+ * of 1200 per minute"; l2Book weight 2, other info requests 20, candleSnapshot +1 per 60 candles returned):
+ * chart 6/min × 25 = 150, sparkline 1/min × 25 = 25, book 30/min × 2 = 60, ctx (shared) 12/min × 20 = 240 → ~475.
+ */
+export const useCandles = (interval: Interval, coin = config.hlCoin, ms = 10_000) => usePoll((s) => fetchCandles(coin, interval, 300, s), ms, [coin, interval, ms]);
 export const useBook = (coin = config.hlCoin) => usePoll((s) => fetchBook(coin, 9, s), 2_000, [coin]);
-export const useCtx = (coin = config.hlCoin) => usePoll((s) => fetchCtx(coin, s), 3_000, [coin]);
+export const useCtx = (coin = config.hlCoin) => useSharedPoll(`ctx:${coin}`, (s) => fetchCtx(coin, s), 5_000);
