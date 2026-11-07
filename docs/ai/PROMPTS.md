@@ -737,3 +737,13 @@ so to keep running the bot how much tokens will be used
 ```
 
 Answered from DEPLOYMENTS.md §M.2/§M.5, the live gas price and the bot balance; no change.
+
+---
+
+## F40 — 2026-11-07T01:25:31Z — Bot budget for demo + submission only
+
+```text
+no like we have to show it mainly for demo video and today just for ethglobal submission
+```
+
+Answered (budget for one day + video); no change.
