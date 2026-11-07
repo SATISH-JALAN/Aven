@@ -767,3 +767,53 @@ so go through the image and structure the rpc load balancer to revert the laodin
 ```
 
 Asked: order 1→2→3→5→4; trade = spot + in-tab SL/TP; bulk bot: the user says Sayan already approved (build, test locally, push).
+
+---
+
+## F43 — see F47 time — Demo video request (key redacted)
+
+```text
+record a demo video about 3-4 min video showing evvery possibilities first show all the main features then some less imp ones like each and everything should be covered properly [PRIVATE KEY REDACTED] this are my private keys if u need to do any transaction u can  do it from this but it should be  a proper demo video with less cuts like give cuts only where it is needed not everytime
+```
+
+Declined to use the key (no signing of real-money transactions for the user); it is to be treated as exposed. Recorded the live mainnet site read-only; the user started the bulk run themselves.
+
+---
+
+## F44 — see F47 time — Where is the admin token
+
+```text
+whats thee admin token
+```
+
+Pointed to Render's environment or Sayan; did not look for it.
+
+---
+
+## F45 — see F47 time — Admin token from a pasted env file (secrets redacted)
+
+```text
+[pasted backend/.env with the Alchemy RPC URL, the bot private key and the admin token: REDACTED] give the admin token from here
+```
+
+Read the token back to the user from their own paste; advised rotating all three secrets after the demo.
+
+---
+
+## F46 — see F47 time — Step-by-step for the bulk run
+
+```text
+[pasted the three bulk-run steps] give it in details like how to do it i have pasted the admin token
+```
+
+Gave detailed steps.
+
+---
+
+## F47 — 2026-11-07T02:58:12Z — Recording + pitch script
+
+```text
+i have started the bulk run start recording and give me the pitch script of the video so that we can record our audio and put into it
+```
+
+Recorder caught mainnet bulk run burst:1794019817471 (6 rounds; Aven arb fees 1,600–2,100 pips, one plain arb at 3,000). Video 3:47 (1.4× of a 5:26 take), pitch script timed to it.

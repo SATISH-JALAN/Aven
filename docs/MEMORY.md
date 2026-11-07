@@ -6,6 +6,10 @@ The running record of status, decisions and open items. It saves you from re-rea
 
 | Prompt | State | Commit(s) / notes |
 |---|---|---|
+| **Demo video (prompts F43–F47)** | ✅ 2026-11-07.
+  - 3:47 MP4 recorded by a headless-Chrome CDP screencast of the LIVE mainnet site (read-only), with captions; one cut while waiting for the operator.
+  - Includes a real mainnet bulk run (`burst:1794019817471`): 6 rounds, Aven arb fees 1,600–2,100 pips vs the plain pool's 3,000, arbs 3–5 blocks after their shock; proof page 1,650 = 1,650 = 1,650.
+  - **Secrets exposed in chat 2026-11-07: the bot private key of `0x4412…34Ee`, the Alchemy RPC key and the Arena admin token. Rotate all three** (move the HYPE to a new wallet, set the new key on Render, regenerate the Alchemy key, set a new `ARENA_ADMIN_TOKEN`). | video kept outside the repo |
 | **Trade terminal: Buy/Sell with order types (prompt F42, part 4)** | ✅ 2026-11-07. Long/Short → Buy/Sell.
   - Market / Limit / Stop order types, plus TP/SL on market orders (one cancels the other). Open orders show in the panel and as lines on the candle chart.
   - Orders run in the open tab (a per-block engine, the wallet signs each fill); spot only, as decided above.
