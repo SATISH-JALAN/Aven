@@ -56,5 +56,63 @@
       "quote": "0xFC91A98c4bDbF5b20a2Da89e514C66295051efd6",
       "quoteSymbol": "aUSD"
     }
+  },
+  "31337": {
+    "chainId": 31337,
+    "config": {
+      "baseIsToken0": true,
+      "decimals0": 18,
+      "decimals1": 6,
+      "perpIndex": 4,
+      "szDecimals": 4
+    },
+    "deployedAtBlock": 29,
+    "explorer": "",
+    "hook": "0x8cd7c60Aa6cFE27e113AE817aa2E1932eEB3E080",
+    "hookSalt": "0x000000000000000000000000000000000000000000000000000000000000921e",
+    "liquidityRouter": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "params": {
+      "baseFee": 500,
+      "fallbackFee": 3000,
+      "gapWeight": 50,
+      "maxFee": 10000,
+      "maxGapBps": 2000,
+      "minFee": 500,
+      "precompileGas": 30000,
+      "premiumWeight": 50,
+      "stressTauSec": 60,
+      "stressThresholdBps": 50,
+      "stressWeight": 20
+    },
+    "poolManager": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+    "pools": {
+      "aven": {
+        "id": "0xabc4731d968459e62a8001d2b61d333eee414eb2997d4d4f1ec486094d7def6c",
+        "key": {
+          "currency0": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+          "currency1": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "fee": 8388608,
+          "hooks": "0x8cd7c60Aa6cFE27e113AE817aa2E1932eEB3E080",
+          "tickSpacing": 60
+        }
+      },
+      "control": {
+        "id": "0x753f04065c73140220c212f44f641f6fa67a1affb08fb976fb2635415aafed51",
+        "key": {
+          "currency0": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+          "currency1": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "fee": 3000,
+          "hooks": "0x0000000000000000000000000000000000000000",
+          "tickSpacing": 60
+        }
+      }
+    },
+    "swapRouter": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+    "tokens": {
+      "base": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+      "baseSymbol": "aETH",
+      "quote": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+      "quoteSymbol": "aUSD"
+    }
   }
 }
