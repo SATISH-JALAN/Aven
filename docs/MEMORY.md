@@ -6,6 +6,10 @@ The running record of status, decisions and open items. It saves you from re-rea
 
 | Prompt | State | Commit(s) / notes |
 |---|---|---|
+| **Trade terminal: Buy/Sell with order types (prompt F42, part 4)** | ✅ 2026-11-07. Long/Short → Buy/Sell.
+  - Market / Limit / Stop order types, plus TP/SL on market orders (one cancels the other). Open orders show in the panel and as lines on the candle chart.
+  - Orders run in the open tab (a per-block engine, the wallet signs each fill); spot only, as decided above.
+  - 6 trigger-rule tests; frontend 59/59, tsc clean. Rendered on the local chain (tabs, trigger prefill, validation). **Not yet clicked through to a fill with a real wallet.** | `frontend/src/lib/orders.ts`, `frontend/src/components/trade/OrderPanel.tsx` |
 | **Bulk run on the dashboard (prompt F42, part 5)** | ✅ 2026-11-07.
   - **Arena:** `POST /burst {rounds ≤ 20}` (admin) runs N × (shock both pools with a quarter of the default size, alternating buy/sell; then a bot pass in a later block). `GET /burst` shows progress publicly; `POST /burst/stop` ends a run.
   - **Dashboard:** the "Bulk run" block starts runs and shows each round's shock block, oracle, the Aven arb fee and the plain arb fee, with blocks after the shock.

@@ -206,7 +206,12 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
     - `MarketBar`: Hyperliquid ETH-PERP mark, 24h change, oracle, premium, funding, volume, open interest; plus the Aven pool price, gap and fees, and the plain pool's price and gap (gaps turn amber when `pushState` says pushed);
     - `PriceChart`: TradingView `lightweight-charts` 5.2.1, Hyperliquid candles + volume, an oracle line, and (LIVE) both pool prices and arb markers;
     - `OrderBook`: Hyperliquid `l2Book`, read-only;
-    - `OrderPanel`: Long = buy aETH, Short = sell aETH, spot on the Aven or plain pool (no leverage). The quote is `indicativeOut` × `feeFor`; it sends through `useSwap`;
+    - `OrderPanel`: Buy / Sell aETH, spot on the Aven or plain pool (no leverage), with order types Market, Limit and Stop. The quote is `indicativeOut` × `feeFor`; it sends through `useSwap` (`execute` returns `{ok, hash, error}`).
+      - Market orders can attach a take-profit / stop-loss: after the fill, two closing orders (99% of the quoted output) are stored, and one cancels the other.
+      - Conditional orders live in `src/lib/orders.ts` (localStorage, per wallet). `triggered()` compares the chosen pool's price with the trigger: sells TP/limit fire at or above, SL/stop at or below; buys mirror that.
+      - `useOrderEngine` checks the open orders on every new Arena block and fills the first one that's due through `execute` (the wallet signs), one at a time.
+      - `PriceChart` draws each open order as a price line.
+      - Orders only run while the tab is open. An order that was mid-signature when the tab closed is marked failed on reload, never re-sent.
     - `Activity`: arb feed, all trades, your trades, shocks, who earned what, and the proof drawer from `arena/Tape.tsx`;
   - `/swap`: a single swap card that routes to either pool and shows both quotes;
   - `/pool`: one tile per pool (Aven and plain) with price, gap, fees and a push status: "Pushed +N bp above/below the oracle" or "At the oracle" (`pushState`, threshold `PUSH_BPS` = 30), the last non-bot swap that pushed it and the bot's last arb back with its fee (`poolActivity`, from `/trades` or the recording); then who earns (LPs vs the arb bot) from live or recorded `/stats`, backed by the mainnet replay; cost per swap; add liquidity (`useAddLiquidity`);

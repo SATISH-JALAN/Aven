@@ -90,8 +90,8 @@ export function useSwap() {
   };
 
   const execute = useCallback(
-    async (pool: PoolName, side: Direction, amount: string, oraclePrice: number) => {
-      if (!d || !w.getProvider || !w.address) return;
+    async (pool: PoolName, side: Direction, amount: string, oraclePrice: number): Promise<{ ok: boolean; hash: Hex | null; error: string | null }> => {
+      if (!d || !w.getProvider || !w.address) return { ok: false, hash: null, error: "wallet not ready" };
       setS({ step: "Preparing…", error: null, last: null });
       try {
         const provider = await w.getProvider();
@@ -141,8 +141,11 @@ export function useSwap() {
           txHash: hash,
         });
         setS({ step: null, error: r.status === "success" ? null : "The swap reverted", last: hash });
+        return { ok: r.status === "success", hash, error: r.status === "success" ? null : "The swap reverted" };
       } catch (e) {
-        setS({ step: null, error: (e as Error).message.split("\n")[0] ?? "Swap failed", last: null });
+        const error = (e as Error).message.split("\n")[0] ?? "Swap failed";
+        setS({ step: null, error, last: null });
+        return { ok: false, hash: null, error };
       }
     },
     [d, w],

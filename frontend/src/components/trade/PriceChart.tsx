@@ -8,6 +8,8 @@
  * - Markers: the arb bot's trades (LIVE only, same reason).
  */
 import { useEffect, useRef, useState } from "react";
+import { useWallet } from "@/components/wallet";
+import { KIND_LABEL, useOrders } from "@/lib/orders";
 import type { CandlestickData, HistogramData, IChartApi, IPriceLine, ISeriesApi, ISeriesMarkersPluginApi, LineData, SeriesMarker, Time, UTCTimestamp } from "lightweight-charts";
 import { config } from "@/config";
 import { useArena } from "@/lib/arena";
@@ -94,6 +96,31 @@ export function PriceChart() {
     if (c.oracleLine) c.oracleLine.applyOptions(opts);
     else c.oracleLine = c.candle.createPriceLine(opts);
   }, [ready, ctx.data]);
+
+  // Open orders of the connected wallet as price lines (limit / stop / TP / SL), so the trade is controlled on the chart.
+  const w = useWallet();
+  const allOrders = useOrders();
+  const orderLines = useRef<IPriceLine[]>([]);
+  useEffect(() => {
+    const c = api.current;
+    if (!ready || !c) return;
+    for (const l of orderLines.current) c.candle.removePriceLine(l);
+    const owner = w.address?.toLowerCase();
+    orderLines.current = owner
+      ? allOrders
+          .filter((o) => o.owner === owner && o.status === "open")
+          .map((o) =>
+            c.candle.createPriceLine({
+              price: o.trigger,
+              color: o.kind === "sl" ? "#e5534b" : o.kind === "tp" ? "#22c08a" : "#3987e5",
+              lineWidth: 1,
+              lineStyle: 1,
+              axisLabelVisible: true,
+              title: `${o.side === "buyBase" ? "buy" : "sell"} ${KIND_LABEL[o.kind].toLowerCase()}`,
+            }),
+          )
+      : [];
+  }, [ready, allOrders, w.address]);
 
   // Pool prices + arb markers (LIVE only).
   const live = a.mode === "LIVE" && a.status === "ok";
