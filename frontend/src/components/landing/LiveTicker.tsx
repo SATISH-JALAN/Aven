@@ -33,6 +33,7 @@ export function useLivePx(intervalMs = 3_000): LivePx | null {
     let alive = true;
     const scale = 10 ** (6 - perp.szDecimals);
     const tick = async () => {
+      if (document.visibilityState !== "visible") return; // the public RPC limit is per IP, shared by every tab
       const r = await readOracleMark(publicClient(), perp.index);
       if (!alive) return;
       if (!r.readOk) return setPx((p) => (p ? { ...p, ok: false } : null));

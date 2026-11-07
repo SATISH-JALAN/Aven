@@ -1,18 +1,22 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import type { Hex } from "viem";
 import { Card, MatchBadge, Notice, TxLink } from "@/components/ui";
 import { WhatItProves } from "@/components/verify/Proof";
 import { useArena } from "@/lib/arena";
-import { latestFeeComputedTx, verifyAllInBrowser } from "@/lib/chain";
+import { config } from "@/config";
+import { latestFeeComputedTx, verifyKnownInBrowser } from "@/lib/chain";
 import { int } from "@/lib/format";
 import { gsap } from "@/lib/gsap";
 
 const TX = /^0x[0-9a-fA-F]{64}$/;
+/** How many of the newest Aven-pool swaps "Verify recent swaps" checks (2 RPC calls each, paced). */
+const MAX_VERIFY = 25;
 
 type AllResult = { count: number; checkA: number; checkB: number; mismatches: Array<{ txHash?: string; onchainFee: number; recomputedFee: number }>; txs: number };
 
-/** The swap verifier (was the /verify page): paste a tx, or scan every FeeComputed since deployment. */
+/** The swap verifier (was the /verify page): paste a tx, or verify the newest Aven-pool swaps the Arena knows. */
 export function VerifyTool() {
   const a = useArena();
   const router = useRouter();
@@ -22,9 +26,13 @@ export function VerifyTool() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [all, setAll] = useState<AllResult | null>(null);
-  const [scan, setScan] = useState<{ at: bigint; head: bigint } | null>(null);
+  const [scan, setScan] = useState<{ done: number; total: number } | null>(null);
   const d = a.deployments;
   const recorded = a.mode === "RECORDED";
+  // A recording from this chain holds real, verifiable txs; one from another chain (e.g. local anvil) doesn't.
+  const sameChainRecording = recorded && a.recorded?.chainId === config.chainId;
+  const hashes = [...new Set(a.trades.filter((t) => t.pool === "aven").map((t) => t.txHash as Hex))].slice(0, MAX_VERIFY);
+  const canVerify = !!d && hashes.length > 0 && (!recorded || sameChainRecording);
 
   const latest = async () => {
     setErr(null);
@@ -45,16 +53,15 @@ export function VerifyTool() {
   };
 
   const verifyAll = async () => {
-    if (!d) return;
+    if (!d || !canVerify) return;
     setErr(null);
     setAll(null);
     setBusy(true);
-    const from = BigInt(d.deployedAtBlock);
+    setScan({ done: 0, total: hashes.length });
     try {
-      const r = await verifyAllInBrowser(d, (at, head) => {
-        setScan({ at, head });
-        const pct = head > from ? Number(((at - from) * 1000n) / (head - from)) / 10 : 100;
-        gsap.to(bar.current, { width: `${pct}%`, duration: 0.3, ease: "power2.out" });
+      const r = await verifyKnownInBrowser(d, hashes, (done, total) => {
+        setScan({ done, total });
+        gsap.to(bar.current, { width: `${(done * 100) / total}%`, duration: 0.3, ease: "power2.out" });
       });
       setAll(r);
     } catch (e) {
@@ -99,26 +106,28 @@ export function VerifyTool() {
       <Card className="mt-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="h-card text-ink">Verify every swap</p>
-            <p className="mt-1 text-sm text-muted">Every FeeComputed since deployment{d ? ` (#${int(d.deployedAtBlock)})` : ""}.</p>
+            <p className="h-card text-ink">Verify recent swaps</p>
+            <p className="mt-1 text-sm text-muted">The newest {hashes.length > 0 ? int(hashes.length) : MAX_VERIFY} Aven-pool swaps the Arena knows, recomputed from the chain.</p>
           </div>
           <button
             onClick={verifyAll}
-            disabled={busy || !d || recorded}
+            disabled={busy || !canVerify}
             className="btn btn-ghost disabled:cursor-not-allowed disabled:opacity-40"
           >
             {busy && scan ? "Scanning…" : "Run all"}
           </button>
         </div>
-        {recorded && <p className="mt-3 text-xs text-faint">Needs a live deployment. The recorded run came from a local chain.</p>}
+        {recorded && !sameChainRecording && <p className="mt-3 text-xs text-faint">The recorded run came from another chain, so its swaps can't be checked here.</p>}
         {!d && !recorded && <p className="mt-3 text-xs text-faint">No deployment on this chain yet.</p>}
+        {d && (!recorded || sameChainRecording) && hashes.length === 0 && <p className="mt-3 text-xs text-faint">No Aven-pool swaps yet. Paste a tx hash above.</p>}
+        <p className="mt-3 text-[11px] text-faint">One swap every 3 s, so the public RPC&apos;s limit (100 requests a minute) isn&apos;t hit. For a full scan, run <code>pnpm verify --all</code> with a dedicated RPC.</p>
         {scan && (
           <div className="mt-5">
             <div className="h-1.5 overflow-hidden rounded-full bg-raised">
               <div ref={bar} className="h-full w-0 rounded-full bg-ink" />
             </div>
             <p className="num mt-2 text-[11px] text-muted">
-              block #{int(scan.at)} of #{int(scan.head)}
+              {int(scan.done)} of {int(scan.total)} swaps
             </p>
           </div>
         )}

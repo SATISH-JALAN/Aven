@@ -5,6 +5,7 @@ import { Emblem } from "@/components/brand";
 import { CountUp } from "@/components/motion";
 import { MOTION_OK, ScrollTrigger, gsap, useGSAP } from "@/lib/gsap";
 import { POOLS, type ReplayFile } from "@/lib/replay";
+import type { RecordedRun } from "@/lib/types";
 
 /** Section heading used across the landing page: a pill, a short title, an optional one-liner. */
 function Head({ pill, title, lede, center = false }: { pill: string; title: React.ReactNode; lede?: string; center?: boolean }) {
@@ -320,15 +321,50 @@ export function Features() {
 
 // ------------------------------------------------------------------------------------------------ stats
 
-const STATS = [
-  { v: 141.25, f: (n: number) => `+$${n.toFixed(0)}`, k: "LP value vs holding", s: "Replay · Oct 29 · live hook" },
-  { v: 8700, f: (n: number) => `${Math.round(n).toLocaleString("en-US")}`, k: "pips paid by the arb, vs 3,000 flat", s: "Arena · recorded run" },
-  { v: 10000, f: (n: number) => `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`, k: "fee vectors, Solidity ≡ TypeScript", s: "pnpm prove:diff" },
-  { v: 0, f: () => "0", k: "owners, keepers or admin keys", s: "AvenHook.sol" },
-];
+type Stat = { v: number | null; f: (n: number) => string; k: string; s: string };
+
+const CHAIN_NAME: Record<number, string> = { 999: "mainnet", 998: "testnet", 31337: "local chain" };
+
+/**
+ * The four headline numbers. The replay and Arena ones are read from the files the Replay and Pool pages use
+ * (never typed in), so they can't go stale when a recording is replaced.
+ */
+function useStats(): Stat[] {
+  const [rec, setRec] = useState<RecordedRun | null>(null);
+  const [rep, setRep] = useState<ReplayFile | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = <T,>(url: string, set: (x: T) => void) =>
+      fetch(url)
+        .then((r) => (r.ok ? (r.json() as Promise<T>) : null))
+        .then((x) => alive && x && set(x))
+        .catch(() => {});
+    void load<RecordedRun>("/arena-fallback.json", setRec);
+    void load<ReplayFile>("/replay/binance-halt.json", setRep);
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const live = rep?.results.avenLive;
+  const replayGain = live ? Number(live.lpValueUsd) - Number(live.hodlValueUsd) : null;
+  const arb = rec?.highlight.avenArb;
+  const flat = rec?.highlight.controlArb.feePips;
+  return [
+    { v: replayGain, f: (n) => `${n >= 0 ? "+" : "−"}$${Math.abs(n).toFixed(0)}`, k: "LP value vs holding", s: "Replay · Oct 29 · live hook" },
+    {
+      v: arb?.feePips ?? null,
+      f: (n) => `${Math.round(n).toLocaleString("en-US")}`,
+      k: `pips paid by the arb, vs ${flat != null ? flat.toLocaleString("en-US") : "3,000"} flat`,
+      s: `Arena · recorded run${rec ? ` · ${CHAIN_NAME[rec.chainId] ?? `chain ${rec.chainId}`}` : ""}`,
+    },
+    { v: 10000, f: (n) => `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`, k: "fee vectors, Solidity ≡ TypeScript", s: "pnpm prove:diff" },
+    { v: 0, f: () => "0", k: "owners, keepers or admin keys", s: "AvenHook.sol" },
+  ];
+}
 
 export function Stats() {
   const ref = useRef<HTMLElement>(null);
+  const stats = useStats();
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
@@ -342,10 +378,10 @@ export function Stats() {
   return (
     <section ref={ref} className="mx-auto max-w-7xl px-6 py-16">
       <div className="grid gap-px overflow-hidden rounded-[32px] border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
-        {STATS.map((s) => (
+        {stats.map((s) => (
           <div key={s.k} data-stat className="flex flex-col justify-between gap-12 bg-bg p-8">
             <p className="text-[clamp(2.8rem,4.6vw,4.2rem)] font-medium leading-none tracking-[-0.05em] text-ink">
-              <CountUp value={s.v} format={s.f} mono={false} />
+              {s.v == null ? <span className="text-faint">—</span> : <CountUp value={s.v} format={s.f} mono={false} />}
             </p>
             <div>
               <p className="text-[15px] text-ink-2">{s.k}</p>

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { addressHref, txHref } from "@/config";
+import { addressHref, config, txHref } from "@/config";
 import { shortHex } from "@/lib/format";
 import type { Term } from "@/lib/steps";
 import { SplitReveal } from "./motion";
@@ -13,7 +13,9 @@ const MODE_STYLE: Record<Mode, string> = {
   REPLAY: "text-[#8dbcf5] bg-delayed/10",
   RECORDED: "text-warn bg-warn/10",
 };
-const MODE_LABEL: Record<Mode, string> = { LIVE: "Live", REPLAY: "Replay", RECORDED: "Recorded run" };
+/** AGENTS.md §6: the live badge names the network. */
+const liveLabel = config.chainId === 999 ? "Live mainnet" : config.chainId === 998 ? "Live testnet" : `Live · ${config.chainName}`;
+const MODE_LABEL: Record<Mode, string> = { LIVE: liveLabel, REPLAY: "Replay", RECORDED: "Recorded run" };
 
 export function ModeBadge({ mode, title }: { mode: Mode; title?: string }) {
   return (
