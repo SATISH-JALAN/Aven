@@ -727,3 +727,13 @@ Returned a comment-free KEY=VALUE block with the §M.6 Render overrides merged i
 (The user pasted the Render deploy log of the Arena: build OK on Node 24.22.2, `[arena] chain 999 … listening on :10000`, live at https://aven-arena.onrender.com.)
 
 Checked the Arena from outside, set `NEXT_PUBLIC_ARENA_API` on Vercel, redeployed; the site runs LIVE.
+
+---
+
+## F39 — 2026-11-07T01:22:45Z — Bot running cost
+
+```text
+so to keep running the bot how much tokens will be used
+```
+
+Answered from DEPLOYMENTS.md §M.2/§M.5, the live gas price and the bot balance; no change.
