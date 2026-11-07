@@ -204,6 +204,33 @@ The deploy key was removed from `contracts/.env` afterwards.
 | **Outcome** | LP fee income **$210.48 (Aven) vs $113.23 (control): LPs kept $97.25 more**. Bot profit $92.88 vs $297.77. The Aven pool stays 97 bp off because a further arb wouldn't cover its fee; the control pool is at 27 bp |
 | Gas | All 4 txs status 1, `maxFeePerGas` = 2 gwei (the cap), paid 0.10–0.12 gwei. Test cost **0.000083 HYPE**; balance 0.016417 HYPE |
 
+### M.6 Hosting: frontend on Vercel, Arena on Render (both free)
+
+**Frontend: ✅ live 2026-11-07 at https://aven-lovat.vercel.app** (Vercel Hobby, project `aven`, account `satish-jalan`).
+- Built from GitHub `SATISH-JALAN/Aven` `main`, so every push redeploys it. Root Directory `frontend`, "include files outside the root" on (it imports `backend/core`), Node 24.x.
+- Env: `NEXT_PUBLIC_CHAIN_ID=999`, `NEXT_PUBLIC_RPC` = the public mainnet RPC, `NEXT_PUBLIC_PRIVY_APP_ID`, `NEXT_PUBLIC_REPO_URL`, and `ENABLE_EXPERIMENTAL_COREPACK=1` (pnpm 12.9.1 from `packageManager`).
+- `NEXT_PUBLIC_ARENA_API` stays unset until the Arena below is up, so the site runs in RECORDED mode (mainnet recording, live prices, on-chain record and portfolio all work). Set it, then redeploy: `NEXT_PUBLIC_*` values are baked in at build time.
+- Checked: every route returns 200; headless Chrome shows no errors (Privy's wallet frame loads).
+
+**Arena: Render free web service (to create; Sayan enters the secrets).** Render dashboard → New → Web Service → the GitHub repo:
+
+| Setting | Value |
+|---|---|
+| Name / region | `aven-arena` (URL `https://aven-arena.onrender.com` if the name is free) / any |
+| Branch / Root Directory | `main` / blank |
+| Runtime / instance | Node / **Free** |
+| Build command | `npx --yes pnpm@12.9.1 install --frozen-lockfile --filter "@aven/arena..."` |
+| Start command | `cd backend/arena && node_modules/.bin/tsx src/main.ts` |
+| Health check path | `/health` |
+| Env | Every line of Sayan's `backend/.env` (Render's "Add from .env"), then: `ARENA_PORT=10000`, `ARENA_CORS_ORIGINS=https://aven-lovat.vercel.app`, `ARENA_TRUST_PROXY=1`, `NODE_VERSION=24` |
+
+- Build and start commands were rehearsed on a fresh clone of `main` (Windows, against the local anvil chain): install 6 s, `/health` OK. Not yet run on Render's Linux.
+- **Free-tier limits:**
+  - The service sleeps after 15 min with no inbound HTTP, and the bot stops with it. A free cron-job.org job hitting `/health` every 10 min keeps it awake: ~744 h/month, inside the 750 free hours.
+  - The disk is wiped on restart, so `trades.jsonl` (Arena stats) starts empty after each restart or deploy. The site's on-chain record and portfolio read the chain, so they don't lose anything.
+- **UNVERIFIED:** whether the last `X-Forwarded-For` entry on Render is the client IP (`ARENA_TRUST_PROXY=1` assumes it). Check after the first deploy. If it isn't, unset the variable: every visitor then shares one POST rate-limit bucket.
+- The Arena signs real mainnet transactions with the bot key, so it runs only with Sayan's OK. The same key must not run anywhere else at the same time (nonce clashes).
+
 
 ## T. HyperEVM testnet (998): kept for reference
 

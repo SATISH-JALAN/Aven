@@ -6,6 +6,7 @@ The running record of status, decisions and open items. It saves you from re-rea
 
 | Prompt | State | Commit(s) / notes |
 |---|---|---|
+| **Hosting (prompt F37)** | 🟡 2026-11-07. **Frontend live on Vercel: https://aven-lovat.vercel.app** (project `aven`, builds from GitHub `main`, root `frontend`; RECORDED mode until the Arena URL is set). Arena on Render free: settings rehearsed on a fresh clone, **waiting for the service to be created and Sayan's secrets** (DEPLOYMENTS.md §M.6). | no code change |
 | **On-chain record + wallet portfolio** | ✅ 2026-11-06 ~23:40 UTC (prompt F34). Chain-only: no DB, no Arena needed. The dashboard's "On chain" section shows every swap on both pools with the oracle and mark the hook read in that block, verified A+B in the browser, compared with Hyperliquid's 1m candles on mainnet. `/portfolio` shows any address's swaps, liquidity and mints from Transfer logs → receipts.
   - Local check (headless Chrome): a test wallet (anvil #3) did 2 mints, approvals, an Aven sell (0.14%), a plain sell (0.30%), a liquidity add and an Aven buy (0.05%). The portfolio showed all 6 txs with amounts, both Aven swaps MATCH, 0 console errors. The ledger table showed the plain pool sitting 30 bp above the oracle because its 0.30% fee stops the arb.
   - Mainnet: the decoder passes on the real logs of arb `0xfce1…` (9,950 pips, A+B). A full browser scan is **throttled by the public RPC** (recon B.3), so the first visit fills newest-first over minutes, then it's cached.

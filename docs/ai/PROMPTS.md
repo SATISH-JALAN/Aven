@@ -688,3 +688,23 @@ push everything in 15 commits without putting claude tag in it so that only my n
 ```
 
 Asked first (AGENTS.md rule 0.1: pushes are Sayan's call); the user confirmed Sayan said push.
+
+---
+
+## F36 — 2026-11-07T00:28:11Z — Restart local servers
+
+```text
+restart the servers locally so i cann test the project locally
+```
+
+Restarted the local stack: anvil 31337 + deploy (`local:up`), Arena on :8787, Next dev on :3000 pointed at 31337. No code changed.
+
+---
+
+## F37 — 2026-11-07T00:51:35Z — Deploy: frontend on Vercel, backend on Render
+
+```text
+i have to deploy the whole project......now deploy my project accordingly like frontend in vercel and the backend and all in render all like which will work better and for free
+```
+
+Chose (asked): Arena on Render free + a keep-alive pinger; Vercel connected to the GitHub repo. Frontend deployed to https://aven-lovat.vercel.app; Render settings in DEPLOYMENTS.md §M.6.
