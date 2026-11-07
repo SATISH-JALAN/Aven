@@ -209,10 +209,10 @@ The deploy key was removed from `contracts/.env` afterwards.
 **Frontend: ✅ live 2026-11-07 at https://aven-lovat.vercel.app** (Vercel Hobby, project `aven`, account `satish-jalan`).
 - Built from GitHub `SATISH-JALAN/Aven` `main`, so every push redeploys it. Root Directory `frontend`, "include files outside the root" on (it imports `backend/core`), Node 24.x.
 - Env: `NEXT_PUBLIC_CHAIN_ID=999`, `NEXT_PUBLIC_RPC` = the public mainnet RPC, `NEXT_PUBLIC_PRIVY_APP_ID`, `NEXT_PUBLIC_REPO_URL`, and `ENABLE_EXPERIMENTAL_COREPACK=1` (pnpm 12.9.1 from `packageManager`).
-- `NEXT_PUBLIC_ARENA_API` stays unset until the Arena below is up, so the site runs in RECORDED mode (mainnet recording, live prices, on-chain record and portfolio all work). Set it, then redeploy: `NEXT_PUBLIC_*` values are baked in at build time.
+- `NEXT_PUBLIC_ARENA_API=https://aven-arena.onrender.com` (set 2026-11-07, then redeployed: `NEXT_PUBLIC_*` values are baked in at build time). Checked in Chrome: `/dashboard` runs LIVE on the SSE stream, Arena under 1 s behind the chain.
 - Checked: every route returns 200; headless Chrome shows no errors (Privy's wallet frame loads).
 
-**Arena: Render free web service (to create; Sayan enters the secrets).** Render dashboard → New → Web Service → the GitHub repo:
+**Arena: ✅ live 2026-11-07 at https://aven-arena.onrender.com** (Render free web service, built from `main` `8d035f7`; Node 24.22.2; bot = shock = `0x4412…34Ee`). Checked from outside: `/health` chainId 999, `/config` = `999.json`, CORS allows only the Vercel origin, `/state` reads the real oracle/mark. The bot reports `botEnabled: false` until an operator turns it on. Settings:
 
 | Setting | Value |
 |---|---|
@@ -228,7 +228,7 @@ The deploy key was removed from `contracts/.env` afterwards.
 - **Free-tier limits:**
   - The service sleeps after 15 min with no inbound HTTP, and the bot stops with it. A free cron-job.org job hitting `/health` every 10 min keeps it awake: ~744 h/month, inside the 750 free hours.
   - The disk is wiped on restart, so `trades.jsonl` (Arena stats) starts empty after each restart or deploy. The site's on-chain record and portfolio read the chain, so they don't lose anything.
-- **UNVERIFIED:** whether the last `X-Forwarded-For` entry on Render is the client IP (`ARENA_TRUST_PROXY=1` assumes it). Check after the first deploy. If it isn't, unset the variable: every visitor then shares one POST rate-limit bucket.
+- **Open: the per-client `/verify` limit doesn't trigger on Render.** 66 requests from one machine in under a minute (all-zero hash) never got a 429. A spoofed `X-Forwarded-For` was also accepted, though that proves nothing while no request is limited. Either the deployed env raised `ARENA_VERIFY_LIMIT_PER_MIN`, or the last XFF entry on Render changes per request, so each request is its own client. Risk: someone can spend the Alchemy quota through `/verify` (POSTs are safe: the admin token is checked first). Fix (Sayan, backend): key the limiter on a header Render sets reliably, or put a global cap on `/verify`.
 - The Arena signs real mainnet transactions with the bot key, so it runs only with Sayan's OK. The same key must not run anywhere else at the same time (nonce clashes).
 
 

@@ -708,3 +708,22 @@ i have to deploy the whole project......now deploy my project accordingly like f
 ```
 
 Chose (asked): Arena on Render free + a keep-alive pinger; Vercel connected to the GitHub repo. Frontend deployed to https://aven-lovat.vercel.app; Render settings in DEPLOYMENTS.md §M.6.
+
+---
+
+## F38 — 2026-11-07T01:10:00Z — Render env block
+
+```text
+[pasted backend/.env contents — RPC key, private key and admin token REDACTED]
+give it in proper one text so that i can just copy paste in render dont add comments
+```
+
+Returned a comment-free KEY=VALUE block with the §M.6 Render overrides merged in (port 10000, Vercel CORS origin, trust proxy, Node 24). Secrets are not logged here.
+
+---
+
+## F38 — 2026-11-07T01:19:45Z — Render deploy log
+
+(The user pasted the Render deploy log of the Arena: build OK on Node 24.22.2, `[arena] chain 999 … listening on :10000`, live at https://aven-arena.onrender.com.)
+
+Checked the Arena from outside, set `NEXT_PUBLIC_ARENA_API` on Vercel, redeployed; the site runs LIVE.
