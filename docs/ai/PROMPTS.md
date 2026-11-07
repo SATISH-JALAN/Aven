@@ -640,3 +640,51 @@ fix [Image #1] this connect wallet problem
 ```
 
 (Screenshot: Privy modal "Could not log in with wallet. Please try connecting again." with MetaMask.)
+
+---
+
+## F31 — 2026-11-06T21:06:29Z — How to run the backend server
+
+```text
+how can in run the backend server
+```
+
+---
+
+## F32 — 2026-11-06T21:22:11Z — Run the whole backend and website, test a trade, check the architecture
+
+```text
+So I want that you run the entire website have the run test once we watch of placing a trade. Before that, I want you to run the entire backend perfectly on the terminal. And see what are the status over here. And from our first of the architecture, check all of those things and tell me if there is any more update I required on the particular node. And let me know if the price bump is actually being solved, because the contract which we are using after Hyperliquid and triggered it with UNICEF hooks. As a V4, so tell me about the particular problem that's been solved or not. And also, if the latency has been reduced after the price pump of the state bit, dry run is probably. And after that, just let me know in the terminal that how it's performing and what are the exact timelines which the trades are stopping and the price fees are getting out. And then, through the inputs and outputs. And also run the backend perfectly on the terminal
+```
+
+---
+
+## F33 — 2026-11-06T21:50:07Z — Live dashboard with charts, swap internals and latency
+
+```text
+So as we have confirmed the trades as well, also we have seen what we are going inside our site. I'll be converting my files and I'll check the regulations and the mandate contracts on my French science laptop as well. But before that, what I wanted to do that all the trades which have been placed, it should always be live at the dashboard. So make a proper dashboard consisting of charts, pie charts, graphs, including all the necessary important informations according to you throughout the front end which we have built and the features we are having. The swap features is very important because to see the real swap important details and how the hooks are working, what are the file from FeeBump difference of regulated price before the stale price stale bit, before that and after the stale bit. And as we have achieved, there is no extra fees after the late fee bump. So check for that. And it should be every time updated, like the latency will be very fast. The main thing which we're gonna prove in front of the judges will be the latency part. The latency should be very crystal clear. For example, the latency is around 100 ms for a plain transaction, and we are taking only 80 ms for the Aven transaction. So the block should be very much clear around it. And everything would be lively updated on the website as well as the dashboard itself, and considered all of the you know, trades are placing, activities are going out and in through the inputs and throughputs throughout the protocol. So it should be, you know, presented in a very majestic and scrollable and animated way with graphs and pie charts and rest of the things. And be practical design .
+```
+
+---
+
+## F34 — 2026-11-06T23:06:43Z — On-chain record of every swap, compared with HyperCore prices; wallet portfolio from the chain
+
+```text
+Okay, so I want to make sure that all the traits and swaps which have been going on chain with record means of the blocks latencies and different price pumps. So due to the Oracle and perps rates, together so basically check through the main blocks, like the other prices which they are giving, and compare it to us. Normally so obviously on the dashboard itself, right? So I want that whenever a particular wallet is connected, through it shows the exact details and exact on-chain activities throughout. Of any particular user. So yeah, I'm not adding any particular DB, but on-chain activity should be always present over the portfolio. So that it could be easily recognizable and can be understood properly. For any particular user. Alright, that's pretty easy. So do that and rest also be the same.
+```
+
+---
+
+## F35 — 2026-11-06T23:58:37Z — Push in 15 commits, only my name
+
+```text
+push everything in 15 commits without
+```
+
+(interrupted, then:)
+
+```text
+push everything in 15 commits without putting claude tag in it so that only my name is there
+```
+
+Asked first (AGENTS.md rule 0.1: pushes are Sayan's call); the user confirmed Sayan said push.
