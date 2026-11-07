@@ -817,3 +817,13 @@ i have started the bulk run start recording and give me the pitch script of the 
 ```
 
 Recorder caught mainnet bulk run burst:1794019817471 (6 rounds; Aven arb fees 1,600–2,100 pips, one plain arb at 3,000). Video 3:47 (1.4× of a 5:26 take), pitch script timed to it.
+
+---
+
+## F48 — 2026-11-07T02:58:57Z — ETHGlobal submission form text
+
+```text
+[Image #1][Image #2] fill the form poperly with proper details
+```
+
+(Screenshots of the ETHGlobal project form: demo link, short description, description, how it's made, GitHub repositories.) The browser profile available to the agent wasn't signed in to ETHGlobal, so the final text for each field was written in chat for pasting; no code change.
