@@ -13,7 +13,7 @@ const DOWN = "#e5534b";
 
 export function MarketBar() {
   const ctx = useCtx();
-  const spark = useCandles("15m");
+  const spark = useCandles("15m", undefined, 60_000); // a 15m sparkline only needs a refresh a minute
   const a = useArena();
   const c = ctx.data;
   const chg = c ? c.markPx - c.prevDayPx : 0;

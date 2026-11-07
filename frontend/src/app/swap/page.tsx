@@ -7,8 +7,9 @@ import { TermChip, TxLink } from "@/components/ui";
 import { useArena } from "@/lib/arena";
 import { num, pipsPct, usd } from "@/lib/format";
 import { termsFired } from "@/lib/steps";
-import { feeFor, indicativeOut, SWAP_GAS_BUDGET, tokenSide, useBalances, useSwap } from "@/lib/swap";
+import { feeFor, indicativeOut, MAINNET_GAS_NOTE, SWAP_GAS_BUDGET, tokenSide, useBalances, useSwap } from "@/lib/swap";
 import type { Direction, PoolName } from "@/lib/types";
+import { config } from "@/config";
 
 export default function SwapPage() {
   const a = useArena();
@@ -35,7 +36,7 @@ export default function SwapPage() {
   const inBal = bal && t ? (side === "sellBase" ? bal.base : bal.quote) : null;
   const outBal = bal && t ? (side === "sellBase" ? bal.quote : bal.base) : null;
   const gasOk = bal ? bal.native >= SWAP_GAS_BUDGET * bal.gasPrice : true;
-  const blocker = s.blocker(amt) ?? (!gasOk ? "Not enough HYPE for gas" : null);
+  const blocker = s.blocker(amt, side) ?? (!gasOk ? "Not enough HYPE for gas" : null);
   const live = a.mode === "LIVE" && a.status === "ok";
 
   return (
@@ -119,6 +120,7 @@ export default function SwapPage() {
           </div>
         </div>
 
+        {config.chainId === 999 && <p className="mt-3 text-center text-[11px] text-faint">{MAINNET_GAS_NOTE}</p>}
         {s.error && <p className="mt-3 text-center text-xs text-crit">{s.error}</p>}
         {s.last && (
           <p className="mt-3 text-center text-xs text-ink-2">

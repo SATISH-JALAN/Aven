@@ -13,8 +13,12 @@ import { bps, num, pipsPct, signedUsd, timeUtc } from "@/lib/format";
 import { planLiquidity, useAddLiquidity } from "@/lib/liquidity";
 import { poolActivity, pushState } from "@/lib/pressure";
 import { POOLS, type ReplayFile } from "@/lib/replay";
-import { feeFor } from "@/lib/swap";
+import { feeFor, MAINNET_GAS_NOTE, useBalances } from "@/lib/swap";
 import type { PoolName } from "@/lib/types";
+import { config } from "@/config";
+
+/** Gas for the whole add-liquidity flow: up to 5 txs (mint and approve both tokens, then modifyLiquidity). */
+const LIQUIDITY_GAS_BUDGET = 700_000n;
 
 function Section({ eyebrow, title, lede, children, deps }: { eyebrow: string; title: string; lede?: string; children: React.ReactNode; deps?: unknown[] }) {
   const ref = useRef<HTMLElement>(null);
@@ -208,14 +212,20 @@ function ReplaySummary() {
 
 /** Measured gas (docs/PROOFS.md, docs/LOADTEST.md, recon C.5) and the chain's gas price right now. */
 function GasTiles() {
-  const rpc = useBlockNumber();
   const [gp, setGp] = useState<bigint | null>(null);
+  // Every 30 s, not every block: the public RPC allows 100 requests/min per IP (recon §E.4).
   useEffect(() => {
-    publicClient()
-      .getGasPrice()
-      .then(setGp)
-      .catch(() => setGp(null));
-  }, [rpc.block]);
+    const read = () => {
+      if (document.visibilityState !== "visible") return;
+      publicClient()
+        .getGasPrice()
+        .then(setGp)
+        .catch(() => setGp(null));
+    };
+    read();
+    const id = setInterval(read, 30_000);
+    return () => clearInterval(id);
+  }, []);
   const hype = (gas: bigint) => (gp === null ? "—" : `${Number(formatUnits(gas * gp, 18)).toFixed(6)} HYPE`);
   const tiles = [
     { v: "~175k", k: "gas per swap", s: hype(175_000n) },
@@ -241,6 +251,9 @@ function AddLiquidity() {
   const d = a.deployments;
   const m = a.math;
   const lq = useAddLiquidity(d);
+  const bal = useBalances(d, lq.wallet.address, lq.last);
+  // Up to 5 txs (mint and approve both tokens, then modifyLiquidity), each with the gas margin.
+  const gasOk = bal ? bal.native >= LIQUIDITY_GAS_BUDGET * bal.gasPrice : true;
   const [pool, setPool] = useState<PoolName>("aven");
   const [range, setRange] = useState(10);
   const [amount, setAmount] = useState("1");
@@ -257,7 +270,9 @@ function AddLiquidity() {
           ? null
           : !plan
             ? "Enter an amount"
-            : null;
+            : !gasOk
+              ? "Not enough HYPE for gas"
+              : null;
 
   return (
     <Card data-reveal>
@@ -318,6 +333,7 @@ function AddLiquidity() {
                 {lq.step ?? blocker ?? `Add liquidity to the ${pool === "aven" ? "Aven" : "plain"} pool`}
               </button>
             )}
+            {config.chainId === 999 && <p className="mt-2 text-[11px] text-faint">{MAINNET_GAS_NOTE}</p>}
             {lq.error && <p className="mt-2 text-[11px] text-crit">{lq.error}</p>}
             {lq.last && (
               <p className="mt-2 text-[11px] text-ink-2">

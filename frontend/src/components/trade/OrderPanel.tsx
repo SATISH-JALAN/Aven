@@ -9,8 +9,9 @@ import { TermChip, TxLink } from "@/components/ui";
 import { useArena } from "@/lib/arena";
 import { num, pipsPct, usd } from "@/lib/format";
 import { termsFired } from "@/lib/steps";
-import { feeFor, indicativeOut, SWAP_GAS_BUDGET, tokenSide, useBalances, useSwap } from "@/lib/swap";
+import { feeFor, indicativeOut, MAINNET_GAS_NOTE, SWAP_GAS_BUDGET, tokenSide, useBalances, useSwap } from "@/lib/swap";
 import type { Direction, PoolName } from "@/lib/types";
+import { config } from "@/config";
 
 const SWAP_GAS = 180_000n; // a full swap through the test router, p50 (docs/PROOFS.md ~175k)
 
@@ -38,7 +39,7 @@ export function OrderPanel() {
   const inBal = bal && t ? (side === "sellBase" ? bal.base : bal.quote) : null;
   const gasHype = bal ? Number(formatUnits(SWAP_GAS * bal.gasPrice, 18)) : null;
   const gasOk = bal ? bal.native >= SWAP_GAS_BUDGET * bal.gasPrice : true;
-  const blocker = s.blocker(amt) ?? (!gasOk ? "Not enough HYPE for gas" : null);
+  const blocker = s.blocker(amt, side) ?? (!gasOk ? "Not enough HYPE for gas" : null);
 
   const pct = (p: number) => {
     if (inBal === null || !t) return;
@@ -161,6 +162,7 @@ export function OrderPanel() {
             {s.step ?? blocker ?? `${long ? "Long" : "Short"} ${amount} ${m?.tokens.baseSymbol ?? ""}`.replace(/\s+/g, " ")}
           </button>
         )}
+        {config.chainId === 999 && <p className="mt-2 text-[11px] text-faint">{MAINNET_GAS_NOTE}</p>}
         {s.error && <p className="mt-2 text-[11px] text-crit">{s.error}</p>}
         {s.last && (
           <p className="mt-2 text-[11px] text-ink-2">

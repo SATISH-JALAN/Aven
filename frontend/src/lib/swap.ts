@@ -19,6 +19,16 @@ export { feeFor, indicativeOut, tokenSide } from "@/lib/trade-math";
 /** mint + approve + swap, with margin. */
 export const SWAP_GAS_BUDGET = 420_000n;
 
+/**
+ * Per-trade cap in the UI (input token, human units). The demo tokens are open-mint (docs/SECURITY.md C-5); the cap
+ * keeps one click from pushing a pool toward the edge of its range (the 40,000 aUSD shock moves it ~190 bp). It is a
+ * UI guard only: anyone can still call the router directly.
+ */
+export const MAX_UI_TRADE: Record<Direction, number> = { sellBase: 5, buyBase: 10_000 };
+
+/** Shown under the trade buttons on mainnet: the tokens are free, the gas is not. */
+export const MAINNET_GAS_NOTE = "Mainnet: gas is paid in real HYPE. aETH and aUSD are free demo tokens.";
+
 // ---- your trades (shared across pages) ----
 let mine: Trade[] = [];
 const subs = new Set<() => void>();
@@ -69,12 +79,13 @@ export function useSwap() {
   const [s, setS] = useState<SwapStatus>({ step: null, error: null, last: null });
 
   /** Why a swap can't run right now (null = ready). Ordered so the first blocker is the one to fix. */
-  const blocker = (amount: number): string | null => {
+  const blocker = (amount: number, side: Direction): string | null => {
     if (a.mode !== "LIVE" || !d || d.swapRouter.length !== 42) return "Needs the live deployment";
     if (!w.enabled) return "Wallet connect is not configured";
     if (!w.authenticated || !w.address) return "Connect wallet to trade";
     if (w.wrongChain) return `Switch to ${appChain.name}`;
     if (!(amount > 0)) return "Enter an amount";
+    if (amount > MAX_UI_TRADE[side]) return `Max ${MAX_UI_TRADE[side].toLocaleString("en-US")} ${side === "sellBase" ? d.tokens.baseSymbol : d.tokens.quoteSymbol} per trade`;
     return null;
   };
 
