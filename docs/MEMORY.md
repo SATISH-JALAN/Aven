@@ -6,6 +6,12 @@ The running record of status, decisions and open items. It saves you from re-rea
 
 | Prompt | State | Commit(s) / notes |
 |---|---|---|
+| **Bulk run on the dashboard (prompt F42, part 5)** | ✅ 2026-11-07.
+  - **Arena:** `POST /burst {rounds ≤ 20}` (admin) runs N × (shock both pools with a quarter of the default size, alternating buy/sell; then a bot pass in a later block). `GET /burst` shows progress publicly; `POST /burst/stop` ends a run.
+  - **Dashboard:** the "Bulk run" block starts runs and shows each round's shock block, oracle, the Aven arb fee and the plain arb fee, with blocks after the shock.
+  - **Local chain:** 4 rounds via the API, then 6 rounds from the dashboard button. Aven arbs paid 1,250–2,500 pips (avg 1,683), each 2 blocks after its shock, all verified A+B. The plain pool's flat 3,000 pips didn't pay after round 1.
+  - **Cost on mainnet:** ~4 swaps per round, ≈ 0.00008 HYPE per round at 0.1 gwei.
+  - **Tests:** Arena 45/45 (3 new route tests), frontend 53/53. | `backend/arena/src/arena.ts`, `frontend/src/components/arena/BulkRun.tsx` |
 | **RPC load balancer + wallet activity (prompt F42, parts 1–3)** | ✅ 2026-11-07.
   - **Balancer:** the browser spreads reads over 7 public mainnet RPCs (recon §F), with failover, a 90 calls/min budget per endpoint, a hedged 1 s head poll and Multicall3.
   - **Measured:** ~277 calls/min with 0 errors; a new block seen every 1.01 s median.

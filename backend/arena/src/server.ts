@@ -154,6 +154,19 @@ export function makeApp(arena: ArenaApi, opts: ServerOptions): Hono {
     if (sizeBase !== undefined && !(Number(sizeBase) > 0)) return c.json({ error: "sizeBase must be > 0" }, 400);
     return c.json(await arena.shock({ ...(sizeBase ? { sizeBase } : {}), ...(direction ? { direction } : {}) }));
   });
+  // Bulk run: N × (shock both pools, then a bot pass), in the background. GET is public (progress for the dashboard).
+  app.get("/burst", (c) => c.json(arena.burst() ?? { status: "idle" }));
+  app.post("/burst", async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { rounds?: unknown; sizeBase?: unknown };
+    const rounds = Number(body.rounds ?? 5);
+    const sizeBase = body.sizeBase === undefined ? undefined : String(body.sizeBase);
+    try {
+      return c.json(arena.startBurst({ rounds, ...(sizeBase ? { sizeBase } : {}) }), 202);
+    } catch (e) {
+      return c.json({ error: (e as Error).message }, (e as Error).message.includes("already running") ? 409 : 400);
+    }
+  });
+  app.post("/burst/stop", (c) => c.json(arena.stopBurst() ?? { status: "idle" }));
   app.post("/bot/start", (c) => c.json(arena.setBot(true)));
   app.post("/bot/stop", (c) => c.json(arena.setBot(false)));
   app.post("/reset-stats", (c) => c.json(arena.resetStats()));

@@ -127,6 +127,10 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
      6. read the receipt, decode `FeeComputed`, verify it, then append a `Trade` to `trades.jsonl` and update the stats.
   3. **SSE broadcaster:** pushes `state`, `trade`, `shock` and `bot` events.
 - **Admin entry:** `POST /shock` sends one identical swap on both pools from the **shock wallet**. Also `POST /bot/start`, `/bot/stop` and `/reset-stats`. All of these need `x-admin-token`, which is checked **before** the per-client POST limit.
+- **Bulk run:** `POST /burst {rounds}` → `Arena.startBurst` (at most 20 rounds, one run at a time) → `runBurst` in the background.
+  - Each round: `shock()` with a quarter of the default size, alternating buy/sell, then `botPassAfter(shockBlock)`. That waits for a later block and for any in-flight auto-bot pass, then runs one `botIteration`; the gas cap and the balance floor still apply.
+  - Every swap is recorded like any other trade. Progress is in `GET /burst` (public) and the SSE `burst` event. `POST /burst/stop` ends the run after its current round.
+  - Dashboard: `frontend/src/components/arena/BulkRun.tsx` (the "Bulk run" block) starts a run with the admin token. It polls `/burst` and shows, per round, the shock block, the oracle, and each arb's fee and blocks after the shock.
   - **Client identity:** the socket address, or with `ARENA_TRUST_PROXY=1` the **last** `X-Forwarded-For` entry.
 - **RPC-backed GETs:** `/verify/:tx` is cached per tx and limited per client (`ARENA_VERIFY_LIMIT_PER_MIN`, 429). `/bot/status` balances are cached per block. `/stream` is capped at `ARENA_MAX_SSE_CLIENTS` (503).
 - **Config guards for chain 999:** `NATIVE_USD` > 0, `ARENA_ADMIN_TOKEN` ≥ 24 characters and `MAX_GAS_PRICE_GWEI` > 0, or the Arena refuses to start.

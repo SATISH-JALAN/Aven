@@ -47,7 +47,7 @@ export interface ArenaData {
   recorded: RecordedRun | null;
   adminToken: string;
   setAdminToken: (t: string) => void;
-  post: (path: "/shock" | "/bot/start" | "/bot/stop" | "/reset-stats", body?: unknown) => Promise<unknown>;
+  post: (path: AdminPath, body?: unknown) => Promise<unknown>;
   verify: (tx: string) => Promise<VerifyResult>;
   refresh: () => void;
 }
@@ -62,6 +62,10 @@ export function useArena(): ArenaData {
 
 const HISTORY_MAX = 1_800; // ~30 min of 1 s blocks, for the dashboard
 const api = (p: string) => `${config.arenaApi}${p}`;
+/** Admin POST routes of the Arena (docs/spec/API.md, plus the bulk run). */
+export type AdminPath = "/shock" | "/bot/start" | "/bot/stop" | "/reset-stats" | "/burst" | "/burst/stop";
+/** Public GET for a component that needs an Arena route the provider doesn't keep (e.g. /burst). */
+export const arenaGet = <T,>(path: string) => getJson<T>(path);
 
 async function getJson<T>(path: string, timeoutMs = 8_000): Promise<T> {
   const ctl = new AbortController();
@@ -303,7 +307,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   }, [ingestState, loadRecorded, nonce]);
 
   const post = useCallback(
-    async (path: "/shock" | "/bot/start" | "/bot/stop" | "/reset-stats", body?: unknown) => {
+    async (path: AdminPath, body?: unknown) => {
       if (mode !== "LIVE") throw new Error("Controls need the live Arena service.");
       const r = await fetch(api(path), {
         method: "POST",

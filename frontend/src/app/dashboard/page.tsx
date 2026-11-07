@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { BulkRun } from "@/components/arena/BulkRun";
 import { Controls } from "@/components/arena/Controls";
 import { TradeTape } from "@/components/arena/Tape";
 import { Block, Composition, Headline, LatencyProof, LiveStrip, MarketCharts, NoExtraFee, RecordedNote, SwapInspector, Throughput } from "@/components/dashboard/sections";
@@ -107,6 +108,10 @@ export default function DashboardPage() {
 
       <Block id="flow" eyebrow="Throughput" title="What flowed in and out.">
         <Throughput trades={trades} windowMs={win} now={now} />
+      </Block>
+
+      <Block id="bulk" eyebrow="Bulk run" title="Many shocks, block by block.">
+        <BulkRun />
       </Block>
 
       <Block id="feed" eyebrow="Live feed" title="Every trade, as it lands.">

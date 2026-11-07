@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { LineChart, type Marker } from "@/components/LineChart";
 import { Magnetic } from "@/components/motion";
 import { Card, Empty, Notice, Src } from "@/components/ui";
-import { useArena } from "@/lib/arena";
+import { useArena, type AdminPath } from "@/lib/arena";
 import { int, num, timeUtc } from "@/lib/format";
 
 // ------------------------------------------------------------------------------------------------ controls
@@ -20,7 +20,7 @@ export function Controls() {
   const lastTrade = a.trades[0];
   const sym = a.math?.tokens.baseSymbol ?? "base";
 
-  const run = async (label: string, path: "/shock" | "/bot/start" | "/bot/stop" | "/reset-stats", body?: unknown) => {
+  const run = async (label: string, path: AdminPath, body?: unknown) => {
     setBusy(label);
     setMsg(null);
     try {

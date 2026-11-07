@@ -46,9 +46,9 @@ import {
   valueSwap,
   zeroForOneOf,
 } from "./math.ts";
-import type { Direction, PoolName, PoolState, Shock, StateResponse, Stats, Trade, VerifyResult } from "./types.ts";
+import type { Burst, BurstRound, Direction, PoolName, PoolState, Shock, StateResponse, Stats, Trade, VerifyResult } from "./types.ts";
 
-export type ArenaEvent = "state" | "trade" | "shock" | "bot";
+export type ArenaEvent = "state" | "trade" | "shock" | "bot" | "burst";
 type Listener = (event: ArenaEvent, data: unknown) => void;
 
 export interface ArenaApi {
@@ -62,6 +62,10 @@ export interface ArenaApi {
   shock(opts: { sizeBase?: string; direction?: string }): Promise<Shock>;
   setBot(enabled: boolean): { enabled: boolean };
   resetStats(): { since: number };
+  /** Bulk run: `rounds` × (shock both pools, then a bot pass). One at a time; see Arena.startBurst. */
+  startBurst(opts: { rounds: number; sizeBase?: string }): Burst;
+  stopBurst(): Burst | null;
+  burst(): Burst | null;
   subscribe(l: Listener): () => void;
 }
 
@@ -325,6 +329,87 @@ export class Arena implements ArenaApi {
     const s: Shock = { id: `shock:${hashes[0]}`, ts: Date.now(), sizeBase: String(sizeBase), direction: dir, txHashes: hashes };
     this.record(s);
     return s;
+  }
+
+  // ------------------------------------------------------------------------------------------------ bulk run
+
+  /** Most rounds one bulk run may ask for: bounds the gas a leaked admin token can spend (~4 swaps per round). */
+  static readonly BURST_MAX_ROUNDS = 20;
+  private burst_: Burst | null = null;
+  private burstStop = false;
+
+  /**
+   * Start a bulk run in the background: `rounds` rounds, each a shock on both pools (alternating buy / sell, so the
+   * pools oscillate around the oracle and the wallet's inventory doesn't drift) followed by a bot pass in a LATER
+   * block. Every swap is recorded like any other trade (block, oracle, fee, verify), so the dashboard's latency and
+   * fee views fill from it. The bot pass runs even while the auto-bot is off; the gas cap and the balance floor still
+   * apply (botIteration). Default size: a quarter of the default shock, ~50 bp of pool movement.
+   */
+  startBurst(opts: { rounds: number; sizeBase?: string }): Burst {
+    if (this.burst_?.status === "running") throw new Error("a bulk run is already running");
+    const rounds = Math.floor(opts.rounds);
+    if (!(rounds >= 1 && rounds <= Arena.BURST_MAX_ROUNDS)) throw new Error(`rounds must be 1..${Arena.BURST_MAX_ROUNDS}`);
+    if (opts.sizeBase !== undefined && !(Number(opts.sizeBase) > 0)) throw new Error("sizeBase must be > 0");
+    this.burstStop = false;
+    const b: Burst = { id: `burst:${Date.now()}`, status: "running", startedAt: Date.now(), endedAt: null, rounds, sizeBase: opts.sizeBase ?? "auto", error: null, results: [] };
+    this.burst_ = b;
+    this.emit("burst", b);
+    void this.runBurst(b, opts.sizeBase);
+    return b;
+  }
+
+  stopBurst(): Burst | null {
+    if (this.burst_?.status === "running") this.burstStop = true;
+    return this.burst_;
+  }
+
+  burst(): Burst | null {
+    return this.burst_;
+  }
+
+  private async runBurst(b: Burst, sizeOpt?: string): Promise<void> {
+    const cfg = this.c.d.config;
+    try {
+      for (let i = 0; i < b.rounds; i++) {
+        if (this.burstStop) break;
+        const direction: Direction = i % 2 === 0 ? "buyBase" : "sellBase";
+        const px = await withRetry(() => readOracle(this.c));
+        if (!px.readOk) throw new Error("oracle read failed");
+        const sizeBase = sizeOpt ?? String(this.cfg.SHOCK_QUOTE / 4 / rawToPrice(px.oracleRaw, cfg.szDecimals));
+        const s = await this.shock({ sizeBase, direction });
+        const shockBlock = this.ownTxBlock;
+        const arbs = await this.botPassAfter(shockBlock);
+        const r: BurstRound = {
+          round: i + 1,
+          direction,
+          sizeBase,
+          shockBlock: Number(shockBlock),
+          oracleRaw: px.oracleRaw.toString(),
+          shockTxs: s.txHashes,
+          arbs: arbs.map((t) => ({ pool: t.pool, txHash: t.txHash, block: t.block, feePips: t.feePips })),
+        };
+        b.results.push(r);
+        this.emit("burst", b);
+      }
+      b.status = this.burstStop ? "stopped" : "done";
+    } catch (e) {
+      b.status = "error";
+      b.error = msg(e);
+    } finally {
+      b.endedAt = Date.now();
+      this.emit("burst", b);
+    }
+  }
+
+  /** Wait for a block after `after`, then run one bot pass (waiting out a pass the auto-bot already has in flight). */
+  private async botPassAfter(after: bigint): Promise<Trade[]> {
+    const deadline = Date.now() + 30_000;
+    let b = await this.c.publicClient.getBlockNumber({ cacheTime: 0 });
+    while ((b <= after || this.running) && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 250));
+      b = await this.c.publicClient.getBlockNumber({ cacheTime: 0 });
+    }
+    return this.botIteration(b);
   }
 
   // ------------------------------------------------------------------------------------------------ reads

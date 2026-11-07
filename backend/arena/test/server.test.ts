@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ArenaApi, ArenaEvent } from "../src/arena.ts";
+import type { Burst } from "../src/types.ts";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -32,6 +33,7 @@ function fakeArena() {
       },
     },
   };
+  let burst: Burst | null = null;
   const api: ArenaApi = {
     health: () => ({ ok: true, chainId: 31337, block: 7, botEnabled: false, version: "t" }),
     config: () => ({ chainId: 31337 }),
@@ -52,6 +54,18 @@ function fakeArena() {
       return { enabled };
     },
     resetStats: () => ({ since: 42 }),
+    startBurst: (o) => {
+      calls.push(`burst:${o.rounds}:${o.sizeBase ?? ""}`);
+      if (!(o.rounds >= 1 && o.rounds <= 20)) throw new Error("rounds must be 1..20");
+      if (burst?.status === "running") throw new Error("a bulk run is already running");
+      burst = { id: "b", status: "running", startedAt: 1, endedAt: null, rounds: o.rounds, sizeBase: o.sizeBase ?? "auto", error: null, results: [] };
+      return burst;
+    },
+    stopBurst: () => {
+      calls.push("burst:stop");
+      return burst;
+    },
+    burst: () => burst,
     subscribe: (l) => {
       listener = l;
       return () => {
@@ -248,3 +262,33 @@ describe("loadDotEnv", () => {
   });
 });
 
+describe("bulk run routes", () => {
+  it("GET /burst is public and idle before any run", async () => {
+    const app = makeApp(fakeArena().api, opts);
+    const r = await app.fetch(new Request("http://x/burst"));
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ status: "idle" });
+  });
+
+  it("POST /burst needs the admin token, starts with 202, and refuses a second run with 409", async () => {
+    const f = fakeArena();
+    const app = makeApp(f.api, { ...opts, postRateLimitPerMin: 10 });
+    expect((await app.fetch(post("/burst", { rounds: 3 }, null))).status).toBe(401);
+    const ok = await app.fetch(post("/burst", { rounds: 3, sizeBase: "2" }));
+    expect(ok.status).toBe(202);
+    expect(((await ok.json()) as Burst).rounds).toBe(3);
+    expect((await app.fetch(post("/burst", { rounds: 2 }))).status).toBe(409);
+    expect(f.calls).toContain("burst:3:2");
+    const st = await app.fetch(new Request("http://x/burst"));
+    expect(((await st.json()) as Burst).status).toBe("running");
+    expect((await app.fetch(post("/burst/stop"))).status).toBe(200);
+    expect(f.calls).toContain("burst:stop");
+  });
+
+  it("POST /burst rejects a round count outside 1..20 with 400", async () => {
+    const app = makeApp(fakeArena().api, { ...opts, postRateLimitPerMin: 10 });
+    expect((await app.fetch(post("/burst", { rounds: 0 }))).status).toBe(400);
+    expect((await app.fetch(post("/burst", { rounds: 21 }))).status).toBe(400);
+    expect((await app.fetch(post("/burst", { rounds: "x" }))).status).toBe(400);
+  });
+});

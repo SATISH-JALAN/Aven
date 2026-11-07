@@ -38,6 +38,29 @@ export type Trade = {
   verify?: { checkA: boolean; checkB: boolean };
 };
 export type Shock = { id: string; ts: number; sizeBase: string; direction: string; txHashes: string[] };
+/** One round of a bulk run: a shock on both pools, then the bot's pass in a later block. */
+export type BurstRound = {
+  round: number;
+  direction: Direction;
+  sizeBase: string;
+  /** Block of the shock swaps and the oracle the shock was sized at (raw precompile units). */
+  shockBlock: number;
+  oracleRaw: string;
+  shockTxs: string[];
+  /** The bot's arbs after the shock (0, 1 or 2: it only trades when the arb pays). */
+  arbs: Array<{ pool: PoolName; txHash: string; block: number; feePips: number }>;
+};
+/** A bulk run (POST /burst): N rounds, one after another, admin only. */
+export type Burst = {
+  id: string;
+  status: "running" | "done" | "stopped" | "error";
+  startedAt: number;
+  endedAt: number | null;
+  rounds: number;
+  sizeBase: string;
+  error: string | null;
+  results: BurstRound[];
+};
 export type VerifyResult = {
   match: boolean;
   checkA: boolean;

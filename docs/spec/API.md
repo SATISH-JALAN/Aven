@@ -15,6 +15,9 @@ Base URL: `NEXT_PUBLIC_ARENA_API`. JSON. POST routes need header `x-admin-token`
 | POST | `/shock` `{sizeBase?, direction?}` | `Shock` |
 | POST | `/bot/start` · `/bot/stop` | `{enabled}` |
 | POST | `/reset-stats` | `{since}` |
+| GET | `/burst` | the latest bulk run (`Burst`, `backend/arena/src/types.ts`) or `{status: "idle"}`. Public |
+| POST | `/burst` `{rounds: 1..20, sizeBase?}` | `202` + `Burst`; `409` while one runs, `400` on bad input. Added 2026-11-07 (prompt F42, approved by Sayan) |
+| POST | `/burst/stop` | the run, which stops after its current round |
 
 ```ts
 type Reason = "OK" | "READ_FAILED" | "GAP_TOO_LARGE";
