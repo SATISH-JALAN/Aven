@@ -6,7 +6,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { config, type Deployments } from "@/config";
-import type { ArenaConfigResponse, BotStatus, RecordedRun, Shock, StateResponse, Stats, Trade, VerifyResult } from "@/lib/types";
+import type { ArenaConfigResponse, BotStatus, Breakdown, RecordedRun, Shock, StateResponse, Stats, Trade, VerifyResult } from "@/lib/types";
 
 export interface HistoryPoint {
   ts: number;
@@ -15,6 +15,14 @@ export interface HistoryPoint {
   mark: number;
   control: number;
   aven: number;
+  /** Dashboard fields (optional, additive): raw oracle, gaps vs the oracle (bp, signed: < 0 = pool below), the hook's
+   *  live quotes for both directions and its top-of-block anchor. All straight from /state; nothing is derived here. */
+  oracleRaw?: string;
+  avenGap?: number;
+  controlGap?: number;
+  avenBuy?: Breakdown | null;
+  avenSell?: Breakdown | null;
+  topBlock?: number;
 }
 
 export interface ArenaData {
@@ -52,7 +60,7 @@ export function useArena(): ArenaData {
   return v;
 }
 
-const HISTORY_MAX = 600;
+const HISTORY_MAX = 1_800; // ~30 min of 1 s blocks, for the dashboard
 const api = (p: string) => `${config.arenaApi}${p}`;
 
 async function getJson<T>(path: string, timeoutMs = 8_000): Promise<T> {
@@ -60,6 +68,8 @@ async function getJson<T>(path: string, timeoutMs = 8_000): Promise<T> {
   const t = setTimeout(() => ctl.abort(), timeoutMs);
   try {
     const r = await fetch(api(path), { signal: ctl.signal, cache: "no-store" });
+    // 429 = the Arena's per-visitor limit (e.g. /verify: 60 a minute, docs/SECURITY.md): say so plainly.
+    if (r.status === 429) throw new Error(`${path}: too many requests from this browser. Wait a minute and retry.`);
     if (!r.ok) throw new Error(`${path}: HTTP ${r.status}${await r.text().then((x) => (x ? ` ${x.slice(0, 120)}` : ""), () => "")}`);
     return (await r.json()) as T;
   } finally {
@@ -84,7 +94,22 @@ export function toDeployments(c: ArenaConfigResponse, base?: Deployments | null)
 }
 
 function pointOf(s: StateResponse): HistoryPoint {
-  return { ts: s.ts, block: s.block, oracle: s.oracle.price, mark: s.mark.price, control: s.pools.control.price, aven: s.pools.aven.price };
+  const fp = s.pools.aven.feePreview;
+  const q = "buyBase" in fp ? fp : null;
+  return {
+    ts: s.ts,
+    block: s.block,
+    oracle: s.oracle.price,
+    mark: s.mark.price,
+    control: s.pools.control.price,
+    aven: s.pools.aven.price,
+    oracleRaw: s.oracle.raw,
+    avenGap: s.pools.aven.gapBps,
+    controlGap: s.pools.control.gapBps,
+    avenBuy: q?.buyBase ?? null,
+    avenSell: q?.sellBase ?? null,
+    topBlock: s.pools.aven.hookState?.topBlock,
+  };
 }
 
 export function ArenaProvider({ children }: { children: ReactNode }) {
@@ -108,9 +133,16 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
 
   // Admin token: ?admin=<token> (FRONTEND.md B6) or the session.
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("admin");
+    const url = new URL(window.location.href);
+    const q = url.searchParams.get("admin");
     const t = q ?? sessionStorage.getItem("aven-admin") ?? "";
-    if (q) sessionStorage.setItem("aven-admin", q);
+    if (q) {
+      sessionStorage.setItem("aven-admin", q);
+      // On mainnet the token lets a holder spend the bot account's gas (shocks): drop it from the address bar so it
+      // doesn't end up in browser history, screenshots or a shared link. It stays in this tab's sessionStorage.
+      url.searchParams.delete("admin");
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    }
     setAdminTokenState(t);
   }, []);
   const setAdminToken = useCallback((t: string) => {
@@ -164,6 +196,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     let es: EventSource | null = null;
     let poll: ReturnType<typeof setInterval> | null = null;
     let slow: ReturnType<typeof setInterval> | null = null;
+    let retry: ReturnType<typeof setTimeout> | null = null;
 
     if (config.mode === "recorded" || !config.arenaApi) {
       void loadRecorded(config.mode === "recorded" ? "Recorded mode is set for this deployment." : "No Arena service is configured.");
@@ -204,43 +237,56 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
           /* SSE sends a state first anyway */
         }
 
-        es = new EventSource(api("/stream"));
-        es.addEventListener("open", () => alive && setStreaming(true));
-        es.addEventListener("state", (ev) => alive && ingestState(JSON.parse((ev as MessageEvent).data) as StateResponse));
-        es.addEventListener("trade", (ev) => {
-          if (!alive) return;
-          const t = JSON.parse((ev as MessageEvent).data) as Trade;
-          setTrades((p) => [t, ...p.filter((x) => x.id !== t.id)].slice(0, 500));
-          void refreshSlow();
-        });
-        es.addEventListener("shock", (ev) => alive && setShocks((p) => [JSON.parse((ev as MessageEvent).data) as Shock, ...p].slice(0, 50)));
-        es.addEventListener("bot", (ev) => {
-          const d = JSON.parse((ev as MessageEvent).data) as { enabled?: boolean; reason?: string; ping?: number };
-          if (alive && typeof d.enabled === "boolean") setBot((b0) => (b0 ? { ...b0, enabled: d.enabled!, lastError: d.reason ?? b0.lastError } : b0));
-        });
-        es.onerror = () => {
-          if (!alive) return;
-          setStreaming(false);
-          // Fallback: poll /state while the stream reconnects (EventSource retries by itself).
-          if (!poll)
-            poll = setInterval(async () => {
-              try {
-                const s = await getJson<StateResponse>("/state");
-                if (alive) {
-                  ingestState(s);
-                  setNote(null);
-                }
-              } catch (e) {
-                if (alive) setNote(`Arena service: ${(e as Error).message}`);
+        const startPolling = () => {
+          if (poll) return;
+          poll = setInterval(async () => {
+            try {
+              const s = await getJson<StateResponse>("/state");
+              if (alive) {
+                ingestState(s);
+                setNote(null);
               }
-            }, config.pollMs);
+            } catch (e) {
+              if (alive) setNote(`Arena service: ${(e as Error).message}`);
+            }
+          }, config.pollMs);
         };
-        es.addEventListener("open", () => {
-          if (poll) {
-            clearInterval(poll);
-            poll = null;
-          }
-        });
+        // The browser retries a dropped stream by itself, but gives up for good on a non-200 answer (the Arena's 503
+        // "too many stream clients", or a tunnel without SSE). Then reopen it ourselves with backoff; poll meanwhile.
+        const openStream = (attempt: number) => {
+          es = new EventSource(api("/stream"));
+          es.addEventListener("open", () => {
+            if (!alive) return;
+            attempt = 0;
+            setStreaming(true);
+            if (poll) {
+              clearInterval(poll);
+              poll = null;
+            }
+          });
+          es.addEventListener("state", (ev) => alive && ingestState(JSON.parse((ev as MessageEvent).data) as StateResponse));
+          es.addEventListener("trade", (ev) => {
+            if (!alive) return;
+            const t = JSON.parse((ev as MessageEvent).data) as Trade;
+            setTrades((p) => [t, ...p.filter((x) => x.id !== t.id)].slice(0, 500));
+            void refreshSlow();
+          });
+          es.addEventListener("shock", (ev) => alive && setShocks((p) => [JSON.parse((ev as MessageEvent).data) as Shock, ...p].slice(0, 50)));
+          es.addEventListener("bot", (ev) => {
+            const d = JSON.parse((ev as MessageEvent).data) as { enabled?: boolean; reason?: string; ping?: number };
+            if (alive && typeof d.enabled === "boolean") setBot((b0) => (b0 ? { ...b0, enabled: d.enabled!, lastError: d.reason ?? b0.lastError } : b0));
+          });
+          es.onerror = () => {
+            if (!alive) return;
+            setStreaming(false);
+            startPolling();
+            if (es?.readyState === EventSource.CLOSED) {
+              es.close();
+              retry = setTimeout(() => alive && openStream(attempt + 1), Math.min(60_000, 5_000 * 2 ** attempt));
+            }
+          };
+        };
+        openStream(0);
         slow = setInterval(refreshSlow, config.pollMs * 3);
       } catch (e) {
         if (alive) void loadRecorded(`Arena service unreachable (${(e as Error).message}). Showing the recorded run.`);
@@ -252,6 +298,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       es?.close();
       if (poll) clearInterval(poll);
       if (slow) clearInterval(slow);
+      if (retry) clearTimeout(retry);
     };
   }, [ingestState, loadRecorded, nonce]);
 
