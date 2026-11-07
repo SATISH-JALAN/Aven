@@ -88,6 +88,27 @@ const env = {
   videoUrl: process.env.NEXT_PUBLIC_VIDEO_URL || "",
 };
 
+/**
+ * Public HyperEVM mainnet RPCs, fastest first (recon §F, measured 2026-11-07): every one answers chain 999 with open
+ * CORS, reads the HyperCore precompiles, serves receipts, historical eth_getLogs and JSON-RPC batches. The browser
+ * balances over all of them (src/lib/rpc.ts). rpc.hyperlend.finance was rejected: it answered "upstream rate limited".
+ */
+const MAINNET_RPCS = [
+  "https://rpc.hyperliquid.xyz/evm",
+  "https://hyperliquid.drpc.org",
+  "https://rpc.purroofgroup.com",
+  "https://999.rpc.thirdweb.com",
+  "https://hyperliquid.rpc.blxrbdn.com",
+  "https://hyperliquid-json-rpc.stakely.io",
+  "https://rpc.hypurrscan.io",
+];
+/** NEXT_PUBLIC_RPCS (comma list) replaces the list; NEXT_PUBLIC_RPC goes first. Other chains use NEXT_PUBLIC_RPC only. */
+const rpcUrls = (() => {
+  const listed = (process.env.NEXT_PUBLIC_RPCS || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const all = [env.rpcUrl, ...(listed.length ? listed : env.chainId === 999 ? MAINNET_RPCS : [])];
+  return [...new Set(all)];
+})();
+
 const chain = CHAINS[env.chainId] ?? { name: `Chain ${env.chainId}`, explorer: null, testnet: true };
 const deployments = (deploymentsJson as Record<string, Deployments>)[String(env.chainId)] ?? null;
 
@@ -98,8 +119,17 @@ export const config = {
   /** Block explorer base URL, or null when none exists (tx links then go to our own /verify/<tx> page). */
   explorer: deployments?.explorer?.startsWith("http") ? deployments.explorer : chain.explorer,
   deployments,
-  /** Chain data polling interval. HyperEVM's RPC has no websockets (recon B.2). */
+  /** Every RPC endpoint the browser balances over (src/lib/rpc.ts). */
+  rpcUrls,
+  /** Arena /state fallback polling interval. HyperEVM's RPC has no websockets (recon B.2). */
   pollMs: 2_000,
+  /**
+   * Block-head polling: one block per second on HyperEVM's small blocks, so 1 s. Affordable because the head poll is
+   * spread over every endpoint in `rpcUrls` (2 hedged calls/s ≈ 17 requests/min per endpoint with 7 endpoints).
+   */
+  blockPollMs: rpcUrls.length > 1 ? 1_000 : 2_000,
+  /** Multicall3 (canonical address, code checked on 999 on 2026-11-07); lets one block's reads go out as one call. */
+  multicall3: env.chainId === 999 ? ("0xcA11bde05977b3631167028862bE2a173976CA11" as const) : null,
   /** eth_getLogs chunk size (recon B.3). */
   logChunk: 50n,
   /**

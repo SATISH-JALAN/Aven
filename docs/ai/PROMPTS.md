@@ -747,3 +747,23 @@ no like we have to show it mainly for demo video and today just for ethglobal su
 ```
 
 Answered (budget for one day + video); no change.
+
+---
+
+## F41 — RPC load balancer request (interrupted)
+
+```text
+i want to make thee rpc loadbalancer , go through this particular
+```
+
+(Screenshot of the /verify page: "RPC down" and "Request exceeds defined limit". Interrupted before any change.)
+
+---
+
+## F42 — 2026-11-07T02:16:35Z — RPC load balancer, trade terminal, wallet activity, bulk bot, replay check
+
+```text
+so go through the image and structure the rpc load balancer to revert the laoding time of each block as the price feds of hype oracle and perps are occuring together in a blaock to reduce the latency . So that it faces a smooth ux experience for the users while using the hook we have written for Uniswap....dont make any changes in contracts as it is deployed in mainnet if any changes is needed in contract then mention it...Also pls change the long and short options and change it to actual spot margin trading of buy and sell with stop losses and rest of th ecandle feature to control the trade , exaactly like the perps dex rest all should eb the same on mainnet. Also remember every time when the user connects to theier wallet they should see their exsisting activity on chain on Aven . Also in the dashboard add a feature of bot trading from the existing tests scripts from the code directory previously which were running locally now it will run on the backend infront with real control hype token that should be very negligible price , thos will perform trades in bulk htorugh accordingl to the market feeds blocks , so that we can proof the deviation of the feeds and the latency of the feeds due to our blocks design . Also check once if the repplay feature is perfectly working on mainnet rest all should eb the same . Be very professional while builing and testing.
+```
+
+Asked: order 1→2→3→5→4; trade = spot + in-tab SL/TP; bulk bot: the user says Sayan already approved (build, test locally, push).

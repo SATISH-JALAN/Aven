@@ -183,6 +183,15 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 
 ## 9. Frontend ✅ `frontend/` (`@aven/web`)
 
+- **Chain reads (every page):** `src/lib/chain.ts` `publicClient()` → `src/lib/rpc.ts` `balancedTransport(config.rpcUrls)`.
+  - `config.rpcUrls` = `NEXT_PUBLIC_RPC` first, then `NEXT_PUBLIC_RPCS` or, on 999, the 7 public endpoints of recon §F.
+  - Each call goes to the healthy endpoint with the lowest latency × (1 + in-flight). Skipped: endpoints ≥ 2 blocks behind, endpoints cooling down after a throttle (4 s, doubling up to 60 s) and endpoints over 90 calls/min. Reverts are thrown at once.
+  - `eth_blockNumber` is hedged over the two best endpoints (the higher block wins). It's polled every `config.blockPollMs` (1 s) by the one shared `useBlockNumber` store, and the head shown never steps back.
+  - Reads made in the same tick go out as one Multicall3 call (`batch.multicall`, 999 only), and each upstream batches JSON-RPC.
+  - "RPC down" means every endpoint failed. The nav dot's tooltip shows healthy/total endpoints.
+- **Wallet activity on connect:** `src/components/onchain/WalletActivity.tsx` `WalletActivityHost` (mounted once in `layout.tsx`).
+  - Opens a drawer with the wallet's `useWalletActivity` scan (Transfer logs → receipts, verified in the browser) when a wallet connects, once per address per browser session.
+  - The nav's address chip reopens it; Disconnect resets it.
 - **Entry:** a browser opens the app (Vercel or `pnpm --filter @aven/web dev`). Next.js 16 App Router, client pages:
   - `/`: landing (`src/components/landing/*`):
     - a preloader, once per session;

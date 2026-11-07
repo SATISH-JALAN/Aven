@@ -338,6 +338,38 @@ The full app ran on the same fork as chain 999 (Arena with `NATIVE_USD` 78.46, t
 
 Per-swap gas there: Aven 166,889 / 167,021 (gas limit with margin ~250k), control 119,563 / 119,928.
 
+## F. Public HyperEVM mainnet RPCs for the browser (checked 2026-11-07 ~01:55 UTC)
+
+Each endpoint was asked, from Node, for:
+- `eth_chainId` and `eth_blockNumber`;
+- an `eth_call` to the oracle precompile `0x…0807` (perp 1);
+- the receipt of the mainnet arb `0xfce1…` (block 50,561,990);
+- `eth_getLogs` for the hook over 50 blocks around that arb, and at the deploy block;
+- a 2-call JSON-RPC batch.
+
+CORS was read with `Origin: https://aven-lovat.vercel.app`.
+
+| Endpoint | CORS | Oracle read | Receipt (4 logs) | Logs at the arb (2) | Batch | Latency (samples) |
+|---|---|---|---|---|---|---|
+| rpc.hyperliquid.xyz/evm (official, 100 req/min per IP) | `*` | 224571 | ✓ | ✓ | ✓ | 188–280 ms |
+| hyperliquid.drpc.org | `*` | ✓ | ✓ | ✓ | ✓ | 210–880 ms |
+| rpc.purroofgroup.com | `*` | ✓ | ✓ | ✓ | ✓ | 300–850 ms |
+| 999.rpc.thirdweb.com | `*` | ✓ | ✓ | ✓ | ✓ | 395–565 ms |
+| hyperliquid.rpc.blxrbdn.com | `*` | ✓ | ✓ | ✓ | ✓ | 480–520 ms |
+| hyperliquid-json-rpc.stakely.io | `*` | ✓ | ✓ | ✓ | ✓ | 430–1,700 ms |
+| rpc.hypurrscan.io | `*` | ✓ | ✓ | ✓ | ✓ | 730–790 ms |
+| rpc.hyperlend.finance | origin echoed | ✗ "upstream rate limited" | — | — | — | rejected |
+
+The non-official endpoints don't publish their rate limits. The browser's balancer (`frontend/src/lib/rpc.ts`) caps each endpoint at 90 calls/min and fails over on a throttle.
+
+**Balancer load test (2026-11-07, 60 s from one IP, 7 endpoints).**
+- Load: a hedged head poll every 1 s, a 50-block `eth_getLogs` scan every 350 ms and a receipt every 600 ms.
+- Result: **~277 upstream calls/min with 0 errors**, and no endpoint went above 90.
+- A new block was seen every **1,010 ms median (p90 1,433 ms)**, which is the chain's own block time.
+- Before the balancer, the same page load on the official endpoint alone hit `-32005 "Request exceeds defined limit"`.
+
+Multicall3 `0xcA11bde05977b3631167028862bE2a173976CA11` has code on 999.
+
 ## Decisions
 
 1. **BaseHook source:** OpenZeppelin `uniswap-hooks` **`v1.3.0-rc.0`**, imported as `@openzeppelin/uniswap-hooks/src/base/BaseHook.sol`. It's the only v1.3.x tag (no final 1.3.0 exists yet); it pins the same v4-core/periphery as stable v1.2.1, and it adds `onlyValidPools`. Re-pin to `v1.3.0` if it ships. Subclass `BaseHook` directly; `BaseOverrideFee` uses `afterInitialize`, not our `beforeInitialize`.

@@ -57,7 +57,7 @@ interface SwapRow {
   plainFeeUsd: number | null;
 }
 
-function rowsFor(txs: WalletTx[], ledger: ChainEvent[], d: Deployments, latestOracle: number | null): SwapRow[] {
+export function rowsFor(txs: WalletTx[], ledger: ChainEvent[], d: Deployments, latestOracle: number | null): SwapRow[] {
   const all = ledgerRows(ledger, d);
   const byId = new Map(all.map((r) => [r.e.id, r]));
   const out: SwapRow[] = [];
@@ -196,7 +196,7 @@ function SwapDetail({ s, d }: { s: SwapRow; d: Deployments }) {
   );
 }
 
-function ActivityList({ txs, swapRows, d }: { txs: WalletTx[]; swapRows: SwapRow[]; d: Deployments }) {
+export function ActivityList({ txs, swapRows, d }: { txs: WalletTx[]; swapRows: SwapRow[]; d: Deployments }) {
   const [open, setOpen] = useState<string | null>(null);
   const [n, setN] = useState(25);
   const c = d.config;

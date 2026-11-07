@@ -6,6 +6,13 @@ The running record of status, decisions and open items. It saves you from re-rea
 
 | Prompt | State | Commit(s) / notes |
 |---|---|---|
+| **RPC load balancer + wallet activity (prompt F42, parts 1–3)** | ✅ 2026-11-07.
+  - **Balancer:** the browser spreads reads over 7 public mainnet RPCs (recon §F), with failover, a 90 calls/min budget per endpoint, a hedged 1 s head poll and Multicall3.
+  - **Measured:** ~277 calls/min with 0 errors; a new block seen every 1.01 s median.
+  - **Verify:** the page that failed with "Request exceeds defined limit" now shows 9,950 = 9,950 = 9,950. Scanner and verify pacing were tightened.
+  - **Wallet activity:** a drawer with the wallet's on-chain activity opens on connect. Not yet clicked through with a real wallet.
+  - **Replay** checked on the Vercel site: Binance-halt plays, and the final table matches (+$141.25 / +$114.47).
+  - **Tests:** frontend 53/53 (9 new for the balancer, 2 mutations caught), tsc clean. | `frontend/src/lib/{rpc,chain,onchain}.ts`, `frontend/src/components/onchain/WalletActivity.tsx` |
 | **Hosting (prompts F37–F38)** | ✅ 2026-11-07. **Frontend https://aven-lovat.vercel.app** (Vercel project `aven`, builds from GitHub `main`) in LIVE mode against the **Arena at https://aven-arena.onrender.com** (Render free, chain 999). Dashboard checked in Chrome: SSE stream, block-level live data. Open: keep-alive pinger, bot is off (`botEnabled: false`), `/verify` per-client limit doesn't trigger on Render (DEPLOYMENTS.md §M.6). | no code change |
 | **On-chain record + wallet portfolio** | ✅ 2026-11-06 ~23:40 UTC (prompt F34). Chain-only: no DB, no Arena needed. The dashboard's "On chain" section shows every swap on both pools with the oracle and mark the hook read in that block, verified A+B in the browser, compared with Hyperliquid's 1m candles on mainnet. `/portfolio` shows any address's swaps, liquidity and mints from Transfer logs → receipts.
   - Local check (headless Chrome): a test wallet (anvil #3) did 2 mints, approvals, an Aven sell (0.14%), a plain sell (0.30%), a liquidity add and an Aven buy (0.05%). The portfolio showed all 6 txs with amounts, both Aven swaps MATCH, 0 console errors. The ledger table showed the plain pool sitting 30 bp above the oracle because its 0.30% fee stops the arb.
@@ -93,6 +100,15 @@ The running record of status, decisions and open items. It saves you from re-rea
 GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-07 (`1198f4f`, 15 frontend + merge commits), on Sayan's "push" (relayed by Satish). **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
+
+- **2026-11-07: Browser RPC = a client-side load balancer over public endpoints, not a server proxy.**
+  - Why client-side: the public limits are per IP, so each visitor gets 7 budgets of their own. A Vercel proxy would put every visitor behind Vercel's shared IPs (one budget), and it would need an RPC key the Arena's Alchemy quota can't spare.
+  - Consistency: endpoints ≥ 2 blocks behind the freshest head are skipped, and reverts are never retried elsewhere.
+  - Latency floor: the oracle and the mark land in the same block, so one block (~1 s) plus one round trip. No contract change can lower it.
+- **2026-11-07: Trade page = spot Buy/Sell with stop-loss/take-profit that run in the open tab** (the user chose this over real margin).
+  - Real leverage would need a lending/margin contract.
+  - Orders that execute while the user is away need an order contract plus a keeper holding the user's approval.
+  - Both are new mainnet contracts (Sayan + audit), so neither is built.
 
 - **2026-11-07: Connect wallet without Privy sign-in.** MetaMask failed on "Could not log in with wallet" (console: Privy's generic "Error authenticating session"). Privy's servers were fine: the same SIWE init + authenticate from Node with a throwaway key returned 200 for chains 999 and 1, the clock matched, `wallet_auth` was on and no origin was restricted. The failure was in the browser-side sign step, and Privy hides the cause. The app never uses a Privy session (no server-side calls), so `components/wallet.tsx` now calls `useConnectWallet().connectWallet()` instead of `login()`. This means no sign-in signature, and `authenticated` means "a wallet is connected". MetaMask ignores programmatic `disconnect()`, so Disconnect sends `wallet_revokePermissions` and hides the wallet until the next connect. Typecheck and 29 web tests pass. **Not yet clicked through with a real MetaMask.**
 - **2026-11-07: Wallet only, "Connect wallet" wording.** Privy `loginMethods` is `["wallet"]` (email sign-in and the embedded-wallet-on-login option removed), and every "Log in" / "Log out" / "Login off" label now reads "Connect wallet" / "Disconnect" / "Wallet off"; the Privy modal title is "Connect a wallet" (`appearance.landingHeader`). Checked in headless Brave on localhost:3000 with the app ID: every page shows "Connect wallet", no console errors, and the modal lists MetaMask, Coinbase Wallet, Rainbow and Other wallets only. Reason (Om): Aven is a web3 app, so users connect their own wallet.

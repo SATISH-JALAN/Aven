@@ -59,7 +59,7 @@ export const isAppRoute = (path: string | null) => !!path && /^\/(trade|docs)(\/
 export function NetStatus({ compact = false }: { compact?: boolean }) {
   const rpc = useBlockNumber();
   return (
-    <span className={`flex items-center gap-2 text-xs ${rpc.error ? "text-crit" : "text-ink-2"}`} title={rpc.error ? `RPC error: ${rpc.error}` : `${config.chainName} · ${config.rpcUrl}`}>
+    <span className={`flex items-center gap-2 text-xs ${rpc.error ? "text-crit" : "text-ink-2"}`} title={rpc.error ? `RPC error (all ${rpc.total} endpoints): ${rpc.error}` : `${config.chainName} · ${rpc.healthy}/${rpc.total} RPC endpoints healthy`}>
       <span className={`h-1.5 w-1.5 rounded-full ${rpc.error ? "bg-crit" : rpc.block ? "live-dot bg-mint text-mint" : "bg-faint"}`} />
       <span className="num">{rpc.error ? "RPC down" : rpc.block ? `#${rpc.block.toLocaleString("en-US")}` : "…"}</span>
       {!compact && <span className="text-faint">{config.chainName}</span>}
@@ -182,7 +182,7 @@ export function RpcBanner() {
   if (!rpc.error) return null;
   return (
     <div role="alert" className="fixed inset-x-0 top-[80px] z-40 mx-auto w-fit rounded-full border border-crit/40 bg-bg/90 px-4 py-1.5 text-xs text-[#f08a8a] backdrop-blur">
-      ✕ RPC down. Showing the last data{rpc.block ? ` (block #${rpc.block.toLocaleString("en-US")})` : ""}. Retrying every {config.pollMs / 1000}s.
+      ✕ RPC down. Showing the last data{rpc.block ? ` (block #${rpc.block.toLocaleString("en-US")})` : ""}. All {rpc.total} RPC endpoints failed; retrying every {config.blockPollMs / 1000}s.
     </div>
   );
 }

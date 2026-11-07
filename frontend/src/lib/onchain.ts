@@ -31,8 +31,11 @@ import type { Breakdown, Direction, PoolName } from "@/lib/types";
 export const LOG_CHUNK = config.chainId === 999 ? 500 : config.chainId === 998 ? 50 : 5_000;
 /** Gap between our RPC calls. The mainnet public RPC throttles eth_getLogs well below its 100 requests/min (measured
  *  2026-11-06: refusals after a handful of quick calls, ~25 s to recover), so pace at 24/min and back off on refusals. */
-const CALL_GAP_MS = config.chainId === 31337 ? 0 : 2_500;
-const LIVE_MS = config.chainId === 31337 ? 1_500 : 5_000;
+// Spacing between this module's calls. With the balancer (src/lib/rpc.ts) each call goes to another endpoint, so the
+// per-endpoint rate is CALL_GAP_MS × endpoints; one endpoint alone keeps the old 100-requests/min pacing.
+const MULTI = config.rpcUrls.length > 1;
+const CALL_GAP_MS = config.chainId === 31337 ? 0 : MULTI ? 350 : 2_500;
+const LIVE_MS = config.chainId === 31337 ? 1_500 : MULTI ? 2_000 : 5_000;
 const LEDGER_CAP = 5_000;
 
 const T_SWAP = encodeEventTopics({ abi: poolManagerAbi, eventName: "Swap" } as never)[0] as Hex;

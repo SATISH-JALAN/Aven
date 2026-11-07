@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { Smoother } from "@/components/motion";
 import { Footer, Nav, PageModeProvider, ReadyOutsideLanding, RpcBanner } from "@/components/shell";
+import { WalletActivityHost } from "@/components/onchain/WalletActivity";
 import { WalletProvider } from "@/components/wallet";
 import { ArenaProvider } from "@/lib/arena";
 import "./globals.css";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <ReadyOutsideLanding />
               <Nav />
               <RpcBanner />
+              <WalletActivityHost />
               <div id="smooth-wrapper">
                 <div id="smooth-content">
                   <Smoother />

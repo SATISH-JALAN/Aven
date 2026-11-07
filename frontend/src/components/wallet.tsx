@@ -8,6 +8,7 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 import { config } from "@/config";
 import { appChain } from "@/lib/chain";
 import { shortHex } from "@/lib/format";
+import { forgetActivitySeen, openWalletActivity } from "@/components/onchain/WalletActivity";
 
 export interface WalletState {
   enabled: boolean;
@@ -134,10 +135,20 @@ export function WalletButton() {
           ⚠ Switch to {config.chainName}
         </button>
       )}
-      <span className="num rounded-full border border-line px-3 py-1.5 text-xs text-ink-2" title={w.address ?? ""}>
+      <button
+        onClick={openWalletActivity}
+        className="num rounded-full border border-line px-3 py-1.5 text-xs text-ink-2 transition hover:border-line-strong hover:text-ink"
+        title={w.address ? `${w.address}: your activity on Aven` : ""}
+      >
         {w.address ? shortHex(w.address) : "no wallet"}
-      </span>
-      <button onClick={() => void w.logout()} className="text-xs text-muted transition hover:text-ink">
+      </button>
+      <button
+        onClick={() => {
+          forgetActivitySeen(w.address);
+          void w.logout();
+        }}
+        className="text-xs text-muted transition hover:text-ink"
+      >
         Disconnect
       </button>
     </div>
