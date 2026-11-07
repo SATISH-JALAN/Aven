@@ -197,6 +197,42 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
     - `Activity`: arb feed, all trades, your trades, shocks, who earned what, and the proof drawer from `arena/Tape.tsx`;
   - `/swap`: a single swap card that routes to either pool and shows both quotes;
   - `/pool`: one tile per pool (Aven and plain) with price, gap, fees and a push status: "Pushed +N bp above/below the oracle" or "At the oracle" (`pushState`, threshold `PUSH_BPS` = 30), the last non-bot swap that pushed it and the bot's last arb back with its fee (`poolActivity`, from `/trades` or the recording); then who earns (LPs vs the arb bot) from live or recorded `/stats`, backed by the mainnet replay; cost per swap; add liquidity (`useAddLiquidity`);
+  - `/dashboard`: the live protocol dashboard (`src/app/dashboard/page.tsx`, `src/components/dashboard/{sections,viz}.tsx`, derivations in `src/lib/dashboard.ts`). From the top:
+    - `LiveStrip`: block, median block time, how long ago the Arena read the block, SSE/polling, bot state, last trade, oracle;
+    - `Headline`: LPs kept more (hero figure, `/stats`), LP income per pool, the share of Aven fees that match §6.3 on their own inputs (`auditFees`), the share verified A + B;
+    - one sticky filter row (window 2 / 10 / 30 min / all, on the Arena clock), scoping everything below;
+    - `LatencyProof`: `episodes()`. Every block where the oracle or the mark changed (changes within 2 blocks merge) plus every shock is one episode. `BlockLanes` shows it per block (HyperCore input · Aven fee arb side · plain fee · Aven fee retail side · arb landed per pool). `Milestones` shows it in Arena ms: fee repriced, first arb per pool, retail side back to base, last arb. A columns chart compares first-arb latency per episode. Stat tiles: Aven 0 blocks, plain never, a 60 s-delayed oracle 60 s (replay design), 0 extra blocks;
+    - `MarketCharts`: prices, gaps and `previewFee` per direction per block (`LineChart`, numbered event lines with a key);
+    - `SwapInspector`: pick or follow an Aven swap. It shows before (stream point before its block), the swap (in/out, fee, gap, bot profit) and after; a fee waterfall (`feeParts`: base / gap / premium / stress, cap, plain 0.30% marker); proof chips (§6.3, verify A, B) with "Re-verify now" (Arena `/verify`) and a link to `/verify/<tx>`; the plain-pool twin; and gas from both receipts (`getTransactionReceipt`, cached, 2 calls per selection);
+    - `NoExtraFee`: the audit checks, the live quotes split into terms, and a fee-vs-charged-gap `Scatter` with the §6.3 line;
+    - `Composition`: two `Donut`s (LP $ by fee term; swaps by regime: live / capped / base only / fallback) and a fee-band histogram;
+    - `Throughput`: volume per bucket, running LP income and bot profit, and a token in/out table (`flows`);
+    - the live `TradeTape`, and `Controls` in a drawer.
+
+    History: `ArenaProvider` now keeps 1,800 stream points (about 30 min), each with both gaps, both Aven quotes and the hook's `topBlock` (`HistoryPoint`, additive optional fields).
+
+    Two chain-only parts (no Arena needed):
+    - `WalletCard` (below the live strip): the connected wallet's swaps and fees, with a link to `/portfolio`;
+    - the **On chain** section, `OnchainRecord` (`src/components/onchain/Ledger.tsx`):
+      - scan status;
+      - stat tiles: swaps per pool, the share verified A + B in the browser, price bumps answered, and the share of perp marks inside Hyperliquid's 1-min candle range (mainnet only);
+      - a chart of pool price before / oracle / mark per Aven swap, plus Hyperliquid's 1m close (mainnet; time interpolated between the first and last block timestamps);
+      - `LedgerTable` of every swap: block, time, pool, side, in → out, price before → after, oracle, mark, premium, gap before → after, oracle Δ, fee, proof, tx.
+  - `/portfolio`: `Portfolio` (`src/components/onchain/Portfolio.tsx`). The address is the connected Privy wallet, or `?address=0x…` / the lookup box for any address. It shows:
+    - balances: `useBalances`;
+    - tiles: swaps, volume, fees paid vs a flat 0.30%, gas spent, verified;
+    - charts: fee per swap vs 0.30% (`Columns`), transactions by kind (`Donut`);
+    - an activity list (swap / liquidity / mint / transfer), each swap expandable into prices, oracle and mark, gap, fee terms, the A/B result and a link to the full proof.
+  - `src/lib/onchain.ts` (the chain as the database):
+    - `Scanner`: newest-first `eth_getLogs` scans in `LOG_CHUNK` blocks (999: 500, 998: 50, local: 5,000), one paced RPC queue, back-off on throttles (recon B.3), and a localStorage cache keyed by chain + hook (+ address). It resets when the chain is behind the cache (a restarted anvil);
+    - `useLedger`: our pools' Swap / ModifyLiquidity / FeeComputed, one call per chunk. Each tx is verified by `@aven/core/verify` `verifyLogs` (protocol fee 0);
+    - `useWalletActivity`: aETH / aUSD `Transfer` logs from and to the address (2 calls per chunk), then each tx's receipt and block, decoded into a `WalletTx`;
+    - `useBlockTimes`: lazy block timestamps.
+  - `src/lib/ledger.ts` `ledgerRows` / `ledgerStats` (pure):
+    - price before = the swap's own `FeeComputed`, else the previous swap's price after on that pool;
+    - a plain swap's oracle and mark come from an Aven swap in the same block (exact) or within 3 blocks (≈);
+    - oracle Δ is measured against the previous Aven swap.
+  - `src/lib/hl.ts` `fetchCandleRange`: Hyperliquid 1m candles for a time range (one call).
   - `/replay`: four-pool replay with playback, results, share link + QR, and method notes in a collapsible `Details` drawer;
   - `/docs/[[...slug]]`: GitBook-style docs (`src/components/docs/*`): `DocsShell` (sidebar with Ctrl+K search, content column, "On this page" scrollspy), `Doc` primitives (anchored headings, callouts, code with copy, tables, steps, link cards), 12 pages in four groups (`pages.tsx`). `/docs/verify` embeds `VerifyTool` (the old `/verify` page);
   - `/verify/[tx]`: our explorer stand-in and fee proof.
@@ -208,16 +244,16 @@ The **control pool** (fee 3000, no hook) takes the same path minus steps 2–5.
 
   Shell: `src/app/layout.tsx`. Privy `WalletProvider` (connect-only: `useConnectWallet`, no SIWE sign-in or Privy session) → `ArenaProvider` → `ReadyOutsideLanding`, custom `Cursor`, pill `Nav`, RPC banner, then `#smooth-wrapper` (GSAP ScrollSmoother) holding the page and the `Footer` (CTA, link columns, contracts, a giant wordmark that draws on scroll). The landing `Preloader` fires `aven:ready`; other pages are ready at once; the nav and hero intros wait for it. Config lives in one file: `src/config.ts` (+ `src/config/deployments.json`, synced from `contracts/deployments/` by `pnpm --filter @aven/web sync:deployments`).
 - **Path:**
-  - `src/lib/arena.tsx` `ArenaProvider`: `/health` → `/config`, `/stats`, `/trades`, `/bot/status`, `/state`, then the `/stream` SSE (`state`, `trade`, `shock`, `bot`). It polls `/state` while the stream reconnects. If the service is unreachable or unset, it loads `public/arena-fallback.json` (RECORDED). A recording from another chain supplies config/params for math (`math`) but never this chain's addresses (`deployments`).
-  - Admin POSTs (`/shock`, `/bot/start|stop`, `/reset-stats`) send `x-admin-token` from `?admin=` or the session.
-  - `src/lib/chain.ts`: one shared `eth_blockNumber` poller (nav "last updated" block, RPC-down banner). `verifyTxInBrowser` / `verifyAllInBrowser` call `@aven/core/verify` `verifyTx` / `verifyAll` (≤ 50-block chunks) straight against `NEXT_PUBLIC_RPC`.
+  - `src/lib/arena.tsx` `ArenaProvider`: `/health` → `/config`, `/stats`, `/trades`, `/bot/status`, `/state`, then the `/stream` SSE (`state`, `trade`, `shock`, `bot`). It polls `/state` while the stream reconnects; after a non-200 answer (the Arena's 503 client cap, or a tunnel without SSE) the browser gives up, so it reopens the stream itself with backoff (5 s doubling to 60 s). A 429 shows "too many requests from this browser". If the service is unreachable or unset, it loads `public/arena-fallback.json` (RECORDED). A recording from another chain supplies config/params for math (`math`) but never this chain's addresses (`deployments`).
+  - Admin POSTs (`/shock`, `/bot/start|stop`, `/reset-stats`) send `x-admin-token` from `?admin=` or the session. The `?admin=` parameter is removed from the address bar once read (it can spend the bot account's mainnet gas).
+  - `src/lib/chain.ts`: one shared `eth_blockNumber` poller (nav "last updated" block, RPC-down banner), paused in hidden tabs. `verifyTxInBrowser` calls `@aven/core/verify` `verifyTx` straight against `NEXT_PUBLIC_RPC`; `verifyKnownInBrowser` verifies the newest ≤ 25 Aven-pool swaps the Arena (or a same-chain recording) knows, one every 3 s (2 calls each). There is no scan since deployment in the browser: with 50-block `eth_getLogs` it grows ~1,700 calls a day on mainnet; use `pnpm verify --all`.
   - `src/lib/steps.ts` `feeSteps`: every §6.3 intermediate value with the core BigInt helpers, cross-checked against `compute()` (`consistent`).
   - Replay reads `public/replay/<scenario>.json`; playback is a GSAP tween over the step index.
-  - `src/lib/hl.ts`: Hyperliquid info API from the browser (`candleSnapshot`, `l2Book`, `metaAndAssetCtxs`; CORS open, recon C.7) for the Trade page. There is no mempool view (recon C.7).
+  - `src/lib/hl.ts`: Hyperliquid info API from the browser (`candleSnapshot`, `l2Book`, `metaAndAssetCtxs`; CORS open, recon C.7) for the Trade page, budgeted to ~445 weight/min of Hyperliquid's 1,200 per IP (one shared `metaAndAssetCtxs` poll every 5 s, chart candles 10 s, sparkline 60 s, book 2 s; recon C.7). There is no mempool view (recon C.7).
   - `src/lib/pressure.ts` (pure): `pushState(gapBps)` and `poolActivity(pool, trades)` for the push status above.
   - `src/lib/trade-math.ts` (pure): `tokenSide`, `feeFor`, `indicativeOut`, `planLiquidity`, and the exact contract args `swapArgs`, `liquidityArgs`, `liquidityNeeds`, `withGasMargin` (estimate × 1.3 + 30k).
-  - `src/lib/swap.ts` `useSwap` (Trade, Swap): from the user's Privy wallet, MockERC20 `mint` → `approve` → `PoolSwapTest.swap` on either pool. `src/lib/liquidity.ts` `useAddLiquidity` (Pool): `mint` → `approve` both tokens → `PoolModifyLiquidityTest.modifyLiquidity`.
-- **Exit:** the rendered UI (`/` needs only the RPC; `/trade`, `/swap`, `/pool` need the Arena or the recording for pool data, and Hyperliquid for market data); admin POSTs to the Arena; user swaps and liquidity on chain (Trade, Swap, Pool; LIVE only); CSV download and share link (replay). Every number carries a source label and a LIVE / RECORDED / REPLAY badge.
+  - `src/lib/swap.ts` `useSwap` (Trade, Swap): from the user's Privy wallet, MockERC20 `mint` → `approve` → `PoolSwapTest.swap` on either pool, capped in the UI at `MAX_UI_TRADE` (5 aETH / 10,000 aUSD) and gated on enough HYPE for gas. `src/lib/liquidity.ts` `useAddLiquidity` (Pool): `mint` → `approve` both tokens → `PoolModifyLiquidityTest.modifyLiquidity`.
+- **Exit:** the rendered UI (`/` needs only the RPC; `/trade`, `/swap`, `/pool` need the Arena or the recording for pool data, and Hyperliquid for market data); admin POSTs to the Arena; user swaps and liquidity on chain (Trade, Swap, Pool; LIVE only); CSV download and share link (replay). Every number carries a source label and a "Live mainnet" (999) / "Live testnet" (998) / "Recorded run" / "Replay" badge. The landing stats are read from `arena-fallback.json` and `replay/binance-halt.json`, never typed in. Measured public-RPC load per visible tab: landing 66/min, Trade/Swap/Docs 30, Pool 32 (limit 100/min per IP). Dashboard: the shared block poller plus 2 receipt reads per inspected swap; everything else comes from the Arena stream, plus the on-chain scanner (≤ 24 calls/min, newest-first, then cached).
 
 ## 9b. Demo run ✅
 

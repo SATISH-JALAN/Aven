@@ -6,6 +6,20 @@ The running record of status, decisions and open items. It saves you from re-rea
 
 | Prompt | State | Commit(s) / notes |
 |---|---|---|
+| **On-chain record + wallet portfolio** | ✅ 2026-11-06 ~23:40 UTC (prompt F34). Chain-only: no DB, no Arena needed. The dashboard's "On chain" section shows every swap on both pools with the oracle and mark the hook read in that block, verified A+B in the browser, compared with Hyperliquid's 1m candles on mainnet. `/portfolio` shows any address's swaps, liquidity and mints from Transfer logs → receipts.
+  - Local check (headless Chrome): a test wallet (anvil #3) did 2 mints, approvals, an Aven sell (0.14%), a plain sell (0.30%), a liquidity add and an Aven buy (0.05%). The portfolio showed all 6 txs with amounts, both Aven swaps MATCH, 0 console errors. The ledger table showed the plain pool sitting 30 bp above the oracle because its 0.30% fee stops the arb.
+  - Mainnet: the decoder passes on the real logs of arb `0xfce1…` (9,950 pips, A+B). A full browser scan is **throttled by the public RPC** (recon B.3), so the first visit fills newest-first over minutes, then it's cached.
+  - Frontend 39/39, tsc clean. | `frontend/src/{lib/onchain.ts,lib/ledger.ts,components/onchain/,app/portfolio/}` |
+| **Live dashboard `/dashboard`** | ✅ 2026-11-06 ~22:20 UTC (prompt F33).
+  - Latency lanes per block, milestones, market charts, swap inspector, no-extra-fee checks plus scatter, two donuts, histogram, throughput and live feed; derivations in `src/lib/dashboard.ts` (10 tests; frontend 35/35, tsc clean).
+  - Checked live on the local chain with headless Chrome: the HyperCore input changed in block B, and the Aven quote changed in B (0 blocks, also when the mark moved a block before the oracle). First arb: plain 1–2 blocks, Aven 2–3 (bot order).
+  - Scatter: every gap-only Aven swap sits on the §6.3 line. Fees matching §6.3 100%; verify A+B 100% (188/188). Hook +47,592 gas, 0 extra blocks. | `frontend/src/{app/dashboard,components/dashboard,lib/dashboard.ts}` |
+| **Full-stack local run + price-bump test** | ✅ 2026-11-06 ~21:25 UTC (prompt F32), frontend laptop.
+  - Backend tests 78 pass; `prove:diff` OK; forge 89/1/5 (the known salt-mining OutOfGas, see Gotchas).
+  - `local:up` deploy plus smoke MATCH, then the Arena on 31337. Oracle +150 bp, +200 bp, a shock, then −200 bp: Aven LPs kept **$675** more; bot profit $477 vs $1,289; 69/69 Aven trades verify A+B. The fee reprices in the same block; the bot mines control at +1 block and Aven at +2 (sequential).
+  - Website (headless CDP): the `/pool` shock button → both swaps mined 0.46 s after the click; `/verify/<tx>` shows 2,900 = 2,900 = 2,900.
+  - **Bug:** the `/pool` "Two pools" tiles stay hidden (reveal tween reverted).
+  - Mainnet read-only: `pnpm verify 0xfce1…` MATCH (9,950). | scratchpad only; nothing in the repo changed except docs |
 | P0 bootstrap | ✅ done | `5934448`, aligned in `f94f3b5` |
 | P1 recon | ✅ done; gate passed (precompile = info API after scaling) | `2a56c3b`; details in [recon.md](recon.md) |
 | Repo restructure | ✅ done 2026-11-06 | backend/, contracts/, frontend/; AGENTS.md, MEMORY.md, FLOW.md |
@@ -53,6 +67,14 @@ The running record of status, decisions and open items. It saves you from re-rea
   - **Found and fixed:** the deploy scripts read precompiles directly, which gets 0 bytes in forge's simulation on a live chain, so `DeployAven` would have failed on mainnet → `vm.rpc` path. Backend B-1…B-5 (rate-limit spoofing, RPC-amplifying GETs, SSE cap, `NATIVE_USD` guard, admin token length); 8 mutations caught.
   - **Budget (corrected on re-check):** the base fee is volatile (0.10–10.8 gwei over 3 h), so every tx is capped at 2 gwei: forge `--with-gas-price`, Arena `MAX_GAS_PRICE_GWEI`. The deploy + 200 bot swaps + 10 shocks cost $0.43 calm / $1.29 median / **max $7.07 at the cap**. Fund 0.03 / 0.10 / 0.02 HYPE; buy ~$20. | `contracts/script/base/AvenScript.sol`, `backend/arena/src/{server,config,arena,chain}.ts` |
 | **Backend plan** | ✅ every step done or BLOCKED on Sayan (testnet deploy) | docs/PLAN.md |
+| Frontend wiring Phase A (mainnet, frontend only) | ✅ 2026-11-07. No backend change, no tx sent.
+  - Points at mainnet 999 (`deployments.json` synced; `.env.example` and code defaults are 999 + the public RPC); badge "Live mainnet".
+  - The landing stats are read from the recording and the replay file (were hard-coded 8,700 / 141.25).
+  - Verify: the newest ≤ 25 known swaps, paced (no scan since deployment).
+  - Stream reopens with backoff after a 503; a clear 429 message; `?admin=` is removed from the URL.
+  - UI trade cap (5 aETH / 10,000 aUSD), HYPE-for-gas checks (incl. add liquidity) and a mainnet gas note.
+  - Polling within limits: Hyperliquid ~1,610 → ~445 weight/min; Pool RPC 61 → 32/min; hidden tabs don't poll.
+  - Tests: web 25, build OK; checked in headless Chrome (landing +$141 / 10,000 from the files). | `frontend/src/` |
 | P10 frontend: Trade / Swap / Pool / Docs | ✅ 2026-11-06/07 (prompts F22–F25; the session froze and was resumed). Nav is now Trade · Swap · Pool · Replay · Docs.
   - **Trade:** ClickOptions-style one-screen terminal with a TradingView chart and live Hyperliquid book and stats; Long/Short = spot buy/sell aETH on either pool.
   - **Swap:** card routing to either pool.
@@ -67,7 +89,7 @@ The running record of status, decisions and open items. It saves you from re-rea
 | P10 frontend | ✅ built 2026-11-06 (`@aven/web`, Next 16.4.2 + React 19.3.1 + GSAP 3.15.0 + Privy 3.51.0 + Tailwind 4.3.3). Pages: Arena `/`, `/replay`, `/verify`, `/verify/[tx]`, `/how`, `/build`. 12 vitest tests (fee walkthrough ≡ `compute()` on the spec example, 2,000 random inputs and the recorded 8,700-pip trade); production build passes (7 routes); checked in Chrome in RECORDED and REPLAY modes. **Not yet exercised against a live Arena or chain** (no deployment). Optional "Try it yourself" swap: written but untested on chain | `frontend/README.md`, FLOW.md §9 |
 | P12 README memo, FEEDBACK.md | not started | — |
 
-GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-06 (`4978cd0`), on Sayan's "push". **Local commits after that are not pushed** until Sayan says so.
+GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. Last push: 2026-11-07 (`1198f4f`, 15 frontend + merge commits), on Sayan's "push" (relayed by Satish). **Local commits after that are not pushed** until Sayan says so.
 
 ## Decisions (with date and reason)
 
@@ -76,6 +98,18 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - **2026-11-07: Swaps stay on `PoolSwapTest` → Uniswap's PoolManager; no other DEX.** Every swap (web app, bot, shock) goes through our `PoolSwapTest` into Uniswap's canonical v4 PoolManager, which calls AvenHook. `pnpm health` proves Uniswap's own V4Quoter and Universal Router (2.0, 2.1.2) also route the Aven pool. Other HyperEVM DEXs were not added: `aETH`/`aUSD` only have liquidity in our two pools, another DEX wouldn't run the hook, and AGENTS.md §6 rules out extra integrations. Moving the web app's swap path to the Universal Router (Permit2 approvals) is possible but was not done right before submission.
 - **2026-11-07: "Pushed" = |pool price − oracle| ≥ 30 bp** in the web app (`PUSH_BPS`, the threshold the gap colour already used); the health CLI reports at 25 bp. The last push is the newest non-bot trade on the pool (shock or wallet swap); the last arb is the newest bot trade.
 - **2026-11-07: Web app defaults to mainnet** (`NEXT_PUBLIC_CHAIN_ID` 999, `NEXT_PUBLIC_RPC` the public mainnet RPC), because that's where Aven is deployed. Wallet swaps still need the Arena (LIVE mode), since quotes and fee previews come from its live state.
+- **2026-11-06: The chain is the database for history and portfolios** (prompt F34: "I'm not adding any particular DB"). Pool history and wallet activity are read from HyperEVM logs and receipts in the browser and cached in localStorage. That's a cache only: clearing it gives the same answer from the chain.
+  - Plain-pool swaps don't log an oracle, and HyperEVM serves no past `eth_call` (recon B.3). Their oracle and mark therefore come from an Aven swap in the same block (exact) or within 3 blocks (shown with ≈), else "—". It is never estimated.
+  - A wallet's swaps are found through its aETH / aUSD `Transfer` logs, because the PoolManager's `Swap.sender` is the router, not the user. Approvals and reverted txs move no tokens, so they don't show.
+  - Faster full-history option, not built: a dedicated log RPC with a domain-restricted key, or Arena-side indexing (Sayan's backend, and a change to the frozen API).
+
+- **2026-11-06: Dashboard latency claims are measured, never typed.** The request said "about 100 ms for a plain transaction, 80 ms for Aven". That isn't true and isn't shown: both kinds land in the same 1 s blocks, and an Aven swap costs about 47.6k more gas.
+  - What *is* shown: the Aven fee reprices in **0 blocks** after a HyperCore input changes (oracle or mark), the plain fee **never**, and a 60 s-delayed oracle in 60 s (the replay design).
+  - Blocks are the headline unit (exact, from the chain). ms are Arena server time (`state.ts` / `trade.ts`, one clock), so browser clock skew can't enter.
+  - The first Aven arb landing a block after the plain one is labelled as bot ordering (one wallet, plain first), not hook latency.
+- **2026-11-06: Dashboard colours** (dataviz validator, dark, surface `#0e1110`). Pools keep aqua `#199e70` / orange `#d95926`, with blue `#3987e5` as the third series (all pairs PASS). Gray next to aqua FAILS (CVD ΔE 4.5), so fee terms use the ring gap aqua → premium blue → base magenta `#d55181` → stress yellow `#c98500`, which passes every adjacent pair including the wrap-around.
+
+- **2026-11-07: Frontend guards for open-mint tokens on mainnet** (recommended to Sayan: keep open mint, because new tokens would mean a new hook and pools, since the hook binds the token addresses). The UI caps a trade at 5 aETH / 10,000 aUSD (a 40,000 aUSD shock moves a pool ~190 bp) and says gas is real HYPE. It's a UI guard only; the router stays open. Pending Sayan's confirmation of C-5.
 
 - **2026-11-07: Frontend thread merged with Sayan's mainnet work** (merge commit, not a rebase: every frontend commit touched the same docs). Only docs conflicted. The two prompt logs had clashing numbers, so the frontend thread is listed as **F13–F28** after Sayan's #13–#27. The frontend test pinned to the old local recording (8,700 pips) now pins the mainnet recording (10,000, ceiling; recomputed = on-chain). **Rule from F28: no backend or contract change without a reviewed plan; never send mainnet txs from the frontend machine** (it holds no keys).
 
@@ -204,8 +238,16 @@ GitHub: `origin` = github.com/SATISH-JALAN/Aven (private), branch `main` only. L
 - **Windows reserves port ranges** (Hyper-V/WinNAT): on the 2026-11-07 machine `netsh int ipv4 show excludedportrange protocol=tcp` lists 8699–8798, which contains the Arena default 8787 and `check:frontend`'s 8797 (`listen EACCES`). Use `ARENA_PORT` / `CHECK_PORT` / `DEMO_PORT` outside the ranges.
 - **Uniswap's Universal Routers on 999 (2.0 and 2.1.2) take `ExactInputSingleParams` with `minHopPriceX36`**, the layout in our pinned v4-periphery; the older layout without it reverts. Found by simulating both in `pnpm health`.
 - **Simulating a Universal Router swap without approvals:** `eth_call` state overrides work on the public HyperEVM RPC. solmate ERC20 `allowance` is mapping slot 4 (`balanceOf` slot 3); Permit2 `allowance[owner][token][spender]` is slot 1, packed amount | expiration << 160 | nonce << 208 (checked against Permit2's own getter).
+- **MockERC20 (solmate) names the Transfer amount `amount`, not `value`.** Decoding with `args.value` threw inside a catch, so mints showed as empty "Transfer" rows. Read `amount ?? value`. The wallet cache key was bumped to v2 so bad records are dropped.
+- **Mainnet public RPC throttling looks like a range error.** `-32005 "Request exceeds defined limit"` came back even for 15-block `eth_getLogs`. Shrinking the range only adds calls; wait (exponential back-off) instead. A throwaway mainnet test left in `frontend/test/` also ran inside the normal `vitest run` and spent the budget: keep network tests out of `test/`.
+
+- **`[data-reveal]` is hidden by CSS (`.js-motion`) until GSAP shows it.** A reveal-marked element that mounts *after* the section's `useReveal` pass stays hidden forever. Separately, the `/pool` "Two pools" tiles are marked `data-revealed` but sit at opacity 0 with no tween left: the reveal was reverted (likely the `deps` re-run), still open. On the dashboard, only always-rendered wrappers carry `data-reveal`, and `useReveal` runs once.
+- **A GSAP `from()` that re-runs when data arrives** (`useGSAP` deps) tweens to the half-drawn state and freezes it (the scatter's formula line stayed undrawn). Use `fromTo` with explicit ends, plus a ran-once ref.
+- **CDP `Runtime.enable` replays console messages the tab already logged.** Warnings from a page's earlier code show up in a new capture: navigate first, or count only messages after the navigation.
+- **The Arena bot's in-flight arb can land in the same block as a shock, after it.** It then pays the post-shock gap fee (seen: 5,600 pips, 8 ms after the shock). Episode logic counts only arbs after the episode start on the Arena clock (a routine nibble mined earlier in the shock block is not "the answer").
 
 - **`forge test` on the frontend laptop (forge 1.8.1, 2026-11-07): `test_constructor_rejectsBadConfig` fails with OutOfGas** inside `HookMiner.find` on its third case (89 pass / 1 fail / 5 skip). The constructor reverts correctly on the cases before it; the gas goes on salt mining. Test and `foundry.toml` are unchanged since it passed, so it's likely the forge version. Not fixed (contracts are Sayan's): he should run it with his forge and compare versions.
+  - **Measured 2026-11-06 21:25 UTC:** with `--gas-limit 20000000000` both suites pass; the base-token1 suite needs **1,375,455,324 gas** (vs the ~1.07B default), the other 366M. It's salt mining: four `HookMiner.find` searches, each hashing the ~13 KB init code per attempt; the bytecode (metadata) change in `4978cd0` moved the salts later. **Proposed fix for Sayan:** wrap the `HookMiner.find` line in `_expectCtorRevert` with `vm.pauseGasMetering()` / `vm.resumeGasMetering()`. The revert assertions stay unchanged. Tried in the working tree: forge **90 / 0 / 5**; then reverted, because contracts are his.
 
 - **`useGSAP` with a `scope` ref that isn't rendered** (footer on app routes, an empty feed) floods the console with "Invalid scope" / "GSAP target not found" in dev. Return early when `ref.current` is null.
 - **2026-11-06 23:27 IST: the dev server died from low memory again** (Brave ~4.8 GB + `next dev` 1.6 GB; Windows Resource-Exhaustion event). Pages that "rendered blank" in screenshots were just the dead server. Close the browser's heavy tabs, or check with `next build` + `next start` instead of `next dev`.

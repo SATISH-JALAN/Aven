@@ -96,6 +96,11 @@ Pins are recorded in `contracts/foundry.lock` and the git submodule SHAs (`git s
 - `eth_call`, `eth_estimateGas`, `eth_getBalance`, `eth_getCode`, `eth_getStorageAt` and `eth_getTransactionCount` work **only against the latest block**: "Requests that require historical state are not supported". So the verifier can't re-read past precompile values; it must use the `FeeComputed` event inputs (as §7.3 already plans).
 - `eth_getLogs`: the docs say "limited to four topics and a 50-block query range". Probe from block 68,830,000: 50, 51 and 52-block ranges succeeded; 101 blocks → `-32008 Response is too big (max 1048576)`; 1,001 blocks → `-32005 rate limited`. **`verify --all` should scan in ≤ 50-block chunks filtered by hook address + `FeeComputed` topic.**
 - Rate limits: "IP based rate limits are the same as the API server" (same page).
+- **Mainnet (999) public RPC `eth_getLogs`, probed 2026-11-06 ~22:55–23:40 UTC, read-only.**
+  - Filtered by address (+ topics), 50, 51, 200 and **500**-block ranges were served; 999 and 1,000 blocks were refused (`-32005`). That was within seconds of other calls, so it may be the throttle rather than a range limit: UNVERIFIED.
+  - A full scan of our pools since the deploy block (address [PoolManager, hook], topic0 [Swap, ModifyLiquidity, FeeComputed], topic1 [both pool ids]) was **throttled**. After a few quick calls, every query was refused with `-32005 "Request exceeds defined limit"` / `"rate limited"`, **even 15-block ranges**, until ~25 s had passed. The refusals came about every 1,875 blocks scanned.
+  - Effective throughput was ~30 blocks/s (≈17k blocks in ~590 s with calls 1.3 s apart). After three scans, even `eth_blockNumber` was refused for a while.
+  - Consequences for the frontend (`src/lib/onchain.ts`): 500-block chunks, calls 2.5 s apart, exponential back-off (5 → 60 s) on a throttle, and the chunk shrinks only on a "response too big" (`-32008`). It scans newest-first and caches in localStorage.
 
 ### B.4 CREATE2 deployer
 
@@ -203,6 +208,7 @@ The market is sane and has a live book. **Note for the demo:** the testnet premi
 Checked 2026-11-06T18:48Z with `curl` and `origin: http://localhost:3000`:
 - `POST https://api.hyperliquid-testnet.xyz/info` with `{"type":"l2Book","coin":"ETH"}` and `{"type":"metaAndAssetCtxs"}`: HTTP 200 with **`access-control-allow-origin: *`**, so the browser calls it directly (`frontend/src/lib/hl.ts`). `candleSnapshot` for ETH **1m** returns candles (`{t,T,s,i,o,c,h,l,v,n}`).
 - HyperEVM testnet RPC: **no mempool view.** `txpool_status` and `txpool_content` return `-32601 Method not found`, and `eth_getBlockByNumber("pending")` returns `null`. The app shows only the pending state of the user's own transactions.
+- **Hyperliquid info API weights** (docs, "Rate limits and user limits", checked 2026-11-07): "REST requests share an aggregated weight limit of 1200 per minute" per IP; `l2Book` and `allMids` weight 2; "All other documented info requests have weight 20" (incl. `metaAndAssetCtxs`); `candleSnapshot` 20 plus extra weight per 60 items returned. The Trade page's first polling (two `metaAndAssetCtxs` polls at 3 s, candles at 4 s) came to ~1,610/min, over the limit; now ~445/min measured (11 ctx + 7 candle + 25 book requests in 60 s).
 
 ### C.8 Hosting the Arena URL and the frontend (checked 2026-11-07)
 
