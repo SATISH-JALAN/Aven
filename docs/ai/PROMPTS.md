@@ -859,3 +859,13 @@ thiis flow chart look very dull redesign it according to all the other flowchart
 ```
 
 Redesigned the mainnet deployment flowchart in `README.md` from a plain vertical stack (`flowchart TD`) into a horizontal multi-stage pipeline (`flowchart LR`) with themed subgraphs (`Account & Gas`, `Foundry Scripts`, `HyperEVM Mainnet Pools`, `Off-Chain Verification`) and pill-shaped terminal nodes, preserving all exact node content while matching the design language of `FLOW.md` and `ARCHITECTURE.md`.
+
+---
+
+## F51 — 2026-11-14T07:28:31Z — Fix Pyrefly invalid-annotation errors in vm.py
+
+```text
+[Pasted VS Code Pyrefly diagnostic errors for contracts/lib/hyper-evm-lib/lib/forge-std/scripts/vm.py: invalid-annotation on Visibility, Mutability, Item Enum members]
+```
+
+Fixed `invalid-annotation` errors in `vm.py` by annotating `_value_: str` on the `Enum` subclasses (`Visibility`, `Mutability`, `Item`) and removing direct type annotations from enum members in compliance with PEP 484 and Pyrefly rules.
