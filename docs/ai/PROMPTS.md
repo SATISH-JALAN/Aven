@@ -827,3 +827,25 @@ Recorder caught mainnet bulk run burst:1794019817471 (6 rounds; Aven arb fees 1,
 ```
 
 (Screenshots of the ETHGlobal project form: demo link, short description, description, how it's made, GitHub repositories.) The browser profile available to the agent wasn't signed in to ETHGlobal, so the final text for each field was written in chat for pasting; no code change.
+
+---
+
+## F49 — 2026-11-14T07:03:56Z — Fix Mermaid diagram parse errors in README.md
+
+```text
+A swap through the Aven pool
+Unable to render rich display
+
+Parse error on line 18:
+...; fee accrues to LPs PM-->>R: BalanceD
+-----------------------^
+Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', ...
+
+Deployment (HyperEVM mainnet)
+Unable to render rich display
+flowchart TD A["One funded account (HYPE for gas on HyperEVM)"] --> C["DeployCore: reuse Uniswap's PoolManager, deploy the test routers"] ...
+
+fix  this
+```
+
+Fixed Mermaid sequence diagram parse error on line 18 (replaced statement-delimiting `;` with `,` in `Pool.swap with the override fee, fee accrues to LPs`) and sanitized the mainnet deployment flowchart in `README.md` (removed apostrophe in `Uniswap's`, replaced `==` with `=`, and cleaned node sequencing).

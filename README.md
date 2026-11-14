@@ -103,7 +103,7 @@ sequenceDiagram
   L-->>H: Breakdown {fee, reason, signals}
   H->>H: persist top-of-block price + mark anchor, emit FeeComputed
   H-->>PM: (selector, ZERO_DELTA, fee | 0x400000)
-  PM->>PM: Pool.swap with the override fee; fee accrues to LPs
+  PM->>PM: Pool.swap with the override fee, fee accrues to LPs
   PM-->>R: BalanceDelta + Swap event (fee)
 ```
 
@@ -477,12 +477,12 @@ Aven runs on **HyperEVM mainnet (chain 999)** and reuses **Uniswap's canonical v
 
 ```mermaid
 flowchart TD
-  A["One funded account (HYPE for gas on HyperEVM)"] --> C["DeployCore: reuse Uniswap's PoolManager, deploy the test routers"]
-  C --> E["DeployTokens: aETH (18 dec) / aUSD (6 dec)"]
-  E --> F["DeployAven: check perpAssetInfo(1).coin == ETH, mine 0x2080 salt, CREATE2"]
-  F --> G["CreatePools: Aven pool (dynamic fee) + control pool (0.30%) at the live oracle price"]
-  G --> H["Smoke: one swap each way on both pools"]
-  H --> I["pnpm verify: MATCH A + B, commit deployments/999.json"]
+  A["One funded account (HYPE for gas on HyperEVM)"] --> B["DeployCore: reuse Uniswap PoolManager, deploy the test routers"]
+  B --> C["DeployTokens: aETH (18 dec) / aUSD (6 dec)"]
+  C --> D["DeployAven: check perpAssetInfo(1).coin = ETH, mine 0x2080 salt, CREATE2"]
+  D --> E["CreatePools: Aven pool (dynamic fee) + control pool (0.30%) at the live oracle price"]
+  E --> F["Smoke: one swap each way on both pools"]
+  F --> G["pnpm verify: MATCH A + B, commit deployments/999.json"]
 ```
 
 - **Every transaction is capped at 2 gwei** (forge `--with-gas-price 2gwei`; Arena `MAX_GAS_PRICE_GWEI`). The base fee ranged from 0.10 to 10.8 gwei over 3 hours, so a capped tx waits rather than overpays.
