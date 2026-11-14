@@ -849,3 +849,13 @@ fix  this
 ```
 
 Fixed Mermaid sequence diagram parse error on line 18 (replaced statement-delimiting `;` with `,` in `Pool.swap with the override fee, fee accrues to LPs`) and sanitized the mainnet deployment flowchart in `README.md` (removed apostrophe in `Uniswap's`, replaced `==` with `=`, and cleaned node sequencing).
+
+---
+
+## F50 — 2026-11-14T07:23:19Z — Redesign deployment flowchart to match other diagrams
+
+```text
+thiis flow chart look very dull redesign it according to all the other flowcharts and dont change the content just chang the desing
+```
+
+Redesigned the mainnet deployment flowchart in `README.md` from a plain vertical stack (`flowchart TD`) into a horizontal multi-stage pipeline (`flowchart LR`) with themed subgraphs (`Account & Gas`, `Foundry Scripts`, `HyperEVM Mainnet Pools`, `Off-Chain Verification`) and pill-shaped terminal nodes, preserving all exact node content while matching the design language of `FLOW.md` and `ARCHITECTURE.md`.

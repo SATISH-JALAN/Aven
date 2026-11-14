@@ -476,13 +476,32 @@ Each tool reads its own folder's `.env`. Only the `.env.example` files are commi
 Aven runs on **HyperEVM mainnet (chain 999)** and reuses **Uniswap's canonical v4 PoolManager** there; it doesn't deploy its own. The hook is 9.3 KB, so it fits HyperEVM's 3M-gas small blocks: no big blocks and no HyperCore-user step. The deploy was rehearsed on a mainnet fork first, and an internal review was done before it ([docs/SECURITY.md](docs/SECURITY.md) §6). Full runbook: [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md) §M.
 
 ```mermaid
-flowchart TD
-  A["One funded account (HYPE for gas on HyperEVM)"] --> B["DeployCore: reuse Uniswap PoolManager, deploy the test routers"]
-  B --> C["DeployTokens: aETH (18 dec) / aUSD (6 dec)"]
-  C --> D["DeployAven: check perpAssetInfo(1).coin = ETH, mine 0x2080 salt, CREATE2"]
-  D --> E["CreatePools: Aven pool (dynamic fee) + control pool (0.30%) at the live oracle price"]
-  E --> F["Smoke: one swap each way on both pools"]
-  F --> G["pnpm verify: MATCH A + B, commit deployments/999.json"]
+flowchart LR
+  subgraph setup["1. Account & Gas"]
+    A(["One funded account (HYPE for gas on HyperEVM)"])
+  end
+
+  subgraph contracts["2. Foundry Scripts (contracts/script/)"]
+    B["DeployCore: reuse Uniswap PoolManager, deploy the test routers"]
+    C["DeployTokens: aETH (18 dec) / aUSD (6 dec)"]
+    D["DeployAven: check perpAssetInfo(1).coin = ETH, mine 0x2080 salt, CREATE2"]
+  end
+
+  subgraph pools["3. HyperEVM Mainnet Pools"]
+    E["CreatePools: Aven pool (dynamic fee) + control pool (0.30%) at the live oracle price"]
+    F["Smoke: one swap each way on both pools"]
+  end
+
+  subgraph verify["4. Off-Chain Verification"]
+    G(["pnpm verify: MATCH A + B, commit deployments/999.json"])
+  end
+
+  A --> B
+  B --> C
+  C --> D
+  D --> E
+  E --> F
+  F --> G
 ```
 
 - **Every transaction is capped at 2 gwei** (forge `--with-gas-price 2gwei`; Arena `MAX_GAS_PRICE_GWEI`). The base fee ranged from 0.10 to 10.8 gwei over 3 hours, so a capped tx waits rather than overpays.
